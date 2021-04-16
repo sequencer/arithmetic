@@ -31,6 +31,8 @@ class arithmetic extends ScalaModule with ScalafmtModule with PublishModule { m 
   override def ivyDeps = super.ivyDeps() ++ Agg(
     getVersion("chisel3"),
     getVersion("chiseltest"),
+    ivy"com.lihaoyi::upickle:latest.integration",
+    ivy"com.lihaoyi::os-lib:latest.integration",
   )
 
   object tests extends Tests {
