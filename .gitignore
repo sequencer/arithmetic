@@ -1,0 +1,13 @@
+# mill
+out/
+# sbt
+diplomacy/target/
+diplomacy/macros/target/
+project/build.properties
+project/project
+project/target
+target/
+
+.bsp/
+.idea/
+
