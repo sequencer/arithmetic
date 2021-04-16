@@ -1,0 +1,16 @@
+on: [pull_request]
+jobs:
+  checks:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Setup Scala
+        uses: olafurpg/setup-scala@v10
+      - name: Cache
+        uses: coursier/cache-action@v5
+      - name: Setup Mill
+        uses: jodersky/setup-mill@v0.2.3
+      - name: Check Format
+        run: make checkformat
+      - name: Check Mill Compile
+        run: make compile
