@@ -29,6 +29,9 @@ class arithmetic extends ScalaModule with ScalafmtModule with PublishModule { m 
 
   override def ivyDeps = super.ivyDeps() ++ Agg(
     getVersion("chisel3"),
+    ivy"com.github.ktakagaki.breeze::breeze:0.15.1",
+    ivy"com.github.ktakagaki.breeze::breeze-natives:0.15.1",
+    ivy"org.scalanlp::breeze-viz:1.2"
   )
 
   object tests extends Tests {
