@@ -18,6 +18,7 @@ object v {
   val breeze = ivy"com.github.ktakagaki.breeze::breeze:2.0"
   val breezeNatives = ivy"com.github.ktakagaki.breeze::breeze-natives:2.0"
   val breezeViz = ivy"org.scalanlp::breeze-viz:2.0"
+  val spire = ivy"org.typelevel::spire:0.17.0"
   //  val prime = ivy"org.apache.commons:commons-math3:3.6.1"
 }
 
@@ -43,7 +44,8 @@ class arithmetic extends ScalaModule with ScalafmtModule with PublishModule { m 
     v.osLib,
     v.breeze,
     v.breezeViz,
-    v.breezeNatives
+    v.breezeNatives,
+    v.spire
   )
 
   object tests extends Tests with Utest {

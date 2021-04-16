@@ -2,6 +2,8 @@ package division.srt
 
 import breeze.linalg._
 import breeze.plot._
+import spire.implicits._
+import spire.math._
 
 /** Base SRT class.
   *
@@ -11,35 +13,34 @@ import breeze.plot._
   *                    @note 5.6
   * @param ulpN ulp is the unit in the last position, defined by `pow(r, -uplN)`
   *             @note 5.2
-  * @param normD normalized divider range from `pow(2, _._1)` to `pow(2, _._2)`
-  * @param normX normalized dividend range from `pow(2, _._1)` to `pow(2, _._2)`
+  * @param normD normalized divider range
+  * @param normX normalized dividend range
   */
 case class SRT(
-  radix:       Int,
-  quotientSet: (Int, Int),
-  ulpN:        Int = 0,
-  normD:       (Int, Int) = (-1, 0),
-  normX:       (Int, Int) = (-1, 0)) {
-  val a: Int = max(math.abs(quotientSet._1), math.abs(quotientSet._2))
-  require(quotientSet._1 < 0, quotientSet._2 > 0)
+  radix:       Algebraic,
+  quotientSet: (Algebraic, Algebraic),
+  ulpN:        Algebraic = 0,
+  normD:       (Algebraic, Algebraic) = (-1, 0),
+  normX:       (Algebraic, Algebraic) = (-1, 0)) {
+  val a: Algebraic = (-quotientSet._1).max(quotientSet._2)
   // @note 5.7
-  require(a >= (radix + 1) / 2)
+  require(a >= radix / 2)
   // @note 5.3
   require(normD._1 < normD._2)
   require(normX._1 < normX._2)
-  val xMin: Double = math.pow(2, normX._1)
-  val xMax: Double = math.pow(2, normX._2)
-  val dMin: Double = math.pow(2, normD._1)
-  val dMax: Double = math.pow(2, normD._2)
+  val xMin: Algebraic = Algebraic(2).pow(normX._1.toInt)
+  val xMax: Algebraic = Algebraic(2).pow(normX._2.toInt)
+  val dMin: Algebraic = Algebraic(2).pow(normD._1.toInt)
+  val dMax: Algebraic = Algebraic(2).pow(normD._2.toInt)
 
   /** redundancy factor
     * @note 5.8
     */
-  val rou: Double = a.toDouble / (radix - 1)
+  val rou: Algebraic = a / (radix - 1)
 
-  override def toString: String = s"SRT$radix with quotient set: ${quotientSet._1 to quotientSet._2}"
+  override def toString: String = s"SRT$radix with quotient set: from ${-quotientSet._1} to ${quotientSet._2}"
   // @note 5.8s
-  assert((rou > 1.0 / 2) && (rou <= 1))
+  assert((rou > 1 / 2) && (rou <= 1))
 
   /** P-D Diagram
     * @note Graph 5.17(b)
@@ -47,10 +48,10 @@ case class SRT(
   def pdDiagram(): Unit = {
     val fig: Figure = Figure()
     val p:   Plot = fig.subplot(0)
-    val x:   DenseVector[Double] = linspace(dMin, dMax)
+    val x:   DenseVector[Double] = linspace(dMin.toDouble, dMax.toDouble)
 
-    val (uk, lk) = (quotientSet._1 to quotientSet._2).map { k: Int =>
-      (plot(x, x * uRate(k), name = s"U($k)"), plot(x, x * lRate(k), name = s"L($k)"))
+    val (uk, lk) = (quotientSet._1.toBigInt to quotientSet._2.toBigInt).map { k: BigInt =>
+      (plot(x, x * uRate(k.toInt).toDouble, name = s"U($k)"), plot(x, x * lRate(k.toInt).toDouble, name = s"L($k)"))
     }.unzip
 
     p ++= uk ++= lk
@@ -58,8 +59,8 @@ case class SRT(
     p.xlabel = "d"
     p.ylabel = "rω[j]"
     val scale = 1.1
-    p.xlim(0, xMax * scale)
-    p.ylim((quotientSet._1 - rou) * xMax * scale, (quotientSet._2 + rou) * xMax * scale)
+    p.xlim(0, (xMax * scale).toDouble)
+    p.ylim(((quotientSet._1 - rou) * xMax * scale).toDouble, ((quotientSet._2 + rou) * xMax * scale).toDouble)
     p.title = s"P-D Graph of $this"
     p.legend = true
     fig.saveas("pd.pdf")
@@ -68,30 +69,30 @@ case class SRT(
   /** slope factor of U_k
     * @note 5.56
     */
-  def uRate(k: Int): Double = k + rou
+  def uRate(k: Algebraic): Algebraic = k + rou
 
   /** slope factor of L_k
     * @note 5.56
     */
-  def lRate(k: Int): Double = k - rou
+  def lRate(k: Algebraic): Algebraic = k - rou
 
   /** Robertson Diagram
     * @note Graph 5.17(a)
     */
-  def robertsonDiagram(d: Double): Unit = {
+  def robertsonDiagram(d: Algebraic): Unit = {
     require(d > dMin && d < dMax)
     val fig: Figure = Figure()
     val p:   Plot = fig.subplot(0)
 
-    p ++= (quotientSet._1 to quotientSet._2).map { k: Int =>
-      val xrange: DenseVector[Double] = linspace((k - rou) * d, (k + rou) * d)
-      plot(xrange, xrange - k * d, name = s"$k")
+    p ++= (quotientSet._1.toInt to quotientSet._2.toInt).map { k: Int =>
+      val xrange: DenseVector[Double] = linspace(((Algebraic(k) - rou) * d).toDouble, ((Algebraic(k) + rou) * d).toDouble)
+      plot(xrange, xrange - k * d.toDouble, name = s"$k")
     }
 
     p.xlabel = "rω[j]"
     p.ylabel = "ω[j+1]"
-    p.xlim(-radix * rou * dMax, radix * rou * dMax)
-    p.ylim(-rou * d, rou * d)
+    p.xlim((-radix * rou * dMax).toDouble, (radix * rou * dMax).toDouble)
+    p.ylim((-rou * d).toDouble, (rou * d).toDouble)
     p.title = s"Robertson Graph of $this divisor: $d"
     p.legend = true
     fig.saveas("robertson.pdf")
