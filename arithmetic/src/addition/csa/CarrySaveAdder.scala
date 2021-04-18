@@ -4,6 +4,8 @@ import chisel3._
 import chisel3.util._
 
 trait BitCompress {
+  // Output Value = sum( output_bit[i] * outputWeights[i] )
+  val outputWeights: Seq[Int]
   def compressor: Int => Compressor
 }
 
@@ -35,6 +37,7 @@ abstract class CarrySaveAdder(val m: Int, val n: Int)(val width: Int) extends Mo
 }
 
 trait BitCompress2_2 extends BitCompress { this: CarrySaveAdder =>
+  override val outputWeights: Seq[Int] = Seq(1, 2)
   override def compressor: Int => Compressor = (_: Int) =>
     new Compressor(m, n) {
       require(io.in.size == m)
@@ -46,6 +49,7 @@ trait BitCompress2_2 extends BitCompress { this: CarrySaveAdder =>
 class HalfAdder(width: Int) extends CarrySaveAdder(2, 2)(width) with BitCompress2_2
 
 trait BitCompress3_2 extends BitCompress { this: CarrySaveAdder =>
+  override val outputWeights: Seq[Int] = Seq(1, 2)
   override def compressor: Int => Compressor = (_: Int) =>
     new Compressor(m, n) {
       val a :: b :: c :: Nil = io.in.toList
@@ -60,12 +64,28 @@ trait BitCompress3_2 extends BitCompress { this: CarrySaveAdder =>
 class CarrySaveAdder3_2(width: Int) extends CarrySaveAdder(3, 2)(width) with BitCompress3_2
 
 trait BitCompress5_3 extends BitCompress { this: CarrySaveAdder =>
+  override val outputWeights: Seq[Int] = Seq(1, 2, 2)
   override def compressor: Int => Compressor = (_: Int) =>
     new Compressor(m, n) {
       val a :: b :: c :: d :: e :: Nil = io.in.toList
-      val sum_abc = a +& b +& c
-      val sum_all = sum_abc + d + e
-      io.out := sum_all.asBools()
+      /*
+                        a  b  c
+                cout  <-   |
+                     d  e  s
+             carry <-   |
+                       sum
+       */
+      val a_xor_b = a ^ b
+      val a_and_b = a & b
+      val s = a_xor_b ^ c
+      val cout = a_and_b | (a_xor_b & c)
+
+      val d_xor_e = d ^ e
+      val d_and_e = d & e
+      val sum = d_xor_e ^ s
+      val carry = d_and_e | (d_xor_e & s)
+
+      io.out := Seq(sum, cout, carry)
     }
 }
 

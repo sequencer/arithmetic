@@ -10,18 +10,26 @@ trait HasCSASpec {
     val maxPerInput: Int = 1 << dut.width
     val max = math.pow(maxPerInput, dut.m)
 
+    val input = Array.fill(dut.m)(0)
     @tailrec
     def test(n: Int): Unit = {
       var refSum = 0
       for((in, i) <- dut.io.in.zipWithIndex){
-        val x = (n >> dut.m * i) % maxPerInput
+        // convert radix from 10 to maxPerInput
+        // new_bit = (raw / maxPerInput) mod maxPerInput
+        val x = (n >> (dut.width * i)) % maxPerInput
         refSum += x
+        input(i) = x
         in.poke(x.U)
       }
       dut.clock.step(1)
-      // y has higher priority than x
-      val dutSum = dut.io.out.map(_.peek().litValue()).reduce((x, y) => x + (y << 1))
-      require(dutSum == refSum)
+      val output = dut.io.out.map(_.peek().litValue())
+      val dutSum = output.zip(dut.outputWeights).map({
+        case (v, w) => v * w
+      }).sum
+      require(dutSum == refSum, s"input: ${input.mkString(" ")} output:${output.mkString(" ")}\n" +
+        s"refSum: $refSum dutSum: $dutSum"
+      )
 
       if((n + 1) < max){
         test(n + 1)
@@ -33,7 +41,7 @@ trait HasCSASpec {
 }
 
 object CSASpecTester extends ChiselUtestTester with HasCSASpec {
-  val width = 3
+  val width = 1
   val tests: Tests = Tests {
     test("half adder(2-2 carry save adder) should pass"){
       testCircuit(new HalfAdder(width))(CSASpec)
