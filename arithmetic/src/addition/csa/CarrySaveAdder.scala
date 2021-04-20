@@ -1,92 +1,51 @@
 package arithmetic.addition.csa
 
 import chisel3._
-import chisel3.util._
 
-trait BitCompress {
-  // Output Value = sum( output_bit[i] * outputWeights[i] )
-  val outputWeights: Seq[Int]
-  def compressor: Int => Compressor
-}
-
-class CarrySaveAdderIO(val m: Int, val n: Int)(val len: Int) extends Bundle {
-  val in = Input(Vec(m, UInt(len.W)))
-  val out = Output(Vec(n, UInt(len.W)))
-}
-
-class CompressorIO(val m: Int, val n: Int) extends Bundle {
-  val in = Input(Vec(m, Bool()))
-  val out = Output(Vec(n, Bool()))
-}
-
-abstract class Compressor(val m: Int, val n: Int) extends Module {
-  val io = IO(new CompressorIO(m, n))
-}
-
-abstract class CarrySaveAdder(val m: Int, val n: Int)(val width: Int) extends Module with BitCompress {
+/** Abstract class of a Carry Save Adder.
+  *
+  * A Carry Save Adder is a compressor: before compressing a `m` bits input is required, after compressing, `n` output
+  * should encodes the number of 1 from `m`.
+  * So `m+1` terms are encoded to `n` bits output.
+  *
+  * for example a classic csa 3in 2out, which encodes:
+  * {{{
+  *   input          number of 1     output
+  *   000         -> 0            -> 00
+  *   100 010 001 -> 1            -> 01
+  *   110 101 011 -> 2            -> 10
+  *   111         -> 3            -> 11
+  * }}}
+  *
+  * @param inputSize size of input
+  * @param outputSize size of output
+  * @param compressor a function that takes the index of bit, which returns a [[CSACompressor]]
+  * @param width adder width
+  */
+abstract class CarrySaveAdder(
+  val inputSize:  Int,
+  val outputSize: Int,
+  val compressor: Int => CSACompressor
+)(val width:      Int)
+    extends MultiIOModule {
+  require(math.pow(2, outputSize) >= inputSize, "not enough output bits to encode.")
   override val desiredName: String = this.getClass.getSimpleName + s"_$width"
 
-  val io = IO(new CarrySaveAdderIO(m, n)(width))
-  val compressorMods = Seq.tabulate(width)(i => Module(compressor(i)))
-  val result = Wire(Vec(width, Vec(n, Bool())))
-  for (((res, cmp), idx) <- result.zip(compressorMods).zipWithIndex) {
-    cmp.io.in := io.in.map(_(idx))
-    res := cmp.io.out
-  }
-  io.out.zipWithIndex.foreach { case (out, idx) => out := Cat(result.reverseMap(_(idx))) }
+  val in:  Vec[UInt] = IO(Input(Vec(inputSize, UInt(width.W))))
+  val out: Vec[UInt] = IO(Output(Vec(outputSize, UInt(width.W))))
+
+  (out
+    .zip(
+      Seq
+        .tabulate(width)(i => compressor(i))
+        .zipWithIndex
+        .map {
+          case (m, i) => {
+            require(m.inputSize == inputSize && m.outputSize == outputSize)
+            m.circuit(in.map(_(i)))
+          }
+        }
+        .transpose
+    ))
+    .foreach { case (o, i) => o := VecInit(i).asUInt }
 }
-
-trait BitCompress2_2 extends BitCompress { this: CarrySaveAdder =>
-  override val outputWeights: Seq[Int] = Seq(1, 2)
-  override def compressor: Int => Compressor = (_: Int) =>
-    new Compressor(m, n) {
-      require(io.in.size == m)
-      require(io.out.size == n)
-      io.out := VecInit(Seq(io.in.head ^ io.in.last, io.in.head & io.in.last))
-    }
-}
-
-class HalfAdder(width: Int) extends CarrySaveAdder(2, 2)(width) with BitCompress2_2
-
-trait BitCompress3_2 extends BitCompress { this: CarrySaveAdder =>
-  override val outputWeights: Seq[Int] = Seq(1, 2)
-  override def compressor: Int => Compressor = (_: Int) =>
-    new Compressor(m, n) {
-      val a :: b :: c :: Nil = io.in.toList
-      val a_xor_b = a ^ b
-      val a_and_b = a & b
-      val sum = a_xor_b ^ c
-      val carry = a_and_b | (a_xor_b & c)
-      io.out := VecInit(Seq(sum, carry))
-    }
-}
-
-class CarrySaveAdder3_2(width: Int) extends CarrySaveAdder(3, 2)(width) with BitCompress3_2
-
-trait BitCompress5_3 extends BitCompress { this: CarrySaveAdder =>
-  override val outputWeights: Seq[Int] = Seq(1, 2, 2)
-  override def compressor: Int => Compressor = (_: Int) =>
-    new Compressor(m, n) {
-      val a :: b :: c :: d :: e :: Nil = io.in.toList
-      /*
-                        a  b  c
-                cout  <-   |
-                     d  e  s
-             carry <-   |
-                       sum
-       */
-      val a_xor_b = a ^ b
-      val a_and_b = a & b
-      val s = a_xor_b ^ c
-      val cout = a_and_b | (a_xor_b & c)
-
-      val d_xor_e = d ^ e
-      val d_and_e = d & e
-      val sum = d_xor_e ^ s
-      val carry = d_and_e | (d_xor_e & s)
-
-      io.out := Seq(sum, cout, carry)
-    }
-}
-
-class CarrySaveAdder5_3(width: Int) extends CarrySaveAdder(5, 3)(width) with BitCompress5_3
