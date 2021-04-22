@@ -2,7 +2,7 @@ package arithmetic.addition.csa
 
 import chisel3._
 
-/** A [[CSACompressor]] encodes encodes the number of 1 from input bool sequence to `n` bits output.
+/** A [[CSACompressor]] encodes the number of 1 from input bool sequence to `n` bits output.
   * So `m+1` terms are encoded to `n` bits output.
   *
   * for example a classic csa 3in 2out, which encodes:
