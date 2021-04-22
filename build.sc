@@ -19,6 +19,7 @@ object v {
   val breezeNatives = ivy"com.github.ktakagaki.breeze::breeze-natives:2.0"
   val breezeViz = ivy"org.scalanlp::breeze-viz:2.0"
   val spire = ivy"org.typelevel::spire:0.17.0"
+  val evilplot = ivy"io.github.cibotech::evilplot:0.8.1"
   //  val prime = ivy"org.apache.commons:commons-math3:3.6.1"
 }
 
@@ -38,6 +39,7 @@ class arithmetic extends ScalaModule with ScalafmtModule with PublishModule { m 
   override def scalacPluginIvyDeps = Agg(v.chisel3Plugin)
 
   override def ivyDeps = super.ivyDeps() ++ Agg(
+<<<<<<< HEAD
     v.chisel3,
     v.chiseltest,
     v.upickle,
@@ -45,7 +47,8 @@ class arithmetic extends ScalaModule with ScalafmtModule with PublishModule { m 
     v.breeze,
     v.breezeViz,
     v.breezeNatives,
-    v.spire
+    v.spire,
+    v.evilplot
   )
 
   object tests extends Tests with Utest {

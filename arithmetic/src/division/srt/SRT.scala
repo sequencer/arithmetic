@@ -1,100 +1,169 @@
 package division.srt
 
-import breeze.linalg._
-import breeze.plot._
+import com.cibo.evilplot.colors.HTMLNamedColors
+import com.cibo.evilplot.numeric.Bounds
+import com.cibo.evilplot.plot._
+import com.cibo.evilplot.plot.aesthetics.DefaultTheme._
+import com.cibo.evilplot.plot.renderers.PointRenderer
+import os.Path
 import spire.implicits._
 import spire.math._
 
 /** Base SRT class.
   *
   * @param radix is the radix of SRT.
+  *              It defined how many rounds can be calculate in one cycle.
   *              @note 5.2
-  * @param quotientSet is the min and max of quotient-digit set
-  *                    @note 5.6
-  * @param ulpN ulp is the unit in the last position, defined by `pow(r, -uplN)`
-  *             @note 5.2
-  * @param normD normalized divider range
-  * @param normX normalized dividend range
   */
 case class SRT(
-  radix:       Algebraic,
-  quotientSet: (Algebraic, Algebraic),
-  ulpN:        Algebraic = 0,
-  normD:       (Algebraic, Algebraic) = (-1, 0),
-  normX:       (Algebraic, Algebraic) = (-1, 0)) {
-  val a: Algebraic = (-quotientSet._1).max(quotientSet._2)
-  // @note 5.7
-  require(a >= radix / 2)
-  // @note 5.3
-  require(normD._1 < normD._2)
-  require(normX._1 < normX._2)
-  val xMin: Algebraic = Algebraic(2).pow(normX._1.toInt)
-  val xMax: Algebraic = Algebraic(2).pow(normX._2.toInt)
-  val dMin: Algebraic = Algebraic(2).pow(normD._1.toInt)
-  val dMax: Algebraic = Algebraic(2).pow(normD._2.toInt)
+  radix:          Algebraic,
+  a:              Algebraic,
+  dTruncateWidth: Algebraic,
+  xTruncateWidth: Algebraic,
+  dMin:           Algebraic = 0.5,
+  dMax:           Algebraic = 1) {
+  require(a > 0)
+  lazy val xMin: Algebraic = -rho * dMax
+  lazy val xMax: Algebraic = rho * dMax
+
+  /** P-D Diagram
+    *
+    * @note Graph 5.17(b)
+    */
+  lazy val pd: Plot = Overlay((aMin.toBigInt to aMax.toBigInt).flatMap { k: BigInt =>
+    Seq(
+      FunctionPlot.series(
+        _ * uRate(k.toInt).toDouble,
+        s"U($k)",
+        HTMLNamedColors.blue,
+        Some(Bounds(dMin.toDouble, dMax.toDouble)),
+        strokeWidth = Some(1)
+      ),
+      FunctionPlot.series(
+        _ * lRate(k.toInt).toDouble,
+        s"L($k)",
+        HTMLNamedColors.red,
+        Some(Bounds(dMin.toDouble, dMax.toDouble)),
+        strokeWidth = Some(1)
+      )
+    ) ++ qdsPoints :+ mesh
+  }: _*)
+    .title(s"P-D Graph of $this")
+    .xLabel("d")
+    .yLabel("rω[j]")
+    .rightLegend()
+    .standard()
+  lazy val aMax:   Algebraic = a
+  lazy val aMin:   Algebraic = -a
+  lazy val deltaD: Algebraic = pow(2, -dTruncateWidth.toDouble)
+  lazy val deltaX: Algebraic = pow(2, -xTruncateWidth.toDouble)
 
   /** redundancy factor
     * @note 5.8
     */
-  val rou: Algebraic = a / (radix - 1)
-
-  override def toString: String = s"SRT$radix with quotient set: from ${-quotientSet._1} to ${quotientSet._2}"
-  // @note 5.8s
-  assert((rou > 1 / 2) && (rou <= 1))
-
-  /** P-D Diagram
-    * @note Graph 5.17(b)
-    */
-  def pdDiagram(): Unit = {
-    val fig: Figure = Figure()
-    val p:   Plot = fig.subplot(0)
-    val x:   DenseVector[Double] = linspace(dMin.toDouble, dMax.toDouble)
-
-    val (uk, lk) = (quotientSet._1.toBigInt to quotientSet._2.toBigInt).map { k: BigInt =>
-      (plot(x, x * uRate(k.toInt).toDouble, name = s"U($k)"), plot(x, x * lRate(k.toInt).toDouble, name = s"L($k)"))
-    }.unzip
-
-    p ++= uk ++= lk
-
-    p.xlabel = "d"
-    p.ylabel = "rω[j]"
-    val scale = 1.1
-    p.xlim(0, (xMax * scale).toDouble)
-    p.ylim(((quotientSet._1 - rou) * xMax * scale).toDouble, ((quotientSet._2 + rou) * xMax * scale).toDouble)
-    p.title = s"P-D Graph of $this"
-    p.legend = true
-    fig.saveas("pd.pdf")
+  lazy val rho: Algebraic = a / (radix - 1)
+  lazy val tables: Seq[(Int, Seq[(Algebraic, Seq[Algebraic])])] = {
+    (aMin.toInt to aMax.toInt).drop(1).map { k =>
+      k -> dSet.dropRight(1).map { d =>
+        val (floor, ceil) = xRange(k, d, d + deltaD)
+        val m: Seq[Algebraic] = xSet.filter { x: Algebraic => x <= ceil && x >= floor }
+        (d, m)
+      }
+    }
+  }
+  lazy val qdsPoints: Seq[Plot] = {
+    tables.map {
+      case (i, ps) =>
+        ScatterPlot(
+          ps.flatMap { case (d, xs) => xs.map(x => com.cibo.evilplot.numeric.Point(d.toDouble, x.toDouble)) },
+          Some(
+            PointRenderer
+              .default[com.cibo.evilplot.numeric.Point](pointSize = Some(1), color = Some(HTMLNamedColors.gold))
+          )
+        )
+    }
   }
 
-  /** slope factor of U_k
-    * @note 5.56
-    */
-  def uRate(k: Algebraic): Algebraic = k + rou
+  private val xStep = (xMax - xMin) / deltaX
+  // @note 5.7
+  require(a >= radix / 2)
+  private val xSet = Seq.tabulate((xStep + 1).toInt) { n => xMin + deltaX * n }
+  private val dStep: Algebraic = (dMax - dMin) / deltaD
+  assert((rho > 1 / 2) && (rho <= 1))
+  private val dSet = Seq.tabulate((dStep + 1).toInt) { n => dMin + deltaD * n }
+  private val mesh =
+    ScatterPlot(
+      xSet.flatMap { y =>
+        dSet.map { x =>
+          com.cibo.evilplot.numeric.Point(x.toDouble, y.toDouble)
+        }
+      },
+      Some(
+        PointRenderer
+          .default[com.cibo.evilplot.numeric.Point](pointSize = Some(0.5), color = Some(HTMLNamedColors.gray))
+      )
+    )
 
-  /** slope factor of L_k
-    * @note 5.56
-    */
-  def lRate(k: Algebraic): Algebraic = k - rou
+  override def toString: String =
+    s"SRT${radix.toInt} with quotient set: from ${aMin.toInt} to ${aMax.toInt}"
 
   /** Robertson Diagram
+    *
     * @note Graph 5.17(a)
     */
-  def robertsonDiagram(d: Algebraic): Unit = {
+  def robertson(d: Algebraic): Plot = {
     require(d > dMin && d < dMax)
-    val fig: Figure = Figure()
-    val p:   Plot = fig.subplot(0)
-
-    p ++= (quotientSet._1.toInt to quotientSet._2.toInt).map { k: Int =>
-      val xrange: DenseVector[Double] = linspace(((Algebraic(k) - rou) * d).toDouble, ((Algebraic(k) + rou) * d).toDouble)
-      plot(xrange, xrange - k * d.toDouble, name = s"$k")
-    }
-
-    p.xlabel = "rω[j]"
-    p.ylabel = "ω[j+1]"
-    p.xlim((-radix * rou * dMax).toDouble, (radix * rou * dMax).toDouble)
-    p.ylim((-rou * d).toDouble, (rou * d).toDouble)
-    p.title = s"Robertson Graph of $this divisor: $d"
-    p.legend = true
-    fig.saveas("robertson.pdf")
+    Overlay((aMin.toBigInt to aMax.toBigInt).map { k: BigInt =>
+      FunctionPlot.series(
+        _ - (Algebraic(k) * d).toDouble,
+        s"$k",
+        HTMLNamedColors.black,
+        xbounds = Some(Bounds(((Algebraic(k) - rho) * d).toDouble, ((Algebraic(k) + rho) * d).toDouble))
+      )
+    }: _*)
+      .title(s"Robertson Graph of $this divisor: $d")
+      .xLabel("rω[j]")
+      .yLabel("ω[j+1]")
+      .xbounds((-radix * rho * dMax).toDouble, (radix * rho * dMax).toDouble)
+      .ybounds((-rho * d).toDouble, (rho * d).toDouble)
+      .rightLegend()
+      .standard()
   }
+
+  def dumpGraph(plot: Plot, path: Path) = {
+    javax.imageio.ImageIO.write(
+      plot.render().asBufferedImage,
+      "png",
+      path.wrapped.toFile
+    )
+  }
+
+  /** for range `dLeft` to `dRight`, return the `rOmegaCeil` and `rOmegaFloor`
+    * this is used for constructing the rectangle where m_k(i) is located.
+    */
+  private def xRange(k: Algebraic, dLeft: Algebraic, dRight: Algebraic): (Algebraic, Algebraic) = {
+    Seq(L(k, dLeft), L(k, dRight), U(k - 1, dLeft), U(k - 1, dRight))
+      // not safe
+      .sortBy(_.toDouble)
+      .drop(1)
+      .dropRight(1) match { case Seq(l, r) => (l, r) }
+  }
+
+  /** find the intersection point between L`k` and `d` */
+  private def L(k: Algebraic, d: Algebraic): Algebraic = lRate(k) * d
+
+  /** slope factor of L_k
+    *
+    * @note 5.56
+    */
+  private def lRate(k: Algebraic): Algebraic = k - rho
+
+  /** find the intersection point between U`k` and `d` */
+  private def U(k: Algebraic, d: Algebraic): Algebraic = uRate(k) * d
+
+  /** slope factor of U_k
+    *
+    * @note 5.56
+    */
+  private def uRate(k: Algebraic): Algebraic = k + rho
 }
