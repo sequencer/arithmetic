@@ -23,8 +23,8 @@ case class SRT(
   dMin:           Algebraic = 0.5,
   dMax:           Algebraic = 1) {
   require(a > 0)
-  lazy val xMin: Algebraic = -rho * dMax
-  lazy val xMax: Algebraic = rho * dMax
+  lazy val xMin: Algebraic = -rho * dMax * radix
+  lazy val xMax: Algebraic = rho * dMax * radix
 
   /** P-D Diagram
     *
@@ -50,7 +50,7 @@ case class SRT(
   }: _*)
     .title(s"P-D Graph of $this")
     .xLabel("d")
-    .yLabel("rω[j]")
+    .yLabel(s"${radix.toInt}ω[j]")
     .rightLegend()
     .standard()
   lazy val aMax:   Algebraic = a
