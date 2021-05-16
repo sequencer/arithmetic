@@ -3,10 +3,11 @@ import mill._
 import scalalib._
 import scalafmt._
 import publish._
+import coursier.maven.MavenRepository
 
 val defaultVersions = Map(
-  "chisel3" -> "3.4.3",
-  "chisel3-plugin" -> "3.4.3",
+  "chisel3" -> "3.5-SNAPSHOT",
+  "chisel3-plugin" -> "3.5-SNAPSHOT",
   "chiseltest" -> "latest.integration",
   "scala" -> "2.12.13",
 )
@@ -22,6 +23,12 @@ def getVersion(dep: String, org: String = "edu.berkeley.cs", cross: Boolean = fa
 object arithmetic extends arithmetic
 
 class arithmetic extends ScalaModule with ScalafmtModule with PublishModule { m =>
+  override def repositoriesTask = T.task {
+    super.repositoriesTask() ++ Seq(
+      MavenRepository("https://oss.sonatype.org/content/repositories/snapshots")
+    )
+  }
+
   def scalaVersion = defaultVersions("scala")
 
   def publishVersion = "0.1"
