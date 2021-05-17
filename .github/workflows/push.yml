@@ -2,17 +2,12 @@ on: [pull_request]
 jobs:
   checks:
     runs-on: ubuntu-latest
+    container: archlinux/archlinux:latest
     steps:
+      - name: Install dependencies
+        run: pacman -Syu --noconfirm make mill z3
       - uses: actions/checkout@v2
-      - name: Setup Scala
-        uses: olafurpg/setup-scala@v10
-      - name: Cache
-        uses: coursier/cache-action@v5
-      - name: Setup Mill
-        uses: jodersky/setup-mill@v0.2.3
-        with: 
-          mill-version: 0.9.7
       - name: Check Format
         run: make checkformat
-      - name: Check Mill Compile
-        run: make compile
+      - name: Test
+        run: make test
