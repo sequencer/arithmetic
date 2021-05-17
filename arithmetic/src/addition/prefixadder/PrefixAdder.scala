@@ -40,14 +40,16 @@ class AdderOutputBundle(val w: Int) extends Bundle {
   val z: UInt = UInt((w + 1).W)
 }
 
-class PrefixAdder(val width: Int, prefixSum: PrefixSum) extends Module {
+class PrefixAdder(val width: Int, prefixSum: PrefixSum) extends MultiIOModule {
   override val desiredName: String = this.getClass.getSimpleName + width.toString
   require(width > 0)
-  val io: AdderBundle = IO(new AdderBundle(width))
+  val a: UInt = IO(Input(UInt(width.W)))
+  val b: UInt = IO(Input(UInt(width.W)))
+  val z: UInt = IO(Output(UInt((width + 1).W)))
 
   // Split up bit vectors into individual bits
-  val as: Seq[Bool] = io.a.asBools
-  val bs: Seq[Bool] = io.b.asBools
+  val as: Seq[Bool] = a.asBools
+  val bs: Seq[Bool] = b.asBools
 
   /** Type of pair is P and G
     * @todo How to abstract this with Ling Adder?
@@ -65,5 +67,5 @@ class PrefixAdder(val width: Int, prefixSum: PrefixSum) extends Module {
   val sum: Seq[Bool] = ps.zip(cs).map { case (p, c) => p ^ c }
 
   // Recombine bits into bitvector
-  io.z := VecInit(sum).asUInt
+  z := VecInit(sum).asUInt
 }
