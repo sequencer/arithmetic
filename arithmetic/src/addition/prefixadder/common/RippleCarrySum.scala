@@ -1,6 +1,6 @@
-package arithmetic.addition.prefixadder.common
+package addition.prefixadder.common
 
-import arithmetic.addition.prefixadder._
+import addition.prefixadder.PrefixAdder
 import chisel3.Bool
 
 /** [[RippleCarrySum]]: N-1 area, N-1 depth

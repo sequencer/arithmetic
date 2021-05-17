@@ -1,4 +1,4 @@
-package arithmetic.addition.prefixadder.graph
+package addition.prefixadder.graph
 
 import upickle.default.{macroRW, ReadWriter => RW}
 

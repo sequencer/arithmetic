@@ -1,4 +1,4 @@
-package arithmetic.addition.prefixadder.graph
+package addition.prefixadder.graph
 
 import scala.math.Ordered.orderingToOrdered
 

@@ -1,6 +1,6 @@
-package arithmetic.addition.prefixadder.common
+package addition.prefixadder.common
 
-import arithmetic.addition.prefixadder._
+import addition.prefixadder.PrefixSum
 import chisel3.Bool
 
 /** 2 inputs Prefix sum is has implementation of
