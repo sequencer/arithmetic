@@ -1,4 +1,4 @@
-package arithmetic.addition.prefixadder
+package addition
 
 import chisel3._
 

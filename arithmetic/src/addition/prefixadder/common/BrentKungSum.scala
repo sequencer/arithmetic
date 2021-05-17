@@ -1,6 +1,6 @@
-package arithmetic.addition.prefixadder.common
+package addition.prefixadder.common
 
-import arithmetic.addition.prefixadder._
+import addition.prefixadder.PrefixAdder
 import chisel3.Bool
 
 /** [[BrentKungSum]]: 2N area, 2logN depth

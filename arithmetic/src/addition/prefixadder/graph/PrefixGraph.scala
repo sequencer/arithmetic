@@ -1,7 +1,8 @@
-package arithmetic.addition.prefixadder.graph
+package addition.prefixadder.graph
 
-import arithmetic.addition.prefixadder._
-import arithmetic.addition.prefixadder.common._
+import addition.prefixadder.PrefixAdder
+import addition.prefixadder.common.CommonPrefixSum
+
 import scala.util.matching.Regex
 import os._
 

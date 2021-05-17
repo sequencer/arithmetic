@@ -1,5 +1,6 @@
-package arithmetic.addition.prefixadder
+package addition.prefixadder
 
+import addition.FullAdder
 import chisel3._
 import logger.LazyLogging
 
