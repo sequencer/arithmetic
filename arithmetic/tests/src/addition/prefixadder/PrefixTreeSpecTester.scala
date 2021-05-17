@@ -1,9 +1,8 @@
 package addition.prefixadder
 
 import addition.AdderSuite
-import arithmetic.addition.prefixadder.PrefixAdder
-import arithmetic.addition.prefixadder.common.CommonPrefixSum
-import arithmetic.addition.prefixadder.graph.{HasPrefixSumWithGraphImp, PrefixGraph, PrefixNode}
+import addition.prefixadder.common.CommonPrefixSum
+import addition.prefixadder.graph.{HasPrefixSumWithGraphImp, PrefixGraph, PrefixNode}
 import utest._
 
 /** This adder is same with BrentKungSum8*/

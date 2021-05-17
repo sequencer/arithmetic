@@ -1,7 +1,7 @@
 package addition.prefixadder
 
 import addition.AdderSuite
-import arithmetic.addition.prefixadder.common.{BrentKungAdder, KoggeStoneAdder, RippleCarry3Adder, RippleCarryAdder}
+import addition.prefixadder.common.{BrentKungAdder, KoggeStoneAdder, RippleCarry3Adder, RippleCarryAdder}
 import utest._
 
 object AdderSpecTester extends AdderSuite {

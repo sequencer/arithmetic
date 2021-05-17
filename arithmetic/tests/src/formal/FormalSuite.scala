@@ -1,4 +1,4 @@
-package addition
+package formal
 
 import chisel3.Module
 import chisel3.stage.{ChiselGeneratorAnnotation, ChiselStage}
@@ -7,15 +7,17 @@ import firrtl.options.{OutputAnnotationFileAnnotation, TargetDirAnnotation}
 import firrtl.stage.OutputFileAnnotation
 import firrtl.util.BackendCompilationUtilities.timeStamp
 import logger.{LazyLogging, LogLevel, LogLevelAnnotation}
-import utest._
 import os._
+import utest._
 
 trait FormalSuite extends TestSuite {
-  protected def success = MCSuccess
-
-  protected def fail(k: Int) = MCFail(k)
-
-  def formal(dut: () => Module, name: String, expected: MCResult, kmax: Int = 0, annos: Seq[Annotation] = Seq()): Unit = {
+  def formal(
+    dut:      () => Module,
+    name:     String,
+    expected: MCResult,
+    kmax:     Int = 0,
+    annos:    Seq[Annotation] = Seq()
+  ): Unit = {
     expected match {
       case MCFail(k) =>
         require(kmax >= k, s"Please set a kmax that includes the expected failing step! ($kmax < $expected)")
@@ -37,9 +39,20 @@ trait FormalSuite extends TestSuite {
     val r = Z3ModelChecker.bmc(testDir, top, kmax)
     assert(r == expected)
   }
+
+  protected def success = MCSuccess
+
+  protected def fail(k: Int) = MCFail(k)
 }
 
 private object Z3ModelChecker extends LazyLogging {
+  // the following suffixes have to match the ones in [[SMTTransitionSystemEncoder]]
+  private val Transition = "_t"
+  private val Init = "_i"
+  private val Asserts = "_a"
+  private val Assumes = "_u"
+  private val StateTpe = "_s"
+
   def bmc(testDir: Path, main: String, kmax: Int): MCResult = {
     require(kmax >= 0 && kmax < 50, "Trying to keep kmax in a reasonable range.")
     Seq.tabulate(kmax + 1) { k =>
@@ -79,13 +92,6 @@ private object Z3ModelChecker extends LazyLogging {
       // check to see if we can violate the assertions in the last state
       List(s"(assert (not ($main$Asserts s$k)))")
   }.mkString("\n")
-
-  // the following suffixes have to match the ones in [[SMTTransitionSystemEncoder]]
-  private val Transition = "_t"
-  private val Init = "_i"
-  private val Asserts = "_a"
-  private val Assumes = "_u"
-  private val StateTpe = "_s"
 }
 sealed trait MCResult
 
