@@ -1,4 +1,4 @@
-package arithmetic.tests
+package addition
 
 import chisel3.Module
 import chisel3.stage.{ChiselGeneratorAnnotation, ChiselStage}
@@ -15,7 +15,7 @@ trait FormalSuite extends TestSuite {
 
   protected def fail(k: Int) = MCFail(k)
 
-  def test(dut: () => Module, name: String, expected: MCResult, kmax: Int = 0, annos: Seq[Annotation] = Seq()): Unit = {
+  def formal(dut: () => Module, name: String, expected: MCResult, kmax: Int = 0, annos: Seq[Annotation] = Seq()): Unit = {
     expected match {
       case MCFail(k) =>
         require(kmax >= k, s"Please set a kmax that includes the expected failing step! ($kmax < $expected)")

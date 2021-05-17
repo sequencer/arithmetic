@@ -8,7 +8,6 @@ import coursier.maven.MavenRepository
 val defaultVersions = Map(
   "chisel3" -> "3.5-SNAPSHOT",
   "chisel3-plugin" -> "3.5-SNAPSHOT",
-  "chiseltest" -> "latest.integration",
   "scala" -> "2.12.13",
 )
 
@@ -37,7 +36,6 @@ class arithmetic extends ScalaModule with ScalafmtModule with PublishModule { m 
 
   override def ivyDeps = super.ivyDeps() ++ Agg(
     getVersion("chisel3"),
-    getVersion("chiseltest"),
     ivy"com.lihaoyi::upickle:latest.integration",
     ivy"com.lihaoyi::os-lib:latest.integration",
   )
