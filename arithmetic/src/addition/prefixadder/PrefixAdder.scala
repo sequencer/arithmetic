@@ -40,12 +40,8 @@ class AdderOutputBundle(val w: Int) extends Bundle {
   val z: UInt = UInt((w + 1).W)
 }
 
-class PrefixAdder(val width: Int, prefixSum: PrefixSum) extends MultiIOModule {
+class PrefixAdder(val width: Int, prefixSum: PrefixSum) extends FullAdder {
   override val desiredName: String = this.getClass.getSimpleName + width.toString
-  require(width > 0)
-  val a: UInt = IO(Input(UInt(width.W)))
-  val b: UInt = IO(Input(UInt(width.W)))
-  val z: UInt = IO(Output(UInt((width + 1).W)))
 
   // Split up bit vectors into individual bits
   val as: Seq[Bool] = a.asBools
