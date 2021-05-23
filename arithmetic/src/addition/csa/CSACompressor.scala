@@ -1,6 +1,7 @@
 package arithmetic.addition.csa
 
 import chisel3._
+import chisel3.util.{pla, BitPat}
 
 /** A [[CSACompressor]] encodes the number of 1 from input bool sequence to `n` bits output.
   * So `m+1` terms are encoded to `n` bits output.
@@ -38,8 +39,21 @@ abstract class CSACompressor(val inputSize: Int, val outputSize: Int) {
 
   def circuit(inputs: Seq[Bool]): Seq[Bool]
 
-  // after chipsalliance/chisel3#1853 merged, use pla generate circuit for formal verification.
-  // def referenceCircuit = chisel3.util.experimental.decoder(table)
+  def generateCircuit(inputs: Seq[Bool], formal: Boolean): Seq[Bool] = {
+    val out = circuit(inputs)
+    if (formal) {
+      val (refIn, refOut) = pla(
+        encodeTable.flatMap {
+          case (key, value) => value.map(v => key -> v)
+        }.map {
+          case (key, value) => BitPat(value.U) -> BitPat(key.U)
+        }.toSeq
+      )
+      refIn := VecInit(inputs).asUInt()
+      chisel3.experimental.verification.assert(VecInit(out).asUInt() === refOut)
+    }
+    out
+  }
 
   protected def tableBuilder(table: Map[String, Seq[String]]): Map[BigInt, Seq[BigInt]] = table.map {
     case (k, v) => BigInt(k, 2) -> v.map(BigInt(_, 2))
