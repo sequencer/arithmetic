@@ -1,4 +1,4 @@
-package arithmetic.addition
+package addition
 
 package object csa {
   class HalfAdder(width: Int) extends CarrySaveAdder(2, 2, _ => common.CSACompressor2_2)(width)

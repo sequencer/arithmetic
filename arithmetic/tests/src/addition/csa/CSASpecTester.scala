@@ -1,7 +1,6 @@
 package addition.csa
 
-import arithmetic.addition.csa.{CSACompressor, CarrySaveAdder}
-import arithmetic.addition.csa.common.{CSACompressor2_2, CSACompressor3_2, CSACompressor5_3}
+import addition.csa.common.{CSACompressor2_2, CSACompressor3_2, CSACompressor5_3}
 import formal.FormalSuite
 import utest._
 

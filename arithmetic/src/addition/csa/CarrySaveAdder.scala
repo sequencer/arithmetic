@@ -1,4 +1,4 @@
-package arithmetic.addition.csa
+package addition.csa
 
 import chisel3._
 
