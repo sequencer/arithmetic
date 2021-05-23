@@ -11,7 +11,7 @@ jobs:
       - name: Setup Mill
         uses: jodersky/setup-mill@v0.2.3
         with: 
-          mill-version: 0.9.6
+          mill-version: 0.9.7
       - name: Check Format
         run: make checkformat
       - name: Check Mill Compile
