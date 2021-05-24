@@ -43,7 +43,7 @@ class arithmetic extends ScalaModule with ScalafmtModule with PublishModule { m 
   object tests extends Tests {
     override def ivyDeps = Agg(ivy"com.lihaoyi::utest:latest.integration")
 
-    def testFrameworks = Seq("utest.runner.Framework")
+    def testFramework = "utest.runner.Framework"
   }
 
   def pomSettings = PomSettings(
