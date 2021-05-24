@@ -1,6 +1,6 @@
-package arithmetic.addition.csa.common
+package addition.csa.common
 
-import arithmetic.addition.csa._
+import addition.csa.CSACompressor
 import chisel3._
 
 object CSACompressor5_3 extends CSACompressor(5, 3) {

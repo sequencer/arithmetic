@@ -1,4 +1,4 @@
-package arithmetic.addition.csa
+package addition.csa
 
 import chisel3._
 
@@ -22,11 +22,12 @@ import chisel3._
   * @param compressor a function that takes the index of bit, which returns a [[CSACompressor]]
   * @param width adder width
   */
-abstract class CarrySaveAdder(
+class CarrySaveAdder(
   val inputSize:  Int,
   val outputSize: Int,
   val compressor: Int => CSACompressor
-)(val width:      Int)
+)(val width:      Int,
+  formal:         Boolean = false)
     extends MultiIOModule {
   require(math.pow(2, outputSize) >= inputSize, "not enough output bits to encode.")
   override val desiredName: String = this.getClass.getSimpleName + s"_$width"
@@ -42,7 +43,7 @@ abstract class CarrySaveAdder(
         .map {
           case (m, i) => {
             require(m.inputSize == inputSize && m.outputSize == outputSize)
-            m.circuit(in.map(_(i)))
+            m.generateCircuit(in.map(_(i)), formal)
           }
         }
         .transpose
