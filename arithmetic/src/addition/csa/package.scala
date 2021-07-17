@@ -1,7 +1,16 @@
 package addition
 
+import addition.csa.common.{CSACompressor2_2, CSACompressor3_2, CSACompressor5_3}
+import chisel3._
+
 package object csa {
-  class HalfAdder(width: Int) extends CarrySaveAdder(2, 2, _ => common.CSACompressor2_2)(width)
-  class CarrySaveAdder3_2(width: Int) extends CarrySaveAdder(3, 2, _ => common.CSACompressor3_2)(width)
-  class CarrySaveAdder5_3(width: Int) extends CarrySaveAdder(5, 3, _ => common.CSACompressor5_3)(width)
+  def apply[T <: Data](csa: CSACompressor, width: Option[Int] = None)(in: Vec[T]) = {
+    val m = new CarrySaveAdder(csa, width.getOrElse(in.flatMap(_.widthOption).max))
+    m.in := VecInit(in.map(_.asUInt()))
+    m.out
+  }
+
+  def c22[T <: Data](in: Vec[T]) = apply(CSACompressor2_2, Some(2))(in)
+  def c32[T <: Data](in: Vec[T]) = apply(CSACompressor3_2, Some(3))(in)
+  def c53[T <: Data](in: Vec[T]) = apply(CSACompressor5_3, Some(5))(in)
 }
