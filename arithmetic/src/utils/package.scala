@@ -35,4 +35,9 @@ package object utils {
         .drop(1)
         .map(_._2)
     )
+
+  def signExt(x: UInt, len: Int): UInt = {
+    val sign = x.head(1)
+    if (x.getWidth >= len) x else Fill(len - x.getWidth, sign) ## x
+  }
 }
