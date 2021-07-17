@@ -17,36 +17,26 @@ import chisel3._
   *   111         -> 3            -> 11
   * }}}
   *
-  * @param inputSize size of input
+  * @param inputSize  size of input
   * @param outputSize size of output
   * @param compressor a function that takes the index of bit, which returns a [[CSACompressor]]
-  * @param width adder width
+  * @param width      adder width
   */
-class CarrySaveAdder(
-  val inputSize:  Int,
-  val outputSize: Int,
-  val compressor: Int => CSACompressor
-)(val width:      Int,
-  formal:         Boolean = false)
-    extends MultiIOModule {
-  require(math.pow(2, outputSize) >= inputSize, "not enough output bits to encode.")
+class CarrySaveAdder(compressor: CSACompressor, val width: Int, formal: Boolean = false) extends MultiIOModule {
+  val inputSize:            Int = compressor.inputSize
+  val outputSize:           Int = compressor.outputSize
   override val desiredName: String = this.getClass.getSimpleName + s"_$width"
 
   val in:  Vec[UInt] = IO(Input(Vec(inputSize, UInt(width.W))))
   val out: Vec[UInt] = IO(Output(Vec(outputSize, UInt(width.W))))
 
-  (out
+  out
     .zip(
       Seq
-        .tabulate(width)(i => compressor(i))
+        .fill(width)(compressor)
         .zipWithIndex
-        .map {
-          case (m, i) => {
-            require(m.inputSize == inputSize && m.outputSize == outputSize)
-            m.generateCircuit(in.map(_(i)), formal)
-          }
-        }
+        .map { case (m, i) => m.generateCircuit(in.map(_(i)), formal) }
         .transpose
-    ))
+    )
     .foreach { case (o, i) => o := VecInit(i).asUInt }
 }
