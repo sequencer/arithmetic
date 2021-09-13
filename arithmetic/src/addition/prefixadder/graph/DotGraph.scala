@@ -8,6 +8,8 @@ object DotNode {
   implicit val rw: RW[DotNode] = macroRW
 }
 
+/** Connects two dot nodes.
+  */
 case class DotEdge(tail: Int, head: Int)
 
 object DotEdge {
