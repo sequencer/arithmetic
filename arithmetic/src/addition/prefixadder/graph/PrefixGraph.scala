@@ -6,6 +6,11 @@ import addition.prefixadder.common.CommonPrefixSum
 import scala.util.matching.Regex
 import os._
 
+/** This represents the graph of the prefix-sum operation, or "prefix graph" for short.
+ * It is constructed as a sequence of [[PrefixNode]]
+ *
+ * @param nodes a sequnce of [[PrefixNode]] containing all the operational nodes in the prefix graph.
+ */
 case class PrefixGraph(nodes: Seq[PrefixNode]) {
   override def toString: String =
     "digraph G {\n" + (nodes.map { node =>
@@ -16,21 +21,43 @@ case class PrefixGraph(nodes: Seq[PrefixNode]) {
       }
     }).reduce(_ + "\n" + _) + "\n}"
 
+  /** Works out the width of the prefix graph
+   */
   def width: Int = nodes.map(_.bit).max + 1
 
+  /** Works out the depth of the prefix graph
+   */
   def depth: Int = nodes.map(_.level).max
 
+  /** Selects the nodes with the specific bit
+   */
   def bit(bit: Int): Seq[PrefixNode] = nodes.filter(_.bit == bit)
 
+  /** Selects the nodes with the specific level
+   */
   def level(level: Int): Seq[PrefixNode] = nodes.filter(_.level == level)
 
+  /** Selects the nodes in the deepest level
+   */
   def lastLevelNode: Seq[PrefixNode] =
     nodes.groupBy(_.bit).map { case (level, node) => node.filter(_.prefixData.contains(0)).max }.toSeq
 }
 
+/** Major construction method of [[PrefixGraph]] is defined in its companion object.
+ */
 object PrefixGraph {
+  /** Receives a set of PrefixNodes and returns a sorted sequence of PrefixNodes
+   *
+   * @param nodes a set of PrefixNodes not yet sorted
+   * @return [[PrefixGraph]] a sorted sequence of PrefixNodes
+   */
   def apply(nodes: Set[PrefixNode]): PrefixGraph = new PrefixGraph(nodes.toSeq.sorted)
 
+  /** Converts  [[dotGraph]] into [[PrefixGraph]]
+   *
+   * @param path file path of the .dot file
+   * @return prefix graph
+   */
   def apply(path: Path): PrefixGraph = {
     val dotGraph: DotGraph = upickle.default.read[DotGraph](os.read(path))
     val pattern:  Regex = "Node([0-9]+)-([0-9]+)".r

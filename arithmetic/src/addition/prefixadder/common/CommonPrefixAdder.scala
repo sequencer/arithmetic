@@ -62,5 +62,12 @@ trait CommonPrefixSum extends PrefixSum {
       )
   }
 
+  /**Generates gp pairs at each bits given the two operands
+   *
+   * @param a the input left operands
+   * @param b the input right operands
+   *
+   * @return gp pairs
+   */
   def zeroLayer(a: Seq[Bool], b: Seq[Bool]): Seq[(Bool, Bool)] = a.zip(b).map { case (a, b) => (a ^ b, a && b) }
 }

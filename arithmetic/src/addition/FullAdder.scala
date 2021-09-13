@@ -2,6 +2,8 @@ package addition
 
 import chisel3._
 
+/** Top-level Module of the full adder
+ */
 trait FullAdder extends Module {
   val width: Int
   require(width > 0)
