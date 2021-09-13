@@ -4,8 +4,9 @@ import addition.FullAdder
 import chisel3._
 import logger.LazyLogging
 
+/** This trait decides in which way the prefix sequence will be calculated.
+  */
 trait PrefixSum extends LazyLogging {
-
   /** Generate the final prefix tree
     * @param summands zero layer of prefix tree
     * @return final prefix tree
