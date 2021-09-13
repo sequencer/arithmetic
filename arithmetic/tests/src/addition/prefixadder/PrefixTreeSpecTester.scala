@@ -5,7 +5,8 @@ import addition.prefixadder.common.CommonPrefixSum
 import addition.prefixadder.graph.{HasPrefixSumWithGraphImp, PrefixGraph, PrefixNode}
 import utest._
 
-/** This adder is same with BrentKungSum8*/
+/** This adder is same with BrentKungSum8
+  */
 object BrentKungSum8ByGraph extends HasPrefixSumWithGraphImp with CommonPrefixSum {
   val zeroLayer: Seq[PrefixNode] = Seq.tabulate(8)(PrefixNode(_))
   val node11: PrefixNode = PrefixNode(zeroLayer(0), zeroLayer(1))
