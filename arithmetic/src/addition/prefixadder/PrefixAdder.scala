@@ -27,7 +27,8 @@ trait PrefixSum extends LazyLogging {
   def zeroLayer(a: Seq[Bool], b: Seq[Bool]): Seq[(Bool, Bool)]
 }
 
-
+/** The top-level module with all the internal signals
+  */
 class PrefixAdder(val width: Int, prefixSum: PrefixSum) extends FullAdder {
   override val desiredName: String = this.getClass.getSimpleName + width.toString
 
