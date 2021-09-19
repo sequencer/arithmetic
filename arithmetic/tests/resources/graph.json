@@ -1,0 +1,234 @@
+{
+  "name": "G",
+  "directed": true,
+  "strict": false,
+  "_subgraph_cnt": 0,
+  "objects": [
+    {
+      "_gvid": 0,
+      "name": "Node0-0-8",
+      "label": "\\N",
+      "pos": "0,0"
+    },
+    {
+      "_gvid": 1,
+      "name": "Node0-1-9",
+      "label": "\\N",
+      "pos": "0,1"
+    },
+    {
+      "_gvid": 2,
+      "name": "Node1-1-16",
+      "label": "\\N",
+      "pos": "1,1"
+    },
+    {
+      "_gvid": 3,
+      "name": "Node0-2-10",
+      "label": "\\N",
+      "pos": "0,2"
+    },
+    {
+      "_gvid": 4,
+      "name": "Node2-2-20",
+      "label": "\\N",
+      "pos": "2,2"
+    },
+    {
+      "_gvid": 5,
+      "name": "Node0-3-11",
+      "label": "\\N",
+      "pos": "0,3"
+    },
+    {
+      "_gvid": 6,
+      "name": "Node1-3-17",
+      "label": "\\N",
+      "pos": "1,3"
+    },
+    {
+      "_gvid": 7,
+      "name": "Node2-3-21",
+      "label": "\\N",
+      "pos": "2,3"
+    },
+    {
+      "_gvid": 8,
+      "name": "Node0-4-12",
+      "label": "\\N",
+      "pos": "0,4"
+    },
+    {
+      "_gvid": 9,
+      "name": "Node3-4-25",
+      "label": "\\N",
+      "pos": "3,4"
+    },
+    {
+      "_gvid": 10,
+      "name": "Node0-5-13",
+      "label": "\\N",
+      "pos": "0,5"
+    },
+    {
+      "_gvid": 11,
+      "name": "Node1-5-18",
+      "label": "\\N",
+      "pos": "1,5"
+    },
+    {
+      "_gvid": 12,
+      "name": "Node3-5-23",
+      "label": "\\N",
+      "pos": "3,5"
+    },
+    {
+      "_gvid": 13,
+      "name": "Node0-6-14",
+      "label": "\\N",
+      "pos": "0,6"
+    },
+    {
+      "_gvid": 14,
+      "name": "Node4-6-26",
+      "label": "\\N",
+      "pos": "4,6"
+    },
+    {
+      "_gvid": 15,
+      "name": "Node0-7-15",
+      "label": "\\N",
+      "pos": "0,7"
+    },
+    {
+      "_gvid": 16,
+      "name": "Node1-7-19",
+      "label": "\\N",
+      "pos": "1,7"
+    },
+    {
+      "_gvid": 17,
+      "name": "Node2-7-22",
+      "label": "\\N",
+      "pos": "2,7"
+    },
+    {
+      "_gvid": 18,
+      "name": "Node3-7-24",
+      "label": "\\N",
+      "pos": "3,7"
+    }
+  ],
+  "edges": [
+    {
+      "_gvid": 0,
+      "tail": 0,
+      "head": 2
+    },
+    {
+      "_gvid": 1,
+      "tail": 1,
+      "head": 2
+    },
+    {
+      "_gvid": 2,
+      "tail": 2,
+      "head": 4
+    },
+    {
+      "_gvid": 4,
+      "tail": 3,
+      "head": 4
+    },
+    {
+      "_gvid": 5,
+      "tail": 3,
+      "head": 6
+    },
+    {
+      "_gvid": 6,
+      "tail": 5,
+      "head": 6
+    },
+    {
+      "_gvid": 3,
+      "tail": 2,
+      "head": 7
+    },
+    {
+      "_gvid": 7,
+      "tail": 6,
+      "head": 7
+    },
+    {
+      "_gvid": 8,
+      "tail": 7,
+      "head": 9
+    },
+    {
+      "_gvid": 11,
+      "tail": 8,
+      "head": 9
+    },
+    {
+      "_gvid": 12,
+      "tail": 8,
+      "head": 11
+    },
+    {
+      "_gvid": 13,
+      "tail": 10,
+      "head": 11
+    },
+    {
+      "_gvid": 9,
+      "tail": 7,
+      "head": 12
+    },
+    {
+      "_gvid": 14,
+      "tail": 11,
+      "head": 12
+    },
+    {
+      "_gvid": 16,
+      "tail": 12,
+      "head": 14
+    },
+    {
+      "_gvid": 17,
+      "tail": 13,
+      "head": 14
+    },
+    {
+      "_gvid": 18,
+      "tail": 13,
+      "head": 16
+    },
+    {
+      "_gvid": 19,
+      "tail": 15,
+      "head": 16
+    },
+    {
+      "_gvid": 15,
+      "tail": 11,
+      "head": 17
+    },
+    {
+      "_gvid": 20,
+      "tail": 16,
+      "head": 17
+    },
+    {
+      "_gvid": 10,
+      "tail": 7,
+      "head": 18
+    },
+    {
+      "_gvid": 21,
+      "tail": 17,
+      "head": 18
+    }
+  ]
+}

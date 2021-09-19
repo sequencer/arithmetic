@@ -40,6 +40,15 @@ object PrefixTreeSpecTester extends AdderSuite {
   val node4 = PrefixNode(zeroLayer(2), node1)
 
   val tests: Tests = Tests {
+    test("should serialize PrefixGraph") {
+      assert(os.read(os.resource / "graph.dot") == BrentKungSum8ByGraph.prefixGraph.toString)
+    }
+    test("should deserialize PrefixGraph and generate correct adder.") {
+      val d = new CommonPrefixSum with HasPrefixSumWithGraphImp {
+        val prefixGraph: PrefixGraph = PrefixGraph(os.resource / "graph.json")
+      }
+      formalFullAdder(() => new PrefixAdder(d.prefixGraph.width, d), "deserialized PrefixGraph")
+    }
     test("should abort in PrefixNode generation") {
       try {
         PrefixNode(zeroLayer(2), node2)
