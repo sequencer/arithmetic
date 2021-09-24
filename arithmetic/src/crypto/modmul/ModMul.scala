@@ -11,8 +11,8 @@ abstract class ModMul extends Module {
     val b = UInt(width.W)
   })))
   when(input.fire()){
-    assert(input.bits.a < p.U, "a should exist in the field.")
-    assert(input.bits.b < p.U, "b should exist in the field.")
+    chisel3.experimental.verification.assert(input.bits.a < p.U, "a should exist in the field.")
+    chisel3.experimental.verification.assert(input.bits.b < p.U, "b should exist in the field.")
   }
   val z = IO(Decoupled(UInt(width.W)))
   when(z.fire()){

@@ -25,13 +25,13 @@ class Barrett(val p: BigInt,
     val s6 = Value("b01000000".U)
     val s7 = Value("b10000000".U)
   }
+  val state = RegInit(StateType.s0)
   val isMul = (state.asUInt() & "b00001110".U).orR()
   val isAdd = (state.asUInt() & "b01110000".U).orR
   val mulDone = if (mulPipe != 0) Counter(isMul, mulPipe)._2 else true.B
   val addDone = if (mulPipe != 0) Counter(isAdd, mulPipe)._2 else true.B
   // TODO: check here.
   val addSign = add.z.head(0)
-  val state = RegInit(StateType.s0)
   state := chisel3.util.experimental.decode.decoder(
     state.asUInt() ## mulDone ## addDone ## addSign ## input.valid ## z.ready, {
     val Y = "1"
@@ -70,9 +70,10 @@ class Barrett(val p: BigInt,
       to(s5, addDone = N)(s5),
       to(s6, addDone = Y)(s7),
       to(s6, addDone = N)(s6),
+      "???????"
     ).mkString("\n"))
   }
-  )
+  ).asTypeOf(StateType.Type())
   val debouceMul = Mux(mulDone, mul.z, 0.U)
   val debouceAdd = Mux(addDone, add.z, 0.U)
 
@@ -91,8 +92,8 @@ class Barrett(val p: BigInt,
 
   add.valid := isAdd
   add.a := r
-  // TODO: add another state here.
-  add.b := Mux(state.asUInt()(4), -q, (-p+1).U)
+  // TODO: CSA.
+  add.b := Mux(state.asUInt()(4), -q, (-p).S((2 * width + 1).W).asUInt())
 
   mul.valid := isMul
   mul.a := Mux1H(Map(
@@ -107,6 +108,7 @@ class Barrett(val p: BigInt,
   ))
 
   input.ready := state.asUInt()(0)
+  z.bits := r
   z.valid := state.asUInt()(7)
 }
 
