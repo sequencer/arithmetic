@@ -4,19 +4,17 @@ import scalalib._
 import scalafmt._
 import publish._
 import coursier.maven.MavenRepository
+import mill.scalalib.TestModule.Utest
 
-val defaultVersions = Map(
-  "chisel3" -> "3.5-SNAPSHOT",
-  "chisel3-plugin" -> "3.5-SNAPSHOT",
-  "scala" -> "2.12.13",
-)
-
-def getVersion(dep: String, org: String = "edu.berkeley.cs", cross: Boolean = false) = {
-  val version = sys.env.getOrElse(dep + "Version", defaultVersions(dep))
-  if (cross)
-    ivy"$org:::$dep:$version"
-  else
-    ivy"$org::$dep:$version"
+object v {
+  val scala = "2.12.13"
+  val arithmetic = "0.1"
+  val chisel3 = ivy"edu.berkeley.cs::chisel3:3.5-SNAPSHOT"
+  val chisel3Plugin = ivy"edu.berkeley.cs:::chisel3-plugin:3.5-SNAPSHOT"
+  val chiseltest = ivy"edu.berkeley.cs::chiseltest:0.5-SNAPSHOT"
+  val utest = ivy"com.lihaoyi::utest:latest.integration"
+  val upickle = ivy"com.lihaoyi::upickle:latest.integration"
+  val osLib = ivy"com.lihaoyi::os-lib:latest.integration"
 }
 
 object arithmetic extends arithmetic
@@ -28,22 +26,21 @@ class arithmetic extends ScalaModule with ScalafmtModule with PublishModule { m 
     )
   }
 
-  def scalaVersion = defaultVersions("scala")
+  def scalaVersion = v.scala
 
-  def publishVersion = "0.1"
+  def publishVersion = v.arithmetic
 
-  override def scalacPluginIvyDeps = super.scalacPluginIvyDeps() ++ Agg(getVersion("chisel3-plugin", cross = true))
+  override def scalacPluginIvyDeps = Agg(v.chisel3Plugin)
 
   override def ivyDeps = super.ivyDeps() ++ Agg(
-    getVersion("chisel3"),
-    ivy"com.lihaoyi::upickle:latest.integration",
-    ivy"com.lihaoyi::os-lib:latest.integration",
+    v.chisel3,
+    v.chiseltest,
+    v.upickle,
+    v.osLib,
   )
 
-  object tests extends Tests {
-    override def ivyDeps = Agg(ivy"com.lihaoyi::utest:latest.integration")
-
-    def testFramework = "utest.runner.Framework"
+  object tests extends Tests with Utest {
+    override def ivyDeps = m.ivyDeps() ++ Agg(v.utest)
   }
 
   def pomSettings = PomSettings(
