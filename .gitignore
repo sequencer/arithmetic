@@ -7,7 +7,9 @@ project/build.properties
 project/project
 project/target
 target/
+test_run_dir/
 
 .bsp/
 .idea/
-
+.metals/
+.vscode/

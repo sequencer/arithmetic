@@ -74,17 +74,17 @@ class Barrett(val p: BigInt,
     ).mkString("\n"))
   }
   ).asTypeOf(StateType.Type())
-  val debouceMul = Mux(mulDone, mul.z, 0.U)
-  val debouceAdd = Mux(addDone, add.z, 0.U)
+  val debounceMul = Mux(mulDone, mul.z, 0.U)
+  val debounceAdd = Mux(addDone, add.z, 0.U)
 
 
   // Data Path
-  when(isMul)(q := debouceMul)
+  when(isMul)(q := debounceMul)
 
   r := Mux1H(Map(
     // x * y -> z; x * y -> r
     // state 1
-    state.asUInt()(1) -> debouceMul,
+    state.asUInt()(1) -> debounceMul,
     // z - q3 * p; r - p
     // state 4, 5, 6
     isAdd -> Mux(addDone, add.z, 0.U)
