@@ -9,7 +9,7 @@ class Barrett(val p: BigInt, val mulPipe: Int, val addPipe: Int) extends ModMul 
   val m = BigInt(2) << ((BigInt(2) * width) / p).toInt
   val mul = Module(new DummyMul(width + 1, mulPipe))
   val add = Module(new DummyAdd(width * 2, addPipe))
-  val q = RegInit(0.U((width + 1).W))
+  val q = RegInit(0.U((width * 2).W))
   val r = RegInit(0.U((width * 2).W))
 
   // Control Path
@@ -25,9 +25,9 @@ class Barrett(val p: BigInt, val mulPipe: Int, val addPipe: Int) extends ModMul 
   }
   val state = RegInit(StateType.s0)
   val isMul = (state.asUInt() & "b00001110".U).orR()
-  val isAdd = (state.asUInt() & "b01110000".U).orR
+  val isAdd = (state.asUInt() & "b01110000".U).orR()
   val mulDone = if (mulPipe != 0) Counter(isMul, mulPipe)._2 else true.B
-  val addDone = if (mulPipe != 0) Counter(isAdd, mulPipe)._2 else true.B
+  val addDone = if (addPipe != 0) Counter(isAdd, addPipe)._2 else true.B
   // TODO: check here.
   val addSign = add.z.head(0)
   state := chisel3.util.experimental.decode
@@ -89,7 +89,7 @@ class Barrett(val p: BigInt, val mulPipe: Int, val addPipe: Int) extends ModMul 
       state.asUInt()(1) -> debounceMul,
       // z - q3 * p; r - p
       // state 4, 5, 6
-      isAdd -> Mux(addDone, add.z, 0.U)
+      isAdd -> debounceAdd
     )
   )
 
@@ -102,8 +102,8 @@ class Barrett(val p: BigInt, val mulPipe: Int, val addPipe: Int) extends ModMul 
   mul.a := Mux1H(
     Map(
       state.asUInt()(1) -> input.bits.a,
-      state.asUInt()(2) -> (q >> (width - 1)),
-      state.asUInt()(3) -> (q >> (width + 1))
+      state.asUInt()(2) -> (q >> (width - 1)), // z >> (k-1)
+      state.asUInt()(3) -> (q >> (width + 1)) // q2 >> (k+1)
     )
   )
   mul.b := Mux1H(

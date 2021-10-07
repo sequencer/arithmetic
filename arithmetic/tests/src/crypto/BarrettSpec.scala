@@ -19,11 +19,14 @@ object BarrettSpec extends TestSuite with ChiselUtestTester {
       )).collectFirst{case EmittedVerilogCircuitAnnotation(e) => }
     }
     test("barrett behavior") {
-      testCircuit(new Barrett(19260817, 1, 1)){dut: Barrett =>
-        dut.input.bits.a.poke(1.U)
-        dut.input.bits.b.poke(1.U)
-        println(dut.z.bits.peek().litValue)
-        dut.clock.step()
+      testCircuit(new Barrett(19260817, 4, 4)){dut: Barrett =>
+        dut.input.bits.a.poke(7.U)
+        dut.input.bits.b.poke(9.U)
+        println("init", dut.z.bits.peek().litValue, dut.z.valid.peek().litValue)
+        for(a <- 1 to 50) {
+          dut.clock.step()
+          println(a, dut.z.bits.peek().litValue, dut.z.valid.peek().litValue, dut.z.ready.peek().litValue)
+        }
       }
     }
   }
