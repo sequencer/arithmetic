@@ -13,3 +13,8 @@ test_run_dir/
 .idea/
 .metals/
 .vscode/
+
+*.sv
+*.dot
+*.fir
+*.json
