@@ -1,4 +1,5 @@
 import chisel3._
+import chisel3.util.Fill
 
 package object utils {
 
@@ -7,16 +8,16 @@ package object utils {
     * This circuit seems to be high fan-out, but synthesis tool should handle this.
     */
   def leftOr(data: UInt): UInt = VecInit(Seq.tabulate(data.getWidth) { i: Int =>
-    VecInit(data.asBools().dropRight(data.getWidth - i - 1)).asUInt().orR()
-  }).asUInt()
+    VecInit(data.asBools.dropRight(data.getWidth - i - 1)).asUInt.orR
+  }).asUInt
 
   /** each bits OR together all bits in its left-hand-side.
     *
     * This circuit seems to be high fan-out, but synthesis tool should handle this.
     */
   def rightOr(data: UInt): UInt = VecInit(Seq.tabulate(data.getWidth) { i: Int =>
-    VecInit(data.asBools().drop(i)).asUInt().orR()
-  }).asUInt()
+    VecInit(data.asBools.drop(i)).asUInt.orR
+  }).asUInt
 
   /** find the first one in the lhs. */
   def leftFirstOne(data: UInt): UInt = (~rightOr(data) << 1).asUInt & data
@@ -35,4 +36,12 @@ package object utils {
         .drop(1)
         .map(_._2)
     )
+
+  def signExt(x: UInt, len: Int): UInt = {
+    val sign = x.head(1)
+    if (x.getWidth >= len)
+      x
+    else
+      Fill(len - x.getWidth, sign) ## x
+  }
 }
