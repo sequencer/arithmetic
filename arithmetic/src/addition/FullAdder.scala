@@ -8,5 +8,5 @@ trait FullAdder extends Module {
   val a: UInt = IO(Input(UInt(width.W)))
   val b: UInt = IO(Input(UInt(width.W)))
   val z: UInt = IO(Output(UInt((width + 1).W)))
-  chisel3.experimental.verification.assert(a +& b === z)
+  assert(a +& b === z)
 }

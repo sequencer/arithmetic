@@ -1,11 +1,11 @@
 package addition
 
 import addition.prefixadder.common.{BrentKungSum, KoggeStoneSum, RippleCarrySum}
-import chisel3.UInt
+import chisel3._
 
 package object prefixadder {
   def apply(prefixSum: PrefixSum, width: Option[Int] = None)(a: UInt, b: UInt) = {
-    val m = new PrefixAdder(width.getOrElse(Seq(a, b).flatMap(_.widthOption).max), prefixSum)
+    val m = Module(new PrefixAdder(width.getOrElse(Seq(a, b).flatMap(_.widthOption).max), prefixSum))
     m.a := a
     m.b := b
     m.z

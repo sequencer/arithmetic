@@ -49,8 +49,8 @@ abstract class CSACompressor(val inputSize: Int, val outputSize: Int) {
           case (key, value) => BitPat(value.U) -> BitPat(key.U)
         }.toSeq
       )
-      refIn := VecInit(inputs).asUInt()
-      chisel3.experimental.verification.assert(VecInit(out).asUInt() === refOut)
+      refIn := VecInit(inputs).asUInt
+      assert(VecInit(out).asUInt === refOut)
     }
     out
   }
