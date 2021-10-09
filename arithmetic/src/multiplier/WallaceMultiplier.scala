@@ -75,7 +75,7 @@ class WallaceMultiplier(
   // TODO: should we switch to SInt?
   val b_sext = signExt(b, width + 1)
   val bx2 = (b_sext << 1)(width, 0)
-  val neg_b = (~b_sext).asUInt()
+  val neg_b = (~b_sext).asUInt
   val neg_bx2 = (neg_b << 1)(width, 0)
 
   // TODO: use Seq.tabulate()().scan() to get rid of mutable here.
@@ -83,7 +83,12 @@ class WallaceMultiplier(
   // TODO remove var
   var last_x = WireInit(0.U(3.W))
   for (i <- Range(0, width, 2)) {
-    val x = if (i == 0) Cat(a(1, 0), 0.U(1.W)) else if (i + 1 == width) signExt(a(i, i - 1), 3) else a(i + 1, i - 1)
+    val x = if (i == 0)
+              Cat(a(1, 0), 0.U(1.W))
+            else if (i + 1 == width)
+              signExt(a(i, i - 1), 3)
+            else
+              a(i + 1, i - 1)
     val pp_temp = MuxLookup(
       x,
       0.U,
@@ -115,12 +120,15 @@ class WallaceMultiplier(
       case _ =>
         (Cat(1.U(1.W), ~s, pp_temp, t), i - 2)
     }
+    println(pp_temp, pp)
     for (j <- columns.indices) {
       if (j >= weight && j < (weight + pp.getWidth)) {
         columns(j) = columns(j) :+ pp(j - weight)
       }
     }
+    println(s"$weight -> ${weight + pp.getWidth}")
   }
+  println(columns.map(_.length).mkString("Array(", ", ", ")"))
   val (sum, carry) = addAll(cols = columns, depth = 0)
   z := addition.prefixadder.apply(sumUpAdder)(sum, carry)
 }
