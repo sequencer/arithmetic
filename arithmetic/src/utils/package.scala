@@ -38,6 +38,6 @@ package object utils {
 
   def signExt(x: UInt, len: Int): UInt = {
     val sign = x.head(1)
-    if (x.getWidth >= len) x else Fill(len - x.getWidth, sign) ## x
+    if (x.getWidth >= len) x else chisel3.util.Fill(len - x.getWidth, sign) ## x
   }
 }
