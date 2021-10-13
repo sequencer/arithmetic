@@ -20,13 +20,13 @@ class WallaceMultiplier(
       case 1 => // do nothing
         (col ++ cin, Seq.empty[Bool], Seq.empty[Bool])
       case 2 =>
-        val c22 = addition.csa.c22(VecInit(col)).map(_.asBool)
+        val c22 = addition.csa.c22(VecInit(col)).map(_.asBool).reverse
         (c22(0) +: cin, Seq.empty[Bool], Seq(c22(1)))
       case 3 =>
-        val c32 = addition.csa.c32(VecInit(col)).map(_.asBool)
+        val c32 = addition.csa.c32(VecInit(col)).map(_.asBool).reverse
         (c32(0) +: cin, Seq.empty[Bool], Seq(c32(1)))
       case 4 =>
-        val c53 = addition.csa.c53(VecInit(col :+ cin.headOption.getOrElse(false.B))).map(_.asBool)
+        val c53 = addition.csa.c53(VecInit(col :+ cin.headOption.getOrElse(false.B))).map(_.asBool).reverse
         (Seq(c53(0)) ++ (if (cin.nonEmpty) cin.drop(1) else Nil), Seq(c53(1)), Seq(c53(2)))
       case _ =>
         val cin_1 = if (cin.nonEmpty) Seq(cin.head) else Nil
