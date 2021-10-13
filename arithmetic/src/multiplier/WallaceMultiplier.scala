@@ -39,11 +39,8 @@ class WallaceMultiplier(
   def addAll(cols: Array[Seq[Bool]], depth: Int): (UInt, UInt) = {
     if (cols.map(_.size).max <= 2) {
       val sum = Cat(cols.map(_.head).reverse)
-      // TODO: remove var.
-      var k = 0
-      while (cols(k).size == 1) k = k + 1
-      val carry = Cat(cols.drop(k).map(_(1)).reverse)
-      (sum, Cat(carry, 0.U(k.W)))
+      val carry = Cat(cols.map(col => if (col.length > 1) col(1) else 0.B).reverse)
+      (sum, carry)
     } else {
       val columns_next = Array.fill(2 * width)(Seq[Bool]())
       var cout1, cout2 = Seq[Bool]()
@@ -120,15 +117,12 @@ class WallaceMultiplier(
       case _ =>
         (Cat(1.U(1.W), ~s, pp_temp, t), i - 2)
     }
-    println(pp_temp, pp)
     for (j <- columns.indices) {
       if (j >= weight && j < (weight + pp.getWidth)) {
         columns(j) = columns(j) :+ pp(j - weight)
       }
     }
-    println(s"$weight -> ${weight + pp.getWidth}")
   }
-  println(columns.map(_.length).mkString("Array(", ", ", ")"))
   val (sum, carry) = addAll(cols = columns, depth = 0)
   z := addition.prefixadder.apply(sumUpAdder)(sum, carry)
 }
