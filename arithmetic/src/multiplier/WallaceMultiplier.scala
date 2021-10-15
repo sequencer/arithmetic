@@ -15,24 +15,25 @@ class WallaceMultiplier(
 ) extends Multiplier {
 
   // TODO: use chisel type here?
-  def addOneColumn(col: Seq[Bool], cin: Seq[Bool]): (Seq[Bool], Seq[Bool], Seq[Bool]) =
+  def addOneColumn(col: Seq[Bool]): (Seq[Bool], Seq[Bool], Seq[Bool]) =
     col.size match {
       case 1 => // do nothing
-        (col ++ cin, Seq.empty[Bool], Seq.empty[Bool])
+        (col, Seq.empty[Bool], Seq.empty[Bool])
       case 2 =>
         val c22 = addition.csa.c22(VecInit(col)).map(_.asBool).reverse
-        (c22(0) +: cin, Seq.empty[Bool], Seq(c22(1)))
+        (Seq(c22(0)), Seq.empty[Bool], Seq(c22(1)))
       case 3 =>
         val c32 = addition.csa.c32(VecInit(col)).map(_.asBool).reverse
-        (c32(0) +: cin, Seq.empty[Bool], Seq(c32(1)))
+        (Seq(c32(0)), Seq.empty[Bool], Seq(c32(1)))
       case 4 =>
-        val c53 = addition.csa.c53(VecInit(col :+ cin.headOption.getOrElse(false.B))).map(_.asBool).reverse
-        (Seq(c53(0)) ++ (if (cin.nonEmpty) cin.drop(1) else Nil), Seq(c53(1)), Seq(c53(2)))
+        val c53 = addition.csa.c53(VecInit(col :+ false.B)).map(_.asBool).reverse
+        (Seq(c53(0)), Seq(c53(1)), Seq(c53(2)))
+      case 5 =>
+        val c53 = addition.csa.c53(VecInit(col)).map(_.asBool).reverse
+        (Seq(c53(0)), Seq(c53(1)), Seq(c53(2)))
       case _ =>
-        val cin_1 = if (cin.nonEmpty) Seq(cin.head) else Nil
-        val cin_2 = if (cin.nonEmpty) cin.drop(1) else Nil
-        val (s_1, c_1_1, c_1_2) = addOneColumn(col.take(4), cin_1)
-        val (s_2, c_2_1, c_2_2) = addOneColumn(col.drop(4), cin_2)
+        val (s_1, c_1_1, c_1_2) = addOneColumn(col.take(5))
+        val (s_2, c_2_1, c_2_2) = addOneColumn(col.drop(5))
         (s_1 ++ s_2, c_1_1 ++ c_2_1, c_1_2 ++ c_2_2)
     }
 
@@ -45,7 +46,7 @@ class WallaceMultiplier(
       val columns_next = Array.fill(2 * width)(Seq[Bool]())
       var cout1, cout2 = Seq[Bool]()
       for (i <- cols.indices) {
-        val (s, c1, c2) = addOneColumn(cols(i), cout1)
+        val (s, c1, c2) = addOneColumn(cols(i) ++ cout1)
         columns_next(i) = s ++ cout2
         cout1 = c1
         cout2 = c2
