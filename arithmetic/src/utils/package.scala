@@ -1,5 +1,5 @@
 import chisel3._
-import chisel3.util.Fill
+import chisel3.util.{BitPat, Fill}
 
 package object utils {
 
@@ -43,5 +43,13 @@ package object utils {
       x
     else
       Fill(len - x.getWidth, sign) ## x
+  }
+
+  /** Because .asUInt() do not set .litOption properly */
+  def sIntToBitPat(x: Int, w: Int): BitPat = {
+     if (x >= 0)
+       BitPat(x.U(w.W))
+     else
+       BitPat((x + (1 << w)).U(w.W))
   }
 }

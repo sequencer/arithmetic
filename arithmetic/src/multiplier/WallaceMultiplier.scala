@@ -72,26 +72,23 @@ class WallaceMultiplier(
   val neg_b = (~b_sext).asUInt
   val neg_bx2 = (neg_b << 1)(width, 0)
 
-  def makePartialProducts(i: Int, x: UInt): Seq[(Int, Bool)] = {
+  def makePartialProducts(i: Int, x: SInt): Seq[(Int, Bool)] = {
     val bb = MuxLookup(
-      x,
+      x.asUInt,
       0.U,
       Seq(
-        1.U -> b_sext,
-        2.U -> b_sext,
-        3.U -> bx2,
-        4.U -> neg_bx2,
-        5.U -> neg_b,
-        6.U -> neg_b
+        1.S(3.W).asUInt -> b_sext,
+        2.S(3.W).asUInt -> bx2,
+        -1.S(3.W).asUInt -> neg_b,
+        -2.S(3.W).asUInt -> neg_bx2,
       )
     )
     val plus_1 = MuxLookup(
-      x,
+      x.asUInt,
       0.U(2.W),
       Seq(
-        4.U -> 2.U(2.W),
-        5.U -> 1.U(2.W),
-        6.U -> 1.U(2.W)
+        -1.S(3.W).asUInt -> 1.U(2.W),
+        -2.S(3.W).asUInt -> 2.U(2.W),
       )
     )
     val s = bb(width)
@@ -103,25 +100,13 @@ class WallaceMultiplier(
       case _ =>
         Cat(1.U(1.W), ~s, bb)
     }
-    val normal_partial_products = Seq.tabulate(pp.getWidth) {j =>
-      (i + j, pp(j))
-    }
-    val plus_1_products = Seq.tabulate(2) {j => (i + j, plus_1(j))}
-
-    normal_partial_products ++ plus_1_products
+    Seq.tabulate(pp.getWidth) {j => (i + j, pp(j)) } ++ Seq.tabulate(2) {j => (i + j, plus_1(j))}
   }
 
-  // TODO: UInt/SInt configurable?
-
-  val columns_map = Range(0, width, 2).map { i =>
-    if (i == 0)
-      (i, Cat(a(1, 0), 0.U(1.W)))
-    else if (i + 1 == width)
-      (i, signExt(a(i, i - 1), 3))
-    else
-      (i, a(i + 1, i - 1))
-  }.flatMap{case (i, x) => makePartialProducts(i, x)}
-   .groupBy{_._1}
+  val columns_map = Booth.recode(width)(4)(a.asUInt)
+    .zipWithIndex
+    .flatMap{case (x, i) => makePartialProducts(2 * i, x)}
+    .groupBy{_._1}
 
   val columns = Array.tabulate(2 * width) {i => columns_map(i).map(_._2)}
 

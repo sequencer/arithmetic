@@ -1,7 +1,8 @@
 package multiplier
 
 import chisel3._
-import chisel3.tester.{testableData, ChiselUtestTester}
+import chisel3.tester.{ChiselUtestTester, testableData}
+import chisel3.util.BitPat
 import utest._
 
 object BoothRecodingTester extends TestSuite with ChiselUtestTester {

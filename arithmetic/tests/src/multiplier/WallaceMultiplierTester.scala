@@ -1,6 +1,5 @@
 package multiplier
 
-import addition.prefixadder.common.BrentKungSum
 import chisel3._
 import chisel3.tester.{ChiselUtestTester, testableClock, testableData}
 import utest._
