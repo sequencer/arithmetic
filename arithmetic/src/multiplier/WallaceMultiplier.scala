@@ -37,7 +37,7 @@ class WallaceMultiplier(
         (s_1 ++ s_2, c_1_1 ++ c_2_1, c_1_2 ++ c_2_2)
     }
 
-  def addAll(cols: Array[Seq[Bool]], depth: Int): (UInt, UInt) = {
+  def addAll(cols: Array[_ <: Seq[Bool]], depth: Int): (UInt, UInt) = {
     if (cols.map(_.size).max <= 2) {
       val sum = Cat(cols.map(_.head).reverse)
       val carry = Cat(cols.map(col => if (col.length > 1) col(1) else 0.B).reverse)
@@ -67,27 +67,13 @@ class WallaceMultiplier(
   val stage:  Int = pipeAt.size
   val stages: Seq[Int] = pipeAt.sorted
 
-  // TODO: UInt/SInt configurable?
-
-  // TODO: why a and b is asymmetric?
-  // TODO: should we switch to SInt?
   val b_sext = signExt(b.asUInt, width + 1)
   val bx2 = (b_sext << 1)(width, 0)
   val neg_b = (~b_sext).asUInt
   val neg_bx2 = (neg_b << 1)(width, 0)
 
-  // TODO: use Seq.tabulate()().scan() to get rid of mutable here.
-  val columns: Array[Seq[Bool]] = Array.fill(2 * width)(Seq())
-  // TODO remove var
-  var last_x = WireInit(0.U(3.W))
-  for (i <- Range(0, width, 2)) {
-    val x = if (i == 0)
-              Cat(a(1, 0), 0.U(1.W))
-            else if (i + 1 == width)
-              signExt(a(i, i - 1), 3)
-            else
-              a(i + 1, i - 1)
-    val pp_temp = MuxLookup(
+  def makePartialProducts(i: Int, x: UInt): Seq[(Int, Bool)] = {
+    val bb = MuxLookup(
       x,
       0.U,
       Seq(
@@ -99,9 +85,8 @@ class WallaceMultiplier(
         6.U -> neg_b
       )
     )
-    val s = pp_temp(width)
-    val t = MuxLookup(
-      last_x,
+    val plus_1 = MuxLookup(
+      x,
       0.U(2.W),
       Seq(
         4.U -> 2.U(2.W),
@@ -109,21 +94,37 @@ class WallaceMultiplier(
         6.U -> 1.U(2.W)
       )
     )
-    last_x = x
-    val (pp, weight) = i match {
+    val s = bb(width)
+    val pp = i match {
       case 0 =>
-        (Cat(~s, s, s, pp_temp), 0)
+        Cat(~s, s, s, bb)
       case n if (n == width - 1) || (n == width - 2) =>
-        (Cat(~s, pp_temp, t), i - 2)
+        Cat(~s, bb)
       case _ =>
-        (Cat(1.U(1.W), ~s, pp_temp, t), i - 2)
+        Cat(1.U(1.W), ~s, bb)
     }
-    for (j <- columns.indices) {
-      if (j >= weight && j < (weight + pp.getWidth)) {
-        columns(j) = columns(j) :+ pp(j - weight)
-      }
+    val normal_partial_products = Seq.tabulate(pp.getWidth) {j =>
+      (i + j, pp(j))
     }
+    val plus_1_products = Seq.tabulate(2) {j => (i + j, plus_1(j))}
+
+    normal_partial_products ++ plus_1_products
   }
+
+  // TODO: UInt/SInt configurable?
+
+  val columns_map = Range(0, width, 2).map { i =>
+    if (i == 0)
+      (i, Cat(a(1, 0), 0.U(1.W)))
+    else if (i + 1 == width)
+      (i, signExt(a(i, i - 1), 3))
+    else
+      (i, a(i + 1, i - 1))
+  }.flatMap{case (i, x) => makePartialProducts(i, x)}
+   .groupBy{_._1}
+
+  val columns = Array.tabulate(2 * width) {i => columns_map(i).map(_._2)}
+
   val (sum, carry) = addAll(cols = columns, depth = 0)
-  z := addition.prefixadder.apply(sumUpAdder)(sum, carry)(2 * width - 1).asSInt
+  z := addition.prefixadder.apply(sumUpAdder)(sum, carry)(2 * width - 1, 0).asSInt
 }
