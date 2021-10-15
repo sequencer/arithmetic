@@ -3,6 +3,7 @@ package multiplier
 import chisel3._
 import chisel3.util.experimental.decode.{TruthTable, decoder}
 import chisel3.util.{Cat, BitPat, isPow2, log2Ceil}
+import utils.sIntToBitPat
 
 class Booth(width: Int)(radix: Int) extends Module {
   assert(isPow2(radix))
@@ -10,7 +11,7 @@ class Booth(width: Int)(radix: Int) extends Module {
   val input = IO(Input(UInt(width.W)))
   val output = IO(Output(Vec(
     (width - 1) / radixLog2 + 1, // = ceil(width / radixLog2)
-    UInt((radixLog2 + 1).W)
+    SInt((radixLog2 + 1).W)
   )))
 
   val paddingLeftWidth = radixLog2 - 1 - (width - 1) % radixLog2
@@ -41,15 +42,21 @@ class Booth(width: Int)(radix: Int) extends Module {
       .zipWithIndex
       .map {
         case (o, i) =>
-          val w = (radixLog2 + 1).W
-          (BitPat(i.U(w)), BitPat((o + (1 << (radixLog2 - 1))).U(w)))
+          val w = radixLog2 + 1
+          (sIntToBitPat(i, w), sIntToBitPat(o, w))
       },
     BitPat.dontCare(radixLog2 + 1)
   )
-  println(boothEncodingTable)
-  printf("%b", paddedInput)
 
   output := Seq.tabulate(output.size) { i =>
     decoder(paddedInput(radixLog2 * (i + 1), radixLog2 * i), boothEncodingTable)
+  }.map(_.asSInt)
+}
+
+object Booth {
+  def recode(width: Int)(radix: Int)(x: UInt): Vec[SInt] = {
+    val recoder = Module(new Booth(width)(radix))
+    recoder.input := x
+    recoder.output
   }
 }
