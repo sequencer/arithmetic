@@ -71,7 +71,7 @@ class WallaceMultiplier(
 
   // TODO: why a and b is asymmetric?
   // TODO: should we switch to SInt?
-  val b_sext = signExt(b, width + 1)
+  val b_sext = signExt(b.asUInt, width + 1)
   val bx2 = (b_sext << 1)(width, 0)
   val neg_b = (~b_sext).asUInt
   val neg_bx2 = (neg_b << 1)(width, 0)
@@ -125,5 +125,5 @@ class WallaceMultiplier(
     }
   }
   val (sum, carry) = addAll(cols = columns, depth = 0)
-  z := addition.prefixadder.apply(sumUpAdder)(sum, carry)
+  z := addition.prefixadder.apply(sumUpAdder)(sum, carry)(2 * width - 1).asSInt
 }
