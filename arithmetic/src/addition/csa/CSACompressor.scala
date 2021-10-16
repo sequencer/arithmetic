@@ -44,13 +44,15 @@ abstract class CSACompressor(val inputSize: Int, val outputSize: Int) {
     if (formal) {
       val (refIn, refOut) = pla(
         encodeTable.flatMap {
-          case (key, value) => value.map(v => key -> v)
+          case (key, value) =>
+            value.map(v => v -> key)
         }.map {
-          case (key, value) => BitPat(value.U) -> BitPat(key.U)
+          case (key, value) =>
+            BitPat(key.U(inputSize.W)) -> BitPat(value.U(outputSize.W))
         }.toSeq
       )
-      refIn := VecInit(inputs).asUInt
-      assert(VecInit(out).asUInt === refOut)
+      refIn := VecInit(inputs.reverse).asUInt
+      assert(VecInit(out.reverse).asUInt === refOut)
     }
     out
   }
