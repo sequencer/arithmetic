@@ -8,9 +8,11 @@ import utils.signExt
 
 class WallaceMultiplier(
   val width:  Int
-)(sumUpAdder: PrefixSum = BrentKungSum,
+)(
+  radixLog2: Int = 2,
+  sumUpAdder: PrefixSum = BrentKungSum,
   // TODO: add additional stage for final adder?
-  pipeAt: Seq[Int] = Nil
+  pipeAt: Seq[Int] = Nil,
   // TODO: making addOneColumn to be configurable to add more CSA to make this circuit more configurable?
 ) extends Multiplier {
 
@@ -64,49 +66,55 @@ class WallaceMultiplier(
     }
   }
 
+  // produce Seq(b, 2 * b, ..., 2^digits * b), output width = width + radixLog2 - 1
+  val bMultipleWidth = (width + radixLog2 - 1).W
+  def prepareBMultiples(digits: Int): Seq[SInt] = {
+    if (digits == 0) {
+      Seq(signExt(b, bMultipleWidth.get).asSInt)
+    } else {
+      val lowerMultiples = prepareBMultiples(digits - 1)
+      val bPower2 = signExt(b << (digits - 1), bMultipleWidth.get)
+      val higherMultiples = lowerMultiples.dropRight(1).map { m =>
+        addition.prefixadder.apply(sumUpAdder)(bPower2.asUInt, m.asUInt)(bMultipleWidth.get - 1, 0)
+      } :+ (bPower2 << 1)(bMultipleWidth.get - 1, 0)
+      lowerMultiples ++ higherMultiples.map(_.asSInt)
+    }
+  }
+
   val stage:  Int = pipeAt.size
   val stages: Seq[Int] = pipeAt.sorted
 
-  val b_sext = signExt(b.asUInt, width + 1)
-  val bx2 = (b_sext << 1)(width, 0)
-  val neg_b = (~b_sext).asUInt
-  val neg_bx2 = (neg_b << 1)(width, 0)
-
-  def makePartialProducts(i: Int, recoded: SInt): Seq[(Int, Bool)] = {  // Seq[(weight, value)]
-    val w = recoded.getWidth.W
-    val bb = MuxLookup(
-      recoded.asUInt,
-      0.U,
-      Seq(
-        1.S(w).asUInt -> b_sext,
-        2.S(w).asUInt -> bx2,
-        -1.S(w).asUInt -> neg_b,
-        -2.S(w).asUInt -> neg_bx2,
-      )
-    )
-    val plus_1 = MuxLookup(
-      recoded.asUInt,
-      0.U(2.W),
-      Seq(
-        -1.S(w).asUInt -> 1.U(2.W),
-        -2.S(w).asUInt -> 2.U(2.W),
-      )
-    )
-    val s = bb(width)
-    val pp = i match {
-      case 0 =>
-        Cat(~s, s, s, bb)
-      case n if n >= width - 2 =>
-        Cat(~s, bb)
-      case _ =>
-        Cat(1.U(1.W), ~s, bb)
-    }
-    Seq.tabulate(pp.getWidth) {j => (i + j, pp(j)) } ++ Seq.tabulate(2) {j => (i + j, plus_1(j))}
+  val bMultiples = prepareBMultiples(radixLog2 - 1)
+  val encodedWidth = (radixLog2 + 1).W
+  val partialProductLookupTable: Seq[(UInt, SInt)] = Range(-(1 << (radixLog2 - 1)), (1 << (radixLog2 - 1)) + 1).map{
+    case 0 =>
+      0.U(encodedWidth) -> 0.S(bMultipleWidth)
+    case i if i > 0 =>
+      i.U(encodedWidth) -> bMultiples(i - 1)
+    case i if i < 0 =>
+      i.S(encodedWidth).asUInt -> (~bMultiples(-i - 1)).asSInt
   }
 
-  val columns_map = Booth.recode(width)(4)(a.asUInt)
+  def makePartialProducts(i: Int, recoded: SInt): Seq[(Int, Bool)] = {  // Seq[(weight, value)]
+    val bb: UInt = MuxLookup(recoded.asUInt, 0.S(bMultipleWidth), partialProductLookupTable).asUInt
+    val s = bb(bMultipleWidth.get - 1)
+    val shouldPlus1 = recoded(recoded.getWidth - 1)
+    val pp = i match {
+      case 0 =>
+        Cat(~s, Fill(radixLog2, s), bb)
+      case i if i >= width - radixLog2 =>
+        Cat(~s, bb)
+      case _ =>
+        val fillWidth = math.min(width - radixLog2, radixLog2 - 1)
+        Cat(Fill(fillWidth, 1.B), ~s, bb)
+    }
+    printf(s"$i: %b, %b, ${" " * (2 * width - i - pp.getWidth)}%b${" " * i}, %b\n", recoded, bb, pp, s)
+    Seq.tabulate(pp.getWidth) {j => (i + j, pp(j)) } :+ (i, shouldPlus1)
+  }
+
+  val columns_map = Booth.recode(width)(radixLog2)(a.asUInt)
     .zipWithIndex
-    .flatMap{case (x, i) => makePartialProducts(2 * i, x)}
+    .flatMap{case (x, i) => makePartialProducts(radixLog2 * i, x)}
     .groupBy{_._1}
 
   val columns = Array.tabulate(2 * width) {i => columns_map(i).map(_._2)}
