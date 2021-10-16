@@ -8,13 +8,13 @@ import utest._
 object CSASpecTester extends FormalSuite {
   def tests: Tests = Tests {
     test("CSA53") {
-      verify(new CarrySaveAdder(CSACompressor5_3, 4), Seq(BoundedCheck(1)))
+      verify(new CarrySaveAdder(CSACompressor5_3, 4, true), Seq(BoundedCheck(1)))
     }
     test("CSA32") {
-      verify(new CarrySaveAdder(CSACompressor3_2, 4), Seq(BoundedCheck(1)))
+      verify(new CarrySaveAdder(CSACompressor3_2, 4, true), Seq(BoundedCheck(1)))
     }
     test("CSA22") {
-      verify(new CarrySaveAdder(CSACompressor2_2, 4), Seq(BoundedCheck(1)))
+      verify(new CarrySaveAdder(CSACompressor2_2, 4, true), Seq(BoundedCheck(1)))
     }
   }
 }
