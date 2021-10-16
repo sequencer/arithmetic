@@ -26,7 +26,6 @@ class Booth(width: Int)(radix: Int) extends Module {
     case i if i == 0 => 1
     case i => 1 << (i - 1)
   }
-  println(boothEncodingCoeff)
 
   val boothEncodingTable = TruthTable(
     Seq
