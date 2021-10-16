@@ -2,7 +2,7 @@ package multiplier
 
 import chisel3._
 import chisel3.util.experimental.decode.{TruthTable, decoder}
-import chisel3.util.{Cat, BitPat, isPow2, log2Ceil}
+import chisel3.util.{BitPat, Cat, Fill, isPow2, log2Ceil}
 import utils.sIntToBitPat
 
 class Booth(width: Int)(radix: Int) extends Module {
@@ -15,10 +15,11 @@ class Booth(width: Int)(radix: Int) extends Module {
   )))
 
   val paddingLeftWidth = radixLog2 - 1 - (width - 1) % radixLog2
+  val signBit = input(width - 1)
   val paddedInput = if (paddingLeftWidth == 0)
     Cat(input, 0.U(1.W))
   else {
-    Cat(0.U(paddingLeftWidth.W), input, 0.U(1.W))
+    Cat(Fill(paddingLeftWidth, 0.B), input, 0.U(1.W))
   }
 
   val boothEncodingCoeff = Seq.tabulate(radixLog2 + 1) {
