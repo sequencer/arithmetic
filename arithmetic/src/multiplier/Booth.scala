@@ -5,9 +5,7 @@ import chisel3.util.experimental.decode.{TruthTable, decoder}
 import chisel3.util.{BitPat, Cat, Fill, isPow2, log2Ceil}
 import utils.sIntToBitPat
 
-class Booth(width: Int)(radix: Int) extends Module {
-  assert(isPow2(radix))
-  val radixLog2 = log2Ceil(radix)
+class Booth(width: Int)(radixLog2: Int) extends Module {
   val input = IO(Input(UInt(width.W)))
   val output = IO(Output(Vec(
     (width - 1) / radixLog2 + 1, // = ceil(width / radixLog2)
@@ -19,7 +17,7 @@ class Booth(width: Int)(radix: Int) extends Module {
   val paddedInput = if (paddingLeftWidth == 0)
     Cat(input, 0.U(1.W))
   else {
-    Cat(Fill(paddingLeftWidth, 0.B), input, 0.U(1.W))
+    Cat(Fill(paddingLeftWidth, signBit), input, 0.U(1.W))
   }
 
   val boothEncodingCoeff = Seq.tabulate(radixLog2 + 1) {

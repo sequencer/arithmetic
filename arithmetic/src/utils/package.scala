@@ -37,12 +37,12 @@ package object utils {
         .map(_._2)
     )
 
-  def signExt(x: UInt, len: Int): UInt = {
+  def signExt(x: Bits, len: Int): Bits = {
     val sign = x.head(1)
     if (x.getWidth >= len)
       x
     else
-      Fill(len - x.getWidth, sign) ## x
+      Fill(len - x.getWidth, sign) ## x.asUInt
   }
 
   /** Because .asUInt() do not set .litOption properly */
