@@ -108,7 +108,6 @@ class WallaceMultiplier(
         val fillWidth = math.min(width - radixLog2, radixLog2 - 1)
         Cat(Fill(fillWidth, 1.B), ~s, bb)
     }
-    printf(s"$i: %b, %b, ${" " * (2 * width - i - pp.getWidth)}%b${" " * i}, %b\n", recoded, bb, pp, s)
     Seq.tabulate(pp.getWidth) {j => (i + j, pp(j)) } :+ (i, shouldPlus1)
   }
 
