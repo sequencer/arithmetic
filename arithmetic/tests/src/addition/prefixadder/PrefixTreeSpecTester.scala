@@ -48,7 +48,7 @@ object PrefixTreeSpecTester extends FormalSuite {
       val d = new CommonPrefixSum with HasPrefixSumWithGraphImp {
         val prefixGraph: PrefixGraph = PrefixGraph(os.resource / "graph.json")
       }
-      verify(new PrefixAdder(d.prefixGraph.width, d), Seq(BoundedCheck(0)))
+      verify(new PrefixAdder(d.prefixGraph.width, d), Seq(BoundedCheck(1)))
     }
     test("should abort in PrefixNode generation") {
       try {
@@ -59,7 +59,7 @@ object PrefixTreeSpecTester extends FormalSuite {
       }
     }
     test("DemoPrefixAdderWithGraph should pass test") {
-      verify(new DemoPrefixAdderWithGraph, Seq(BoundedCheck(0)))
+      verify(new DemoPrefixAdderWithGraph, Seq(BoundedCheck(1)))
     }
     test("should generate graphML file") {
       os.write.over(os.pwd / "PrefixGraph.dot", PrefixGraph(zeroLayer.toSet + node1 + node2 + node3 + node4).toString)
