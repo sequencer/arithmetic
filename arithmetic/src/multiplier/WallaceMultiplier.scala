@@ -72,30 +72,31 @@ class WallaceMultiplier(
   val neg_b = (~b_sext).asUInt
   val neg_bx2 = (neg_b << 1)(width, 0)
 
-  def makePartialProducts(i: Int, x: SInt): Seq[(Int, Bool)] = {
+  def makePartialProducts(i: Int, recoded: SInt): Seq[(Int, Bool)] = {  // Seq[(weight, value)]
+    val w = recoded.getWidth.W
     val bb = MuxLookup(
-      x.asUInt,
+      recoded.asUInt,
       0.U,
       Seq(
-        1.S(3.W).asUInt -> b_sext,
-        2.S(3.W).asUInt -> bx2,
-        -1.S(3.W).asUInt -> neg_b,
-        -2.S(3.W).asUInt -> neg_bx2,
+        1.S(w).asUInt -> b_sext,
+        2.S(w).asUInt -> bx2,
+        -1.S(w).asUInt -> neg_b,
+        -2.S(w).asUInt -> neg_bx2,
       )
     )
     val plus_1 = MuxLookup(
-      x.asUInt,
+      recoded.asUInt,
       0.U(2.W),
       Seq(
-        -1.S(3.W).asUInt -> 1.U(2.W),
-        -2.S(3.W).asUInt -> 2.U(2.W),
+        -1.S(w).asUInt -> 1.U(2.W),
+        -2.S(w).asUInt -> 2.U(2.W),
       )
     )
     val s = bb(width)
     val pp = i match {
       case 0 =>
         Cat(~s, s, s, bb)
-      case n if (n == width - 1) || (n == width - 2) =>
+      case n if n >= width - 2 =>
         Cat(~s, bb)
       case _ =>
         Cat(1.U(1.W), ~s, bb)
