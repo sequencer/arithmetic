@@ -23,3 +23,11 @@ object WallaceMultiplierTester extends TestSuite with ChiselUtestTester {
     }
   }
 }
+
+object FormalWallaceTester extends FormalSuite {
+  val tests: Tests = Tests {
+    test("wallace multiplier") {
+      formal(() => new WallaceMultiplier(4)(), "Wallace", success)
+    }
+  }
+}

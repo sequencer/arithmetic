@@ -10,4 +10,5 @@ trait Multiplier extends Module {
   val a: SInt = IO(Input(SInt(width.W)))
   val b: SInt = IO(Input(SInt(width.W)))
   val z: SInt = IO(Output(SInt((2 * width).W)))
+  assert(a * b === z)
 }
