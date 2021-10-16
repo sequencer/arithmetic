@@ -1,33 +1,19 @@
 package multiplier
 
-import chisel3._
-import chisel3.tester.{ChiselUtestTester, testableClock, testableData}
+import chiseltest.formal.BoundedCheck
+import formal.FormalSuite
 import utest._
-
-object WallaceMultiplierTester extends TestSuite with ChiselUtestTester {
-  val tests: Tests = Tests {
-    test("more data") {
-      for (width <- 8 until 11) {
-        testCircuit(new WallaceMultiplier(width)()) { dut =>
-          for (i <- -31 until 32) {
-            for (j <- -31 until 32) {
-              println(s"test (width = $width) $i * $j = ${dut.z.peek}")
-              dut.a.poke(i.S)
-              dut.b.poke(j.S)
-              dut.clock.step()
-              dut.z.expect((i * j).S)
-            }
-          }
-        }
-      }
-    }
-  }
-}
 
 object FormalWallaceTester extends FormalSuite {
   val tests: Tests = Tests {
-    test("wallace multiplier") {
-      formal(() => new WallaceMultiplier(4)(), "Wallace", success)
+    test("wallace multiplier 1") {
+      verify(new WallaceMultiplier(1)(), Seq(BoundedCheck(1)))
+    }
+    test("wallace multiplier 4") {
+      verify(new WallaceMultiplier(4)(), Seq(BoundedCheck(1)))
+    }
+    test("wallace multiplier 7") {
+      verify(new WallaceMultiplier(7)(), Seq(BoundedCheck(1)))
     }
   }
 }
