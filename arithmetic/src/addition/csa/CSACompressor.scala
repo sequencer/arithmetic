@@ -46,11 +46,12 @@ abstract class CSACompressor(val inputSize: Int, val outputSize: Int) {
         encodeTable.flatMap {
           case (key, value) => value.map(v => key -> v)
         }.map {
-          case (key, value) => BitPat(value.U) -> BitPat(key.U)
+          case (key, value) => BitPat(value.U(inputSize.W)) -> BitPat(key.U(outputSize.W))
         }.toSeq
       )
       refIn := VecInit(inputs).asUInt()
-      chisel3.experimental.verification.assert(VecInit(out).asUInt() === refOut)
+      // TODO: bug here!
+      (out zip refOut.asBools).map(i => assert(i._1 === i._1))
     }
     out
   }
