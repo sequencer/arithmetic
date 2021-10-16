@@ -3,6 +3,8 @@ package addition.prefixadder
 import addition.AdderSuite
 import addition.prefixadder.common.CommonPrefixSum
 import addition.prefixadder.graph.{HasPrefixSumWithGraphImp, PrefixGraph, PrefixNode}
+import chiseltest.formal.BoundedCheck
+import formal.FormalSuite
 import utest._
 
 /** This adder is same with BrentKungSum8*/
@@ -31,7 +33,7 @@ object BrentKungSum8ByGraph extends HasPrefixSumWithGraphImp with CommonPrefixSu
 
 class DemoPrefixAdderWithGraph extends PrefixAdder(BrentKungSum8ByGraph.prefixGraph.width, BrentKungSum8ByGraph)
 
-object PrefixTreeSpecTester extends AdderSuite {
+object PrefixTreeSpecTester extends FormalSuite {
 
   val zeroLayer = Seq.tabulate(4)(PrefixNode(_))
   val node1 = PrefixNode(zeroLayer(0), zeroLayer(1))
@@ -47,7 +49,7 @@ object PrefixTreeSpecTester extends AdderSuite {
       val d = new CommonPrefixSum with HasPrefixSumWithGraphImp {
         val prefixGraph: PrefixGraph = PrefixGraph(os.resource / "graph.json")
       }
-      formalFullAdder(() => new PrefixAdder(d.prefixGraph.width, d), "deserialized PrefixGraph")
+      verify(new PrefixAdder(d.prefixGraph.width, d), Seq(BoundedCheck(0)))
     }
     test("should abort in PrefixNode generation") {
       try {
@@ -58,7 +60,7 @@ object PrefixTreeSpecTester extends AdderSuite {
       }
     }
     test("DemoPrefixAdderWithGraph should pass test") {
-      formalFullAdder(() => new DemoPrefixAdderWithGraph, "custom_brent_kun_sum8")
+      verify(new DemoPrefixAdderWithGraph, Seq(BoundedCheck(0)))
     }
     test("should generate graphML file") {
       os.write.over(os.pwd / "PrefixGraph.dot", PrefixGraph(zeroLayer.toSet + node1 + node2 + node3 + node4).toString)
