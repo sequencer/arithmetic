@@ -1,6 +1,5 @@
 package addition.prefixadder
 
-import addition.AdderSuite
 import addition.prefixadder.common.{BrentKungAdder, KoggeStoneAdder, RippleCarry3Adder, RippleCarryAdder}
 import chiseltest.formal.BoundedCheck
 import formal.FormalSuite

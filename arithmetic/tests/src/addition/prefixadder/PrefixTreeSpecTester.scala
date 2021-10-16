@@ -1,6 +1,5 @@
 package addition.prefixadder
 
-import addition.AdderSuite
 import addition.prefixadder.common.CommonPrefixSum
 import addition.prefixadder.graph.{HasPrefixSumWithGraphImp, PrefixGraph, PrefixNode}
 import chiseltest.formal.BoundedCheck
