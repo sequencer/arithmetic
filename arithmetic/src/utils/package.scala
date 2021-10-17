@@ -37,19 +37,20 @@ package object utils {
         .map(_._2)
     )
 
-  def signExt(x: Bits, len: Int): Bits = {
-    val sign = x.head(1)
+  def extend(x: Bits, len: Int, signed: Boolean = true): Bits = {
     if (x.getWidth >= len)
       x
-    else
-      Fill(len - x.getWidth, sign) ## x.asUInt
+    else {
+      val fillBit = if (signed) x.head(1) else 0.B
+      Fill(len - x.getWidth, fillBit) ## x.asUInt
+    }
   }
 
   /** Because .asUInt() do not set .litOption properly */
   def sIntToBitPat(x: Int, w: Int): BitPat = {
-     if (x >= 0)
-       BitPat(x.U(w.W))
-     else
-       BitPat((x + (1 << w)).U(w.W))
+    if (x >= 0)
+      BitPat(x.U(w.W))
+    else
+      BitPat((x + (1 << w)).U(w.W))
   }
 }
