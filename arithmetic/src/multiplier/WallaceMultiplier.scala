@@ -4,17 +4,24 @@ import addition.prefixadder.PrefixSum
 import addition.prefixadder.common.BrentKungSum
 import chisel3._
 import chisel3.util._
-import utils.signExt
+import utils.extend
 
-class WallaceMultiplier(
-  val width:  Int
-)(
-  radixLog2: Int = 2,
-  sumUpAdder: PrefixSum = BrentKungSum,
+class WallaceMultiplierImpl(
+  val width:  Int,
+  val signed: Boolean
+)(radixLog2:  Int,
+  sumUpAdder: PrefixSum,
   // TODO: add additional stage for final adder?
-  pipeAt: Seq[Int] = Nil,
+  pipeAt: Seq[Int]
   // TODO: making addOneColumn to be configurable to add more CSA to make this circuit more configurable?
-) extends Multiplier {
+) extends Module {
+
+  val a: Bits = IO(Input(if (signed) SInt(width.W) else UInt(width.W)))
+  val b: Bits = IO(Input(if (signed) SInt(width.W) else UInt(width.W)))
+  val z: Bits = IO(Output(if (signed) SInt((2 * width).W) else UInt((2 * width).W)))
+
+  val stage:  Int = pipeAt.size
+  val stages: Seq[Int] = pipeAt.sorted
 
   // TODO: use chisel type here?
   def addOneColumn(col: Seq[Bool]): (Seq[Bool], Seq[Bool], Seq[Bool]) =
@@ -70,10 +77,10 @@ class WallaceMultiplier(
   val bMultipleWidth = (width + radixLog2 - 1).W
   def prepareBMultiples(digits: Int): Seq[SInt] = {
     if (digits == 0) {
-      Seq(signExt(b, bMultipleWidth.get).asSInt)
+      Seq(extend(b, bMultipleWidth.get, signed).asSInt)
     } else {
       val lowerMultiples = prepareBMultiples(digits - 1)
-      val bPower2 = signExt(b << (digits - 1), bMultipleWidth.get)
+      val bPower2 = extend(b << (digits - 1), bMultipleWidth.get, signed)
       val higherMultiples = lowerMultiples.dropRight(1).map { m =>
         addition.prefixadder.apply(sumUpAdder)(bPower2.asUInt, m.asUInt)(bMultipleWidth.get - 1, 0)
       } :+ (bPower2 << 1)(bMultipleWidth.get - 1, 0)
@@ -81,12 +88,9 @@ class WallaceMultiplier(
     }
   }
 
-  val stage:  Int = pipeAt.size
-  val stages: Seq[Int] = pipeAt.sorted
-
   val bMultiples = prepareBMultiples(radixLog2 - 1)
   val encodedWidth = (radixLog2 + 1).W
-  val partialProductLookupTable: Seq[(UInt, SInt)] = Range(-(1 << (radixLog2 - 1)), (1 << (radixLog2 - 1)) + 1).map{
+  val partialProductLookupTable: Seq[(UInt, SInt)] = Range(-(1 << (radixLog2 - 1)), (1 << (radixLog2 - 1)) + 1).map {
     case 0 =>
       0.U(encodedWidth) -> 0.S(bMultipleWidth)
     case i if i > 0 =>
@@ -95,10 +99,10 @@ class WallaceMultiplier(
       i.S(encodedWidth).asUInt -> (~bMultiples(-i - 1)).asSInt
   }
 
-  def makePartialProducts(i: Int, recoded: SInt): Seq[(Int, Bool)] = {  // Seq[(weight, value)]
+  def makePartialProducts(i: Int, recoded: SInt): Seq[(Int, Bool)] = { // Seq[(weight, value)]
     val bb: UInt = MuxLookup(recoded.asUInt, 0.S(bMultipleWidth), partialProductLookupTable).asUInt
-    val s = bb(bMultipleWidth.get - 1)
-    val shouldPlus1 = recoded(recoded.getWidth - 1)
+    val shouldPlus1 = recoded.head(1).asBool
+    val s = if (signed) bb.head(1) else shouldPlus1
     val pp = i match {
       case 0 =>
         Cat(~s, Fill(radixLog2, s), bb)
@@ -108,16 +112,44 @@ class WallaceMultiplier(
         val fillWidth = math.min(width - radixLog2, radixLog2 - 1)
         Cat(Fill(fillWidth, 1.B), ~s, bb)
     }
-    Seq.tabulate(pp.getWidth) {j => (i + j, pp(j)) } :+ (i, shouldPlus1)
+    printf(s"$i:%b,%b,${" " * (2 * width - i - pp.getWidth)}%b${" " * i},%b\n", recoded, bb, pp, shouldPlus1)
+    Seq.tabulate(pp.getWidth) { j => (i + j, pp(j)) } :+ (i, shouldPlus1)
   }
 
-  val columns_map = Booth.recode(width)(radixLog2)(a.asUInt)
+  val columns_map = Booth
+    .recode(width)(radixLog2, signed = signed)(a.asUInt)
     .zipWithIndex
-    .flatMap{case (x, i) => makePartialProducts(radixLog2 * i, x)}
-    .groupBy{_._1}
+    .flatMap { case (x, i) => makePartialProducts(radixLog2 * i, x) }
+    .groupBy { _._1 }
 
-  val columns = Array.tabulate(2 * width) {i => columns_map(i).map(_._2)}
+  val columns = Array.tabulate(2 * width) { i => columns_map(i).map(_._2) }
 
   val (sum, carry) = addAll(cols = columns, depth = 0)
-  z := addition.prefixadder.apply(sumUpAdder)(sum, carry)(2 * width - 1, 0).asSInt
+
+  val result = addition.prefixadder.apply(sumUpAdder)(sum, carry)(2 * width - 1, 0)
+  z := (if (signed) result.asSInt else result.asUInt)
+}
+
+class SignedWallaceMultiplier(
+  val width:  Int
+)(radixLog2:  Int = 2,
+  sumUpAdder: PrefixSum = BrentKungSum,
+  pipeAt:     Seq[Int] = Nil)
+    extends SignedMultiplier {
+  val impl = Module(new WallaceMultiplierImpl(width, true)(radixLog2, sumUpAdder, pipeAt))
+  impl.a := a
+  impl.b := b
+  z := impl.z
+}
+
+class UnsignedWallaceMultiplier(
+  val width:  Int
+)(radixLog2:  Int = 2,
+  sumUpAdder: PrefixSum = BrentKungSum,
+  pipeAt:     Seq[Int] = Nil)
+    extends UnsignedMultiplier {
+  val impl = Module(new WallaceMultiplierImpl(width, false)(radixLog2, sumUpAdder, pipeAt))
+  impl.a := a
+  impl.b := b
+  z := impl.z
 }
