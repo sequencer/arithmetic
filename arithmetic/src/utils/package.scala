@@ -1,6 +1,8 @@
 import chisel3._
 import chisel3.util.{BitPat, Fill}
 
+/* TODO: utils is not verified yet, need formal in feature. */
+
 package object utils {
 
   /** each bits OR together all bits in its right-hand-side.
