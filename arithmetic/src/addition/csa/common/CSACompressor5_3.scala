@@ -70,17 +70,17 @@ object CSACompressor5_3 extends CSACompressor(5, 3) {
   )
 
   def circuit(inputs: Seq[Bool]): Seq[Bool] = {
-    val a_xor_b = inputs(0) ^ inputs(1)
-    val a_xor_b_xor_c = a_xor_b ^ inputs(2)
-    val d_xor_e = inputs(3) ^ inputs(4)
+    val ab = inputs(0) ^ inputs(1)
+    val abc = ab ^ inputs(2)
+    val de = inputs(3) ^ inputs(4)
 
     Seq(
       // count(de) == 2 | ((count(de) == 1) & (count(abc) == (1,3)))
-      inputs(3) & inputs(4) | (d_xor_e & a_xor_b_xor_c),
+      inputs(3) & inputs(4) | (de & abc),
       // count(abc) == (2,3)
-      inputs(0) & inputs(1) | (a_xor_b & inputs(2)),
+      inputs(0) & inputs(1) | (ab & inputs(2)),
       // count(abcde) == (1,3,5)
-      d_xor_e ^ a_xor_b_xor_c
+      de ^ abc
     )
   }
 }

@@ -41,9 +41,9 @@ class WallaceMultiplierImpl(
         val c53 = addition.csa.c53(VecInit(col)).map(_.asBool).reverse
         (Seq(c53(0)), Seq(c53(1)), Seq(c53(2)))
       case _ =>
-        val (s_1, c_1_1, c_1_2) = addOneColumn(col.take(5))
-        val (s_2, c_2_1, c_2_2) = addOneColumn(col.drop(5))
-        (s_1 ++ s_2, c_1_1 ++ c_2_1, c_1_2 ++ c_2_2)
+        val (s1, c11, c12) = addOneColumn(col.take(5))
+        val (s2, c21, c22) = addOneColumn(col.drop(5))
+        (s1 ++ s2, c11 ++ c21, c12 ++ c22)
     }
 
   def addAll(cols: Array[_ <: Seq[Bool]], depth: Int): (UInt, UInt) = {
@@ -52,11 +52,11 @@ class WallaceMultiplierImpl(
       val carry = Cat(cols.map(col => if (col.length > 1) col(1) else 0.B).reverse)
       (sum, carry)
     } else {
-      val columns_next = Array.fill(2 * width)(Seq[Bool]())
+      val columnsNext = Array.fill(2 * width)(Seq[Bool]())
       var cout1, cout2 = Seq[Bool]()
       for (i <- cols.indices) {
         val (s, c1, c2) = addOneColumn(cols(i) ++ cout1)
-        columns_next(i) = s ++ cout2
+        columnsNext(i) = s ++ cout2
         cout1 = c1
         cout2 = c2
       }
@@ -65,9 +65,9 @@ class WallaceMultiplierImpl(
       val toNextLayer =
         if (needReg)
           // TODO: use 'RegEnable' instead
-          columns_next.map(_.map(x => RegNext(x)))
+          columnsNext.map(_.map(x => RegNext(x)))
         else
-          columns_next
+          columnsNext
 
       addAll(toNextLayer, depth + 1)
     }
@@ -115,13 +115,13 @@ class WallaceMultiplierImpl(
     Seq.tabulate(pp.getWidth) { j => (i + j, pp(j)) } :+ (i, shouldPlus1)
   }
 
-  val columns_map = Booth
+  val columnsMap = Booth
     .recode(width)(radixLog2, signed = signed)(a.asUInt)
     .zipWithIndex
     .flatMap { case (x, i) => makePartialProducts(radixLog2 * i, x) }
     .groupBy { _._1 }
 
-  val columns = Array.tabulate(2 * width) { i => columns_map(i).map(_._2) }
+  val columns = Array.tabulate(2 * width) { i => columnsMap(i).map(_._2) }
 
   val (sum, carry) = addAll(cols = columns, depth = 0)
 
