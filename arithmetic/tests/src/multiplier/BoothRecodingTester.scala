@@ -10,7 +10,9 @@ object BoothRecodingTester extends TestSuite with ChiselUtestTester {
     test("encoding len") {
       testCircuit(new Booth(16)(8)) { dut =>
         dut.input.poke(7.U)
-        println(dut.output.peek())
+        dut.output(0).expect(7.S)
+        dut.output(1).expect(0.S)
+        dut.output(2).expect(0.S)
       }
     }
   }
