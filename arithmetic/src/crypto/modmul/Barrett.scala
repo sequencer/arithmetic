@@ -3,7 +3,7 @@ package crypto.modmul
 import chisel3._
 import chisel3.experimental.ChiselEnum
 import chisel3.util.experimental.decode.TruthTable
-import chisel3.util.{Counter, Mux1H}
+import chisel3.util.{BitPat, Counter, Mux1H}
 
 class Barrett(val p: BigInt, val mulPipe: Int, val addPipe: Int) extends ModMul {
   val m = BigInt(2) << ((BigInt(2) * width) / p).toInt
@@ -29,10 +29,11 @@ class Barrett(val p: BigInt, val mulPipe: Int, val addPipe: Int) extends ModMul 
   val mulDone = if (mulPipe != 0) Counter(isMul, mulPipe)._2 else true.B
   val addDone = if (addPipe != 0) Counter(isAdd, addPipe)._2 else true.B
   // TODO: check here.
-  val addSign = add.z.head(0)
+  val addSign = add.z.head(1)
+  val decodeIn = WireDefault(state.asUInt ## mulDone ## addDone ## addSign ## input.valid ## z.ready)
   state := chisel3.util.experimental.decode
-    .decoder(
-      state.asUInt ## mulDone ## addDone ## addSign ## input.valid ## z.ready, {
+    .decoder.qmc(
+      decodeIn, {
         val Y = "1"
         val N = "0"
         val DC = "?"
@@ -44,7 +45,7 @@ class Barrett(val p: BigInt, val mulPipe: Int, val addPipe: Int) extends ModMul 
           inputValid: String = DC,
           zReady:     String = DC
         )(stateO:     String
-        ) = s"$stateI$mulDone$addDone$addSign$inputValid$zReady->$stateO"
+        ) = BitPat(s"b$stateI$mulDone$addDone$addSign$inputValid$zReady")->BitPat(s"b$stateO")
         val s0 = "00000001"
         val s1 = "00000010"
         val s2 = "00000100"
@@ -55,8 +56,8 @@ class Barrett(val p: BigInt, val mulPipe: Int, val addPipe: Int) extends ModMul 
         val s7 = "10000000"
         val t = TruthTable(
           Seq(
-            to(s0, inputValid = Y)(s1),
             to(s0, inputValid = N)(s0),
+            to(s0, inputValid = Y)(s1),
             to(s1, mulDone = Y)(s2),
             to(s1, mulDone = N)(s1),
             to(s2, mulDone = Y)(s3),
@@ -70,15 +71,17 @@ class Barrett(val p: BigInt, val mulPipe: Int, val addPipe: Int) extends ModMul 
             to(s5, addDone = N)(s5),
             to(s6, addDone = Y)(s7),
             to(s6, addDone = N)(s6),
-            "???????"
-          ).mkString("\n")
+          ), BitPat.dontCare(state.getWidth)
         )
         println(t)
+        println(chisel3.util.experimental.decode.QMCMinimizer.minimize(t))
         t
       }
     )
     .asTypeOf(StateType.Type())
+  println(s"${state.getWidth} ## ${mulDone.getWidth} ## ${addDone.getWidth} ## ${addSign.getWidth} ## ${input.valid.getWidth} ## ${z.ready.getWidth}\n")
   printf(p"${state.asUInt} ## ${mulDone} ## ${addDone} ## ${addSign} ## ${input.valid} ## ${z.ready}\n")
+  printf(p"${decodeIn}\n")
 //  printf(p"state table is ${state.asUInt}")
   val debounceMul = Mux(mulDone, mul.z, 0.U)
   val debounceAdd = Mux(addDone, add.z, 0.U)
