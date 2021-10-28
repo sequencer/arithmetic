@@ -18,17 +18,25 @@ object MontgomerySpec extends TestSuite with ChiselUtestTester {
         ChiselGeneratorAnnotation(() => new Montgomery(4096, 2, 1)),
       )).collectFirst{case EmittedVerilogCircuitAnnotation(e) => }
     }
-//    test("Montgomery behavior") {
-//      testCircuit(new Barrett(19260817, 4, 4), Seq(chiseltest.simulator.WriteVcdAnnotation)){dut: Montgomery =>
+    test("Montgomery behavior") {
+      testCircuit(new Montgomery(128, 2, 1), Seq(chiseltest.simulator.WriteVcdAnnotation)){dut: Montgomery =>
+        val p = 12289
+        val b = 2342
+        dut.p.poke(p.U)
+        dut.pPrime.poke(true.B)
+        dut.a.poke(1232.U)
+        dut.b.poke(b.U)
+        dut.bp.poke((p+b).U)
 //        dut.input.bits.a.poke(7.U)
 //        dut.input.bits.b.poke(9.U)
-//        dut.input.valid.poke(true.B)
-//        println("init", dut.z.bits.peek().litValue, dut.z.valid.peek().litValue)
-//        for(a <- 1 to 100) {
-//          dut.clock.step()
-//           println(a, dut.z.bits.peek().litValue, dut.z.valid.peek().litValue, dut.z.ready.peek().litValue)
-//        }
-//      }
-//    }
+        dut.valid.poke(true.B)
+
+        println("init", dut.out.peek().litValue)
+        for(a <- 1 to 100) {
+          dut.clock.step()
+//           println(a, dut.out.peek().litValue)
+        }
+      }
+    }
   }
 }

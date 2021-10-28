@@ -32,7 +32,7 @@ class Barrett(val p: BigInt, val mulPipe: Int, val addPipe: Int) extends ModMul 
   val addSign = add.z.head(0)
   state := chisel3.util.experimental.decode
     .decoder(
-      state.asUInt() ## mulDone ## addDone ## addSign ## input.valid ## z.ready, {
+      state.asUInt ## mulDone ## addDone ## addSign ## input.valid ## z.ready, {
         val Y = "1"
         val N = "0"
         val DC = "?"
@@ -53,7 +53,7 @@ class Barrett(val p: BigInt, val mulPipe: Int, val addPipe: Int) extends ModMul 
         val s5 = "00100000"
         val s6 = "01000000"
         val s7 = "10000000"
-        TruthTable(
+        val t = TruthTable(
           Seq(
             to(s0, inputValid = Y)(s1),
             to(s0, inputValid = N)(s0),
@@ -73,9 +73,13 @@ class Barrett(val p: BigInt, val mulPipe: Int, val addPipe: Int) extends ModMul 
             "???????"
           ).mkString("\n")
         )
+        println(t)
+        t
       }
     )
     .asTypeOf(StateType.Type())
+  printf(p"${state.asUInt} ## ${mulDone} ## ${addDone} ## ${addSign} ## ${input.valid} ## ${z.ready}\n")
+//  printf(p"state table is ${state.asUInt}")
   val debounceMul = Mux(mulDone, mul.z, 0.U)
   val debounceAdd = Mux(addDone, add.z, 0.U)
 

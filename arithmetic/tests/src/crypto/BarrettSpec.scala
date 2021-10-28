@@ -26,8 +26,9 @@ object BarrettSpec extends TestSuite with ChiselUtestTester {
         println("init", dut.z.bits.peek().litValue, dut.z.valid.peek().litValue)
         for(a <- 1 to 100) {
           dut.clock.step()
-//           println(a, dut.z.bits.peek().litValue, dut.z.valid.peek().litValue, dut.z.ready.peek().litValue)
+          print("cycle", a)
         }
+        //           println(a, dut.z.bits.peek().litValue, dut.z.valid.peek().litValue, dut.z.ready.peek().litValue)
       }
     }
   }
