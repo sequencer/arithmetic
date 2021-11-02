@@ -6,7 +6,7 @@ import chisel3.util.experimental.decode.TruthTable
 import chisel3.util.{BitPat, Counter, Mux1H}
 
 class Barrett(val p: BigInt, val mulPipe: Int, val addPipe: Int) extends ModMul {
-  val m = BigInt(2) << ((BigInt(2) * width) / p).toInt
+  val m = ((BigInt(1) << (2 * width)) / p).toInt
   val mul = Module(new DummyMul(width + 1, mulPipe))
   val add = Module(new DummyAdd(width * 2, addPipe))
   val q = RegInit(0.U((width * 2).W))
@@ -26,13 +26,21 @@ class Barrett(val p: BigInt, val mulPipe: Int, val addPipe: Int) extends ModMul 
   val state = RegInit(StateType.s0)
   val isMul = (state.asUInt() & "b00001110".U).orR()
   val isAdd = (state.asUInt() & "b01110000".U).orR()
-  val mulDone = if (mulPipe != 0) Counter(isMul, mulPipe)._2 else true.B
-  val addDone = if (addPipe != 0) Counter(isAdd, addPipe)._2 else true.B
+  val addDone = if (addPipe != 0) Counter(isAdd, addPipe+1)._2 else true.B
+  val mulDoneNext = RegInit(false.B)
+  mulDoneNext := mulDone
+  // var mulDoneNextNext = RegInit(false.B)
+  // mulDoneNextNext := mulDoneNext
+  val addDoneNext = RegInit(false.B)
+  addDoneNext := addDone
+  val addDoneNextNext = RegInit(false.B)
+  addDoneNextNext := addDoneNext
+  val mulDone = if (mulPipe != 0) Counter(isMul && (~mulDoneNext), mulPipe+1)._2 else true.B // 需要修改成valid的时候累加
   // TODO: check here.
   val addSign = add.z.head(1)
-  val decodeIn = WireDefault(state.asUInt ## mulDone ## addDone ## addSign ## input.valid ## z.ready)
-  state := chisel3.util.experimental.decode
-    .decoder.qmc(
+  val decodeIn = WireDefault(state.asUInt ## mulDoneNext ## addDoneNextNext ## addSign ## input.valid ## z.ready)
+  state := chisel3.util.experimental.decode.decoder
+    .qmc(
       decodeIn, {
         val Y = "1"
         val N = "0"
@@ -45,7 +53,7 @@ class Barrett(val p: BigInt, val mulPipe: Int, val addPipe: Int) extends ModMul 
           inputValid: String = DC,
           zReady:     String = DC
         )(stateO:     String
-        ) = BitPat(s"b$stateI$mulDone$addDone$addSign$inputValid$zReady")->BitPat(s"b$stateO")
+        ) = BitPat(s"b$stateI$mulDone$addDone$addSign$inputValid$zReady") -> BitPat(s"b$stateO")
         val s0 = "00000001"
         val s1 = "00000010"
         val s2 = "00000100"
@@ -70,24 +78,25 @@ class Barrett(val p: BigInt, val mulPipe: Int, val addPipe: Int) extends ModMul 
             to(s5, addDone = Y, addSign = Y)(s7),
             to(s5, addDone = N)(s5),
             to(s6, addDone = Y)(s7),
-            to(s6, addDone = N)(s6),
-          ), BitPat.dontCare(state.getWidth)
+            to(s6, addDone = N)(s6)
+          ),
+          BitPat.dontCare(state.getWidth)
         )
-        println(t)
-        println(chisel3.util.experimental.decode.QMCMinimizer.minimize(t))
+//        println(t)
+//        println(chisel3.util.experimental.decode.QMCMinimizer.minimize(t))
         t
       }
     )
     .asTypeOf(StateType.Type())
-  println(s"${state.getWidth} ## ${mulDone.getWidth} ## ${addDone.getWidth} ## ${addSign.getWidth} ## ${input.valid.getWidth} ## ${z.ready.getWidth}\n")
-  printf(p"${state.asUInt} ## ${mulDone} ## ${addDone} ## ${addSign} ## ${input.valid} ## ${z.ready}\n")
-  printf(p"${decodeIn}\n")
+  // println(s"${state.getWidth} ## ${mulDone.getWidth} ## ${addDone.getWidth} ## ${addSign.getWidth} ## ${input.valid.getWidth} ## ${z.ready.getWidth}\n")
+  // printf(p"${state.asUInt} ## ${mulDone} ## ${addDone} ## ${addSign} ## ${input.valid} ## ${z.ready}\n")
+  // printf(p"${decodeIn}\n")
 //  printf(p"state table is ${state.asUInt}")
   val debounceMul = Mux(mulDone, mul.z, 0.U)
   val debounceAdd = Mux(addDone, add.z, 0.U)
 
   // Data Path
-  when(isMul)(q := debounceMul)
+  when(mulDone)(q := debounceMul)
 
   r := Mux1H(
     Map(
@@ -105,7 +114,7 @@ class Barrett(val p: BigInt, val mulPipe: Int, val addPipe: Int) extends ModMul 
   // TODO: CSA.
   add.b := Mux(state.asUInt()(4), -q, (-p).S((2 * width + 1).W).asUInt())
 
-  mul.valid := isMul
+  mul.valid := isMul & (~mulDoneNext)
   mul.a := Mux1H(
     Map(
       state.asUInt()(1) -> input.bits.a,
@@ -135,7 +144,7 @@ class DummyMul(width: Int, pipe: Int) extends Module {
   val rs = Seq.fill(pipe + 1) { Wire(chiselTypeOf(z)) }
   rs.zipWithIndex.foreach {
     case (r, i) =>
-      if (i == 0) r := a * b else r := RegNext(rs(i - 1))
+      if (i == 0) r := Mux(valid, a * b, 0.U) else r := Mux(valid, RegNext(rs(i - 1)), 0.U)
   }
   z := rs.last
 }
@@ -148,7 +157,7 @@ class DummyAdd(width: Int, pipe: Int) extends Module {
   val rs = Seq.fill(pipe + 1) { Wire(chiselTypeOf(z)) }
   rs.zipWithIndex.foreach {
     case (r, i) =>
-      if (i == 0) r := a + b else r := RegNext(rs(i - 1))
+      if (i == 0) r := Mux(valid, a + b, 0.U) else r := Mux(valid, RegNext(rs(i - 1)), 0.U)
   }
   z := rs.last
 }

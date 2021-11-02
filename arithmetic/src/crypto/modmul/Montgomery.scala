@@ -91,7 +91,7 @@ class Montgomery(pWidth: Int = 4096, addCycles: Int = 2, val addPipe: Int) exten
       state.asUInt()(2) -> i.rotateLeft(1)
     )
   )
-  
+
   adder.a := t
   adder.b := Mux1H(
     Map(
