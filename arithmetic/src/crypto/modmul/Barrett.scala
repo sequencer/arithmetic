@@ -9,8 +9,9 @@ class Barrett(val p: BigInt, val mulPipe: Int, val addPipe: Int) extends ModMul 
   val m = ((BigInt(1) << (2 * width)) / p).toInt
   val mul = Module(new DummyMul(width + 1, mulPipe))
   val add = Module(new DummyAdd(width * 2, addPipe))
-  val q = RegInit(0.U((width * 2).W))
-  val r = RegInit(0.U((width * 2).W))
+  val q = RegInit(0.U((width * 2 + 1).W))
+  val r = RegInit(0.U((width * 2 + 1).W))
+  val r_stable = RegInit(0.U((width * 2).W))
 
   // Control Path
   object StateType extends ChiselEnum {
@@ -26,19 +27,16 @@ class Barrett(val p: BigInt, val mulPipe: Int, val addPipe: Int) extends ModMul 
   val state = RegInit(StateType.s0)
   val isMul = (state.asUInt() & "b00001110".U).orR()
   val isAdd = (state.asUInt() & "b01110000".U).orR()
-  val addDone = if (addPipe != 0) Counter(isAdd, addPipe+1)._2 else true.B
   val mulDoneNext = RegInit(false.B)
   mulDoneNext := mulDone
   // var mulDoneNextNext = RegInit(false.B)
   // mulDoneNextNext := mulDoneNext
   val addDoneNext = RegInit(false.B)
   addDoneNext := addDone
-  val addDoneNextNext = RegInit(false.B)
-  addDoneNextNext := addDoneNext
-  val mulDone = if (mulPipe != 0) Counter(isMul && (~mulDoneNext), mulPipe+1)._2 else true.B // 需要修改成valid的时候累加
-  // TODO: check here.
-  val addSign = add.z.head(1)
-  val decodeIn = WireDefault(state.asUInt ## mulDoneNext ## addDoneNextNext ## addSign ## input.valid ## z.ready)
+  lazy val addDone = if (addPipe != 0) Counter(isAdd && (~addDoneNext), addPipe + 1)._2 else true.B
+  lazy val mulDone = if (mulPipe != 0) Counter(isMul && (~mulDoneNext), mulPipe + 1)._2 else true.B
+  val addSign = (r_stable < p.asUInt)
+  val decodeIn = WireDefault(state.asUInt ## mulDoneNext ## addDoneNext ## addSign ## input.valid ## z.ready)
   state := chisel3.util.experimental.decode.decoder
     .qmc(
       decodeIn, {
@@ -72,7 +70,8 @@ class Barrett(val p: BigInt, val mulPipe: Int, val addPipe: Int) extends ModMul 
             to(s2, mulDone = N)(s2),
             to(s3, mulDone = Y)(s4),
             to(s3, mulDone = N)(s3),
-            to(s4, addDone = Y)(s5),
+            to(s4, addDone = Y, addSign = N)(s5),
+            to(s4, addDone = Y, addSign = Y)(s7),
             to(s4, addDone = N)(s4),
             to(s5, addDone = Y, addSign = N)(s6),
             to(s5, addDone = Y, addSign = Y)(s7),
@@ -97,15 +96,17 @@ class Barrett(val p: BigInt, val mulPipe: Int, val addPipe: Int) extends ModMul 
 
   // Data Path
   when(mulDone)(q := debounceMul)
+  when(addDone)(r_stable := debounceAdd)
 
   r := Mux1H(
     Map(
       // x * y -> z; x * y -> r
       // state 1
-      state.asUInt()(1) -> debounceMul,
+      state.asUInt()(1) -> q,
+      (state.asUInt() & "b00001110".U).orR() -> r,
       // z - q3 * p; r - p
       // state 4, 5, 6
-      isAdd -> debounceAdd
+      isAdd -> r_stable
     )
   )
 

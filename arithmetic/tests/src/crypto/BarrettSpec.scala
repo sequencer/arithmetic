@@ -19,16 +19,29 @@ object BarrettSpec extends TestSuite with ChiselUtestTester {
       )).collectFirst{case EmittedVerilogCircuitAnnotation(e) => }
     }
     test("barrett behavior") {
-      testCircuit(new Barrett(7681, 4, 4), Seq(chiseltest.simulator.WriteVcdAnnotation)){dut: Barrett =>
-        dut.input.bits.a.poke(1234.U)
-        dut.input.bits.b.poke(5678.U)
+      val p = 7681
+      var a = scala.util.Random.nextInt(p)
+      var b = scala.util.Random.nextInt(p)
+      val res = a * b % p
+      var addPipe = scala.util.Random.nextInt(10)
+      var mulPipe = scala.util.Random.nextInt(10)
+      if(addPipe == 0) {
+        addPipe = addPipe + 1        
+      }
+      if(mulPipe == 0) {
+        mulPipe = mulPipe + 1
+      }
+      testCircuit(new Barrett(p, addPipe, mulPipe), Seq(chiseltest.simulator.WriteVcdAnnotation)){dut: Barrett =>
+        dut.input.bits.a.poke(a.U)
+        dut.input.bits.b.poke(b.U)
         dut.input.valid.poke(true.B)
-        println("init", dut.z.bits.peek().litValue, dut.z.valid.peek().litValue)
+        println(a, b)
         for(a <- 1 to 100) {
           dut.clock.step()
-          // print("cycle", a)
+          if(dut.z.valid.peek().litValue == 1) {
+            utest.assert(dut.z.bits.peek().litValue == res)
+          }
         }
-        //           println(a, dut.z.bits.peek().litValue, dut.z.valid.peek().litValue, dut.z.ready.peek().litValue)
       }
     }
   }
