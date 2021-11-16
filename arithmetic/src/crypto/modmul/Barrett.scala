@@ -81,16 +81,10 @@ class Barrett(val p: BigInt, val mulPipe: Int, val addPipe: Int) extends ModMul 
           ),
           BitPat.dontCare(state.getWidth)
         )
-//        println(t)
-//        println(chisel3.util.experimental.decode.QMCMinimizer.minimize(t))
         t
       }
     )
     .asTypeOf(StateType.Type())
-  // println(s"${state.getWidth} ## ${mulDone.getWidth} ## ${addDone.getWidth} ## ${addSign.getWidth} ## ${input.valid.getWidth} ## ${z.ready.getWidth}\n")
-  // printf(p"${state.asUInt} ## ${mulDone} ## ${addDone} ## ${addSign} ## ${input.valid} ## ${z.ready}\n")
-  // printf(p"${decodeIn}\n")
-//  printf(p"state table is ${state.asUInt}")
   val debounceMul = Mux(mulDone, mul.z, 0.U)
   val debounceAdd = Mux(addDone, add.z, 0.U)
 
