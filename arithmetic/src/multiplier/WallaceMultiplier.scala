@@ -4,10 +4,12 @@ import addition.prefixadder.PrefixSum
 import addition.prefixadder.common.BrentKungSum
 import chisel3._
 import chisel3.util._
+import chisel3.experimental.FixedPoint
 import utils.extend
 
 class WallaceMultiplierImpl(
-  val width:  Int,
+  val aWidth:  Int,
+  val bWidth:  Int,
   val signed: Boolean
 )(radixLog2:  Int,
   sumUpAdder: PrefixSum,
@@ -16,9 +18,9 @@ class WallaceMultiplierImpl(
   // TODO: making addOneColumn to be configurable to add more CSA to make this circuit more configurable?
 ) extends Module {
 
-  val a: Bits = IO(Input(if (signed) SInt(width.W) else UInt(width.W)))
-  val b: Bits = IO(Input(if (signed) SInt(width.W) else UInt(width.W)))
-  val z: Bits = IO(Output(if (signed) SInt((2 * width).W) else UInt((2 * width).W)))
+  val a: Bits = IO(Input(if (signed) SInt(aWidth.W) else UInt(aWidth.W)))
+  val b: Bits = IO(Input(if (signed) SInt(bWidth.W) else UInt(bWidth.W)))
+  val z: Bits = IO(Output(if (signed) SInt((aWidth + bWidth).W) else UInt((aWidth + bWidth).W)))
 
   val stage:  Int = pipeAt.size
   val stages: Seq[Int] = pipeAt.sorted
@@ -52,7 +54,7 @@ class WallaceMultiplierImpl(
       val carry = Cat(cols.map(col => if (col.length > 1) col(1) else 0.B).reverse)
       (sum, carry)
     } else {
-      val columnsNext = Array.fill(2 * width)(Seq[Bool]())
+      val columnsNext = Array.fill(aWidth + bWidth)(Seq[Bool]())
       var cout1, cout2 = Seq[Bool]()
       for (i <- cols.indices) {
         val (s, c1, c2) = addOneColumn(cols(i) ++ cout1)
@@ -74,7 +76,7 @@ class WallaceMultiplierImpl(
   }
 
   // produce Seq(b, 2 * b, ..., 2^digits * b), output width = width + radixLog2 - 1
-  val bMultipleWidth = (width + radixLog2 - 1).W
+  val bMultipleWidth = (bWidth + radixLog2 - 1).W
   def prepareBMultiples(digits: Int): Seq[SInt] = {
     if (digits == 0) {
       Seq(extend(b, bMultipleWidth.get, signed).asSInt)
@@ -106,49 +108,66 @@ class WallaceMultiplierImpl(
     val pp = i match {
       case 0 =>
         Cat(~s, Fill(radixLog2, s), bb)
-      case i if i >= width - radixLog2 =>
+      case i if i >= aWidth - radixLog2 =>
         Cat(~s, bb)
       case _ =>
-        val fillWidth = math.min(width - radixLog2, radixLog2 - 1)
+        val fillWidth = math.min(aWidth - radixLog2, radixLog2 - 1)
         Cat(Fill(fillWidth, 1.B), ~s, bb)
     }
     Seq.tabulate(pp.getWidth) { j => (i + j, pp(j)) } :+ (i, shouldPlus1)
   }
 
   val columnsMap = Booth
-    .recode(width)(radixLog2, signed = signed)(a.asUInt)
+    .recode(aWidth)(radixLog2, signed = signed)(a.asUInt)
     .zipWithIndex
     .flatMap { case (x, i) => makePartialProducts(radixLog2 * i, x) }
     .groupBy { _._1 }
 
-  val columns = Array.tabulate(2 * width) { i => columnsMap(i).map(_._2) }
+  val columns = Array.tabulate(aWidth + bWidth) { i => columnsMap(i).map(_._2) }
 
   val (sum, carry) = addAll(cols = columns, depth = 0)
 
-  val result = addition.prefixadder.apply(sumUpAdder)(sum, carry)(2 * width - 1, 0)
+  val result = addition.prefixadder.apply(sumUpAdder)(sum, carry)(aWidth + bWidth - 1, 0)
   z := (if (signed) result.asSInt else result.asUInt)
 }
 
 class SignedWallaceMultiplier(
-  val width:  Int
+  val aWidth:  Int,
+  val bWidth:  Int
 )(radixLog2:  Int = 2,
   sumUpAdder: PrefixSum = BrentKungSum,
   pipeAt:     Seq[Int] = Nil)
     extends SignedMultiplier {
-  val impl = Module(new WallaceMultiplierImpl(width, true)(radixLog2, sumUpAdder, pipeAt))
+  val impl = Module(new WallaceMultiplierImpl(aWidth, bWidth, true)(radixLog2, sumUpAdder, pipeAt))
   impl.a := a
   impl.b := b
   z := impl.z
 }
 
 class UnsignedWallaceMultiplier(
-  val width:  Int
+  val aWidth:  Int,
+  val bWidth:  Int
 )(radixLog2:  Int = 2,
   sumUpAdder: PrefixSum = BrentKungSum,
   pipeAt:     Seq[Int] = Nil)
     extends UnsignedMultiplier {
-  val impl = Module(new WallaceMultiplierImpl(width, false)(radixLog2, sumUpAdder, pipeAt))
+  val impl = Module(new WallaceMultiplierImpl(aWidth, bWidth, false)(radixLog2, sumUpAdder, pipeAt))
   impl.a := a
   impl.b := b
   z := impl.z
+}
+
+class FixedPointWallaceMultiplier(
+  val aWidth:  Int,
+  val aBPwidth: Int,
+  val bWidth:  Int,
+  val bBPWidth: Int
+)(radixLog2:  Int = 2,
+  sumUpAdder: PrefixSum = BrentKungSum,
+  pipeAt:     Seq[Int] = Nil)
+    extends FixedPointMultiplier {
+  val impl = Module(new WallaceMultiplierImpl(aWidth, bWidth, true)(radixLog2, sumUpAdder, pipeAt))
+  impl.a := a.asSInt
+  impl.b := b.asSInt
+  z := impl.z.asFixedPoint((aBPwidth + bBPWidth).BP)
 }
