@@ -1,6 +1,7 @@
 package multiplier
 
 import chisel3._
+import chisel3.experimental.FixedPoint
 
 trait Multiplier[T] extends Module {
   val aWidth: Int
@@ -28,11 +29,14 @@ trait UnsignedMultiplier extends Multiplier[UInt] {
 
 trait FixedPointMultiplier extends Multiplier[FixedPoint] {
 
-  val aBPwidth: Int
+  val aBPWidth: Int
+
   val bBPWidth: Int
-  require(width > 0)
-  val a: UInt = IO(Input(FixedPoint( aWidth.W, aBPwidth.BP )))
-  val b: UInt = IO(Input(FixedPoint( bWidth.W, bBPWidth.BP )))
-  val z: UInt = IO(Output(FixedPoint((aWidth + bWidth).W, (aBPwidth + bBPWidth).BP)))
+
+  require(aBPWidth > 0)
+  require(bBPWidth > 0)
+  val a: FixedPoint = IO(Input(FixedPoint(aWidth.W, aBPWidth.BP)))
+  val b: FixedPoint = IO(Input(FixedPoint(bWidth.W, bBPWidth.BP)))
+  val z: FixedPoint = IO(Output(FixedPoint((aWidth + bWidth).W, (aBPWidth + bBPWidth).BP)))
   assert(a * b === z)
 }

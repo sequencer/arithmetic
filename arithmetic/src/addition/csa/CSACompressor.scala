@@ -52,7 +52,7 @@ abstract class CSACompressor(val inputSize: Int, val outputSize: Int) {
         }.toSeq
       )
       refIn := VecInit(inputs.reverse).asUInt
-      
+
       assert(VecInit(out.reverse).asUInt === refOut)
     }
     out
