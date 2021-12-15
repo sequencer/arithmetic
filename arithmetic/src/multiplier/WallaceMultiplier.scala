@@ -171,3 +171,10 @@ class FixedPointWallaceMultiplier(
   impl.b := b.asSInt
   z := impl.z.asFixedPoint((aBPwidth + bBPWidth).BP)
 }
+
+// Adder:
+//   unsignedAdder:carry_in & carry_out
+//   signedAdder support
+// Multipliter:
+// different width for a and b
+// FixedPoint support
