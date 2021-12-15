@@ -1496,3 +1496,166 @@ Dec 06, 2021 9:12:52 PM org.eclipse.lsp4j.jsonrpc.RemoteEndpoint handleCancellat
 WARNING: Unmatched cancel notification for request id 4441
 Dec 06, 2021 9:12:56 PM org.eclipse.lsp4j.jsonrpc.RemoteEndpoint handleCancellation
 WARNING: Unmatched cancel notification for request id 4448
+[0m2021.12.06 21:59:02 WARN  no build target for: /home/wissy/plct/arithemic/arithmetic/src/addition/FullAdder.scala[0m
+[0m2021.12.06 21:59:04 INFO  shutting down Metals[0m
+[0m2021.12.06 22:00:12 INFO  Started: Metals version 0.10.9 in workspace '/home/wissy/plct/arithemic' for client Visual Studio Code 1.60.2.[0m
+[0m2021.12.06 22:00:12 INFO  time: initialize in 0.27s[0m
+[0m2021.12.06 22:00:12 WARN  Build server is not auto-connectable.[0m
+[0m2021.12.06 22:00:12 WARN  no build target for: /home/wissy/plct/arithemic/arithmetic/src/addition/FullAdder.scala[0m
+[0m2021.12.06 22:00:12 INFO  skipping build import with status 'Failed'[0m
+DanglingParentheses: top-level presets deprecated; use 'preset' subsection
+[0m2021.12.06 22:00:13 INFO  no build target: using presentation compiler with only scala-library: 3.1.0[0m
+[0m2021.12.06 22:00:15 INFO  time: code lens generation in 2.37s[0m
+[0m2021.12.07 11:36:55 WARN  no build target for: /home/wissy/plct/arithemic/arithmetic/src/addition/prefixadder/PrefixAdder.scala[0m
+[0m2021.12.07 11:37:05 WARN  no build target for: /home/wissy/plct/arithemic/arithmetic/src/addition/prefixadder/package.scala[0m
+[0m2021.12.07 11:52:17 WARN  no build target for: /home/wissy/plct/arithemic/arithmetic/tests/src/addition/csa/CSASpecTester.scala[0m
+Dec 07, 2021 11:53:26 AM org.eclipse.lsp4j.jsonrpc.RemoteEndpoint handleCancellation
+WARNING: Unmatched cancel notification for request id 58
+[0m2021.12.07 11:53:26 WARN  no build target for: /home/wissy/plct/arithemic/arithmetic/tests/src/formal/FormalSuite.scala[0m
+Dec 07, 2021 11:53:30 AM org.eclipse.lsp4j.jsonrpc.RemoteEndpoint handleCancellation
+WARNING: Unmatched cancel notification for request id 63
+[0m2021.12.07 11:53:30 WARN  no build target for: /home/wissy/plct/arithemic/arithmetic/tests/src/addition/csa/CSASpecTester.scala[0m
+Dec 07, 2021 11:53:34 AM org.eclipse.lsp4j.jsonrpc.RemoteEndpoint handleCancellation
+WARNING: Unmatched cancel notification for request id 69
+[0m2021.12.07 11:53:34 WARN  no build target for: /home/wissy/plct/arithemic/arithmetic/tests/src/addition/prefixadder/AdderSpecTester.scala[0m
+[0m2021.12.07 11:53:36 WARN  no build target for: /home/wissy/plct/arithemic/arithmetic/tests/src/addition/csa/CSASpecTester.scala[0m
+Dec 07, 2021 11:53:47 AM org.eclipse.lsp4j.jsonrpc.RemoteEndpoint handleCancellation
+WARNING: Unmatched cancel notification for request id 80
+[0m2021.12.07 11:53:47 WARN  no build target for: /home/wissy/plct/arithemic/arithmetic/tests/src/addition/prefixadder/AdderSpecTester.scala[0m
+Dec 07, 2021 11:53:52 AM org.eclipse.lsp4j.jsonrpc.RemoteEndpoint handleCancellation
+WARNING: Unmatched cancel notification for request id 85
+[0m2021.12.07 11:53:52 WARN  no build target for: /home/wissy/plct/arithemic/arithmetic/tests/src/addition/csa/CSASpecTester.scala[0m
+Dec 07, 2021 11:53:54 AM org.eclipse.lsp4j.jsonrpc.RemoteEndpoint handleCancellation
+WARNING: Unmatched cancel notification for request id 91
+[0m2021.12.07 11:53:54 WARN  no build target for: /home/wissy/plct/arithemic/arithmetic/tests/src/addition/prefixadder/AdderSpecTester.scala[0m
+Dec 07, 2021 11:54:19 AM org.eclipse.lsp4j.jsonrpc.RemoteEndpoint handleCancellation
+WARNING: Unmatched cancel notification for request id 101
+[0m2021.12.07 11:54:19 WARN  no build target for: /home/wissy/plct/arithemic/arithmetic/src/addition/prefixadder/common/RippleCarrySum.scala[0m
+Dec 07, 2021 11:55:05 AM org.eclipse.lsp4j.jsonrpc.RemoteEndpoint handleCancellation
+WARNING: Unmatched cancel notification for request id 131
+[0m2021.12.07 11:55:05 WARN  no build target for: /home/wissy/plct/arithemic/arithmetic/tests/src/addition/prefixadder/AdderSpecTester.scala[0m
+[0m2021.12.07 11:55:10 WARN  no build target for: /home/wissy/plct/arithemic/arithmetic/tests/src/addition/prefixadder/PrefixTreeSpecTester.scala[0m
+[0m2021.12.07 11:55:42 WARN  no build target for: /home/wissy/plct/arithemic/arithmetic/tests/src/formal/FormalSuite.scala[0m
+Dec 07, 2021 11:55:53 AM org.eclipse.lsp4j.jsonrpc.RemoteEndpoint handleCancellation
+WARNING: Unmatched cancel notification for request id 155
+[0m2021.12.07 11:55:53 WARN  no build target for: /home/wissy/plct/arithemic/arithmetic/tests/src/multiplier/BoothRecodingTester.scala[0m
+Dec 07, 2021 11:56:09 AM org.eclipse.lsp4j.jsonrpc.RemoteEndpoint handleCancellation
+WARNING: Unmatched cancel notification for request id 161
+[0m2021.12.07 11:56:09 WARN  no build target for: /home/wissy/plct/arithemic/arithmetic/tests/src/multiplier/WallaceMultiplierTester.scala[0m
+[0m2021.12.08 16:01:34 WARN  no build target for: /home/wissy/plct/arithemic/arithmetic/src/addition/csa/package.scala[0m
+[0m2021.12.09 13:59:34 WARN  no build target for: /home/wissy/plct/arithemic/build.sc[0m
+Dec 09, 2021 2:00:05 PM org.eclipse.lsp4j.jsonrpc.services.GenericEndpoint notify
+INFO: Unsupported notification method: $/setTrace
+[0m2021.12.09 14:07:25 INFO  shutting down Metals[0m
+[0m2021.12.10 22:20:26 INFO  Started: Metals version 0.10.9 in workspace '/home/wissy/plct/arithemic' for client Visual Studio Code 1.60.2.[0m
+[0m2021.12.10 22:20:26 INFO  time: initialize in 0.28s[0m
+[0m2021.12.10 22:20:27 WARN  Build server is not auto-connectable.[0m
+[0m2021.12.10 22:20:27 WARN  no build target for: /home/wissy/plct/arithemic/arithmetic/tests/src/multiplier/WallaceMultiplierTester.scala[0m
+[0m2021.12.10 22:20:26 INFO  skipping build import with status 'Failed'[0m
+DanglingParentheses: top-level presets deprecated; use 'preset' subsection
+[0m2021.12.10 22:20:28 INFO  no build target: using presentation compiler with only scala-library: 3.1.0[0m
+Dec 10, 2021 10:20:28 PM org.eclipse.lsp4j.jsonrpc.RemoteEndpoint handleCancellation
+WARNING: Unmatched cancel notification for request id 5
+[0m2021.12.10 22:20:28 WARN  no build target for: /home/wissy/plct/arithemic/arithmetic/tests/src/multiplier/BoothRecodingTester.scala[0m
+[0m2021.12.10 22:20:30 INFO  time: code lens generation in 2.31s[0m
+[0m2021.12.10 22:20:30 WARN  no build target for: /home/wissy/plct/arithemic/arithmetic/tests/src/addition/prefixadder/AdderSpecTester.scala[0m
+[0m2021.12.10 22:20:32 WARN  no build target for: /home/wissy/plct/arithemic/arithmetic/src/multiplier/WallaceMultiplier.scala[0m
+[0m2021.12.10 22:20:37 WARN  no build target for: /home/wissy/plct/arithemic/arithmetic/src/addition/FullAdder.scala[0m
+[0m2021.12.14 10:36:58 INFO  shutting down Metals[0m
+[0m2021.12.15 16:07:08 INFO  Started: Metals version 0.10.9 in workspace '/home/wissy/plct/arithemic' for client Visual Studio Code 1.60.2.[0m
+[0m2021.12.15 16:07:09 INFO  time: initialize in 0.31s[0m
+[0m2021.12.15 16:07:09 WARN  Build server is not auto-connectable.[0m
+[0m2021.12.15 16:07:09 WARN  no build target for: /home/wissy/plct/arithemic/arithmetic/src/addition/FullAdder.scala[0m
+[0m2021.12.15 16:07:08 INFO  skipping build import with status 'Failed'[0m
+[0m2021.12.15 16:07:11 INFO  no build target: using presentation compiler with only scala-library: 3.1.0[0m
+DanglingParentheses: top-level presets deprecated; use 'preset' subsection
+[0m2021.12.15 16:07:23 INFO  time: code lens generation in 11s[0m
+[0m2021.12.15 16:19:53 WARN  no build target for: /home/wissy/plct/arithemic/arithmetic/src/addition/prefixadder/common/RippleCarrySum.scala[0m
+Dec 15, 2021 4:19:56 PM org.eclipse.lsp4j.jsonrpc.RemoteEndpoint handleCancellation
+WARNING: Unmatched cancel notification for request id 27
+[0m2021.12.15 16:19:56 WARN  no build target for: /home/wissy/plct/arithemic/arithmetic/src/addition/prefixadder/common/RippleCarry3Sum.scala[0m
+[0m2021.12.15 16:19:58 WARN  no build target for: /home/wissy/plct/arithemic/arithmetic/src/addition/csa/package.scala[0m
+[0m2021.12.15 16:20:00 WARN  no build target for: /home/wissy/plct/arithemic/arithmetic/src/addition/csa/CSACompressor.scala[0m
+[0m2021.12.15 16:20:00 WARN  no build target for: /home/wissy/plct/arithemic/arithmetic/src/addition/csa/CarrySaveAdder.scala[0m
+[0m2021.12.15 16:20:03 WARN  no build target for: /home/wissy/plct/arithemic/arithmetic/src/addition/csa/common/CSACompressor5_3.scala[0m
+Dec 15, 2021 4:20:05 PM org.eclipse.lsp4j.jsonrpc.RemoteEndpoint handleCancellation
+WARNING: Unmatched cancel notification for request id 56
+[0m2021.12.15 16:20:07 WARN  no build target for: /home/wissy/plct/arithemic/arithmetic/src/addition/prefixadder/PrefixAdder.scala[0m
+[0m2021.12.15 16:20:11 WARN  no build target for: /home/wissy/plct/arithemic/arithmetic/src/addition/prefixadder/package.scala[0m
+[0m2021.12.15 16:20:16 WARN  no build target for: /home/wissy/plct/arithemic/arithmetic/src/addition/prefixadder/common/RippleCarrySum.scala[0m
+Dec 15, 2021 4:20:20 PM org.eclipse.lsp4j.jsonrpc.RemoteEndpoint handleCancellation
+WARNING: Unmatched cancel notification for request id 81
+Dec 15, 2021 4:20:36 PM org.eclipse.lsp4j.jsonrpc.RemoteEndpoint handleCancellation
+WARNING: Unmatched cancel notification for request id 92
+[0m2021.12.15 16:21:36 WARN  no build target for: /home/wissy/plct/arithemic/build.sc[0m
+[0m2021.12.15 16:27:23 INFO  shutting down Metals[0m
+[0m2021.12.15 16:28:44 INFO  Started: Metals version 0.10.9 in workspace '/home/wissy/plct/arithemic' for client Visual Studio Code 1.60.2.[0m
+[0m2021.12.15 16:28:44 INFO  time: initialize in 0.56s[0m
+[0m2021.12.15 16:28:45 WARN  Build server is not auto-connectable.[0m
+[0m2021.12.15 16:28:45 INFO  skipping build import with status 'Failed'[0m
+DanglingParentheses: top-level presets deprecated; use 'preset' subsection
+[0m2021.12.15 17:03:16 INFO  shutting down Metals[0m
+[0m2021.12.15 19:52:30 INFO  Started: Metals version 0.10.9 in workspace '/home/wissy/plct/arithemic' for client Visual Studio Code 1.60.2.[0m
+[0m2021.12.15 19:52:30 INFO  time: initialize in 0.27s[0m
+[0m2021.12.15 19:52:30 WARN  Build server is not auto-connectable.[0m
+[0m2021.12.15 19:52:30 INFO  skipping build import with status 'Failed'[0m
+DanglingParentheses: top-level presets deprecated; use 'preset' subsection
+[0m2021.12.15 19:52:39 WARN  no build target for: /home/wissy/plct/arithemic/arithmetic/src/addition/FullAdder.scala[0m
+[0m2021.12.15 19:52:40 INFO  no build target: using presentation compiler with only scala-library: 3.1.0[0m
+[0m2021.12.15 19:52:41 INFO  time: code lens generation in 1.67s[0m
+[0m2021.12.15 19:58:58 WARN  no build target for: /home/wissy/plct/arithemic/arithmetic/src/multiplier/Multiplier.scala[0m
+Dec 15, 2021 7:59:06 PM org.eclipse.lsp4j.jsonrpc.RemoteEndpoint handleCancellation
+WARNING: Unmatched cancel notification for request id 32
+[0m2021.12.15 19:59:07 WARN  no build target for: /home/wissy/plct/arithemic/arithmetic/src/addition/prefixadder/PrefixAdder.scala[0m
+[0m2021.12.15 19:59:31 WARN  no build target for: /home/wissy/plct/arithemic/arithmetic/src/addition/prefixadder/PrefixAdder.scala[0m
+Dec 15, 2021 8:00:29 PM org.eclipse.lsp4j.jsonrpc.RemoteEndpoint handleCancellation
+WARNING: Unmatched cancel notification for request id 93
+Dec 15, 2021 8:01:25 PM org.eclipse.lsp4j.jsonrpc.RemoteEndpoint handleCancellation
+WARNING: Unmatched cancel notification for request id 114
+Dec 15, 2021 8:01:28 PM org.eclipse.lsp4j.jsonrpc.RemoteEndpoint handleCancellation
+WARNING: Unmatched cancel notification for request id 122
+[0m2021.12.15 20:01:30 WARN  no build target for: /home/wissy/plct/arithemic/arithmetic/src/addition/prefixadder/package.scala[0m
+[0m2021.12.15 20:02:44 WARN  no build target for: /home/wissy/plct/arithemic/arithmetic/src/addition/prefixadder/package.scala[0m
+[0m2021.12.15 20:05:32 WARN  no build target for: /home/wissy/plct/arithemic/arithmetic/src/addition/prefixadder/package.scala[0m
+Dec 15, 2021 8:08:43 PM org.eclipse.lsp4j.jsonrpc.RemoteEndpoint handleCancellation
+WARNING: Unmatched cancel notification for request id 274
+Dec 15, 2021 8:10:04 PM org.eclipse.lsp4j.jsonrpc.RemoteEndpoint handleCancellation
+WARNING: Unmatched cancel notification for request id 299
+Dec 15, 2021 8:11:21 PM org.eclipse.lsp4j.jsonrpc.RemoteEndpoint handleCancellation
+WARNING: Unmatched cancel notification for request id 316
+[0m2021.12.15 20:11:35 WARN  no build target for: /home/wissy/plct/arithemic/arithmetic/src/multiplier/WallaceMultiplier.scala[0m
+Dec 15, 2021 8:11:45 PM org.eclipse.lsp4j.jsonrpc.RemoteEndpoint handleCancellation
+WARNING: Unmatched cancel notification for request id 330
+[0m2021.12.15 20:11:51 WARN  no build target for: /home/wissy/plct/arithemic/arithmetic/src/multiplier/Booth.scala[0m
+Dec 15, 2021 8:12:01 PM org.eclipse.lsp4j.jsonrpc.RemoteEndpoint handleCancellation
+WARNING: Unmatched cancel notification for request id 344
+[0m2021.12.15 20:12:01 WARN  no build target for: /home/wissy/plct/arithemic/arithmetic/src/utils/package.scala[0m
+Dec 15, 2021 8:12:11 PM org.eclipse.lsp4j.jsonrpc.RemoteEndpoint handleCancellation
+WARNING: Unmatched cancel notification for request id 357
+[0m2021.12.15 20:12:27 WARN  no build target for: /home/wissy/plct/arithemic/arithmetic/src/multiplier/Booth.scala[0m
+Dec 15, 2021 8:12:30 PM org.eclipse.lsp4j.jsonrpc.RemoteEndpoint handleCancellation
+WARNING: Unmatched cancel notification for request id 372
+[0m2021.12.15 20:14:38 WARN  no build target for: /home/wissy/plct/arithemic/arithmetic/tests/src/addition/prefixadder/PrefixTreeSpecTester.scala[0m
+[0m2021.12.15 20:14:40 WARN  no build target for: /home/wissy/plct/arithemic/arithmetic/tests/src/addition/prefixadder/AdderSpecTester.scala[0m
+Dec 15, 2021 8:14:47 PM org.eclipse.lsp4j.jsonrpc.RemoteEndpoint handleCancellation
+WARNING: Unmatched cancel notification for request id 422
+[0m2021.12.15 20:14:47 WARN  no build target for: /home/wissy/plct/arithemic/arithmetic/tests/src/addition/prefixadder/PrefixTreeSpecTester.scala[0m
+[0m2021.12.15 20:14:54 WARN  no build target for: /home/wissy/plct/arithemic/arithmetic/tests/src/addition/csa/CSASpecTester.scala[0m
+Dec 15, 2021 8:20:30 PM org.eclipse.lsp4j.jsonrpc.RemoteEndpoint handleCancellation
+WARNING: Unmatched cancel notification for request id 437
+[0m2021.12.15 20:20:30 WARN  no build target for: /home/wissy/plct/arithemic/arithmetic/tests/src/addition/prefixadder/AdderSpecTester.scala[0m
+[0m2021.12.15 20:20:43 WARN  no build target for: /home/wissy/plct/arithemic/arithmetic/tests/src/addition/prefixadder/PrefixTreeSpecTester.scala[0m
+[0m2021.12.15 20:20:47 WARN  no build target for: /home/wissy/plct/arithemic/arithmetic/tests/src/addition/csa/CSASpecTester.scala[0m
+Dec 15, 2021 8:20:49 PM org.eclipse.lsp4j.jsonrpc.RemoteEndpoint handleCancellation
+WARNING: Unmatched cancel notification for request id 467
+[0m2021.12.15 20:20:49 WARN  no build target for: /home/wissy/plct/arithemic/arithmetic/tests/src/formal/FormalSuite.scala[0m
+[0m2021.12.15 20:20:51 WARN  no build target for: /home/wissy/plct/arithemic/arithmetic/tests/src/multiplier/BoothRecodingTester.scala[0m
+Dec 15, 2021 8:20:59 PM org.eclipse.lsp4j.jsonrpc.RemoteEndpoint handleCancellation
+WARNING: Unmatched cancel notification for request id 480
+[0m2021.12.15 20:20:59 WARN  no build target for: /home/wissy/plct/arithemic/arithmetic/tests/src/multiplier/WallaceMultiplierTester.scala[0m
+Dec 15, 2021 8:21:22 PM org.eclipse.lsp4j.jsonrpc.RemoteEndpoint handleCancellation
+WARNING: Unmatched cancel notification for request id 485
+Dec 15, 2021 8:21:26 PM org.eclipse.lsp4j.jsonrpc.RemoteEndpoint handleCancellation
+WARNING: Unmatched cancel notification for request id 491
+Dec 15, 2021 8:21:28 PM org.eclipse.lsp4j.jsonrpc.RemoteEndpoint handleCancellation
+WARNING: Unmatched cancel notification for request id 497

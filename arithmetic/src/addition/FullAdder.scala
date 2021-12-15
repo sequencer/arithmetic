@@ -33,12 +33,12 @@ trait SignedFullAdder extends FullAdder[SInt] {
 }
 
 
-trait FixedPointFullAdder extends FullAdder[FixedPoint] {
-  val width: Int
-  val BPWidth: Int
-  require(width > 0)
-  val a: UInt = IO(Input(FixedPoint( width.W, BPwidth.BP )))
-  val b: UInt = IO(Input(FixedPoint( width.W, BPwidth.BP )))
-  val z: UInt = IO(Output(FixedPoint((width+1).W, BPwidth.BP)))
-  assert(a +& b === z)
-}
+// trait FixedPointFullAdder extends FullAdder[FixedPoint] {
+//   val width: Int
+//   val BPWidth: Int
+//   require(width > 0)
+//   val a: UInt = IO(Input(FixedPoint( width.W, BPwidth.BP )))
+//   val b: UInt = IO(Input(FixedPoint( width.W, BPwidth.BP )))
+//   val z: UInt = IO(Output(FixedPoint((width+1).W, BPwidth.BP)))
+//   assert(a +& b === z)
+// }

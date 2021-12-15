@@ -8,6 +8,10 @@ project/project
 project/target
 target/
 
+
 .bsp/
 .idea/
+.github/
+.metals/
+.vscode/
 
