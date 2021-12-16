@@ -17,13 +17,13 @@ package object prefixadder {
     Cat(m.cout, m.z)
   }
 
-  // def apply(prefixSum: PrefixSum, width: Option[Int] = None)(a: SInt, b: SInt) = {
-  //   val WIDTH = width.getOrElse(Seq(a, b).flatMap(_.widthOption).max)
-  //   val m = Module(new SignedPrefixAdder(WIDTH, prefixSum))
-  //   m.a := extend(a, WIDTH, true)
-  //   m.b := extend(b, WIDTH, true)
-  //   m.z
-  // }
+  def apply(prefixSum: PrefixSum, width: Option[Int] = None)(a: SInt, b: SInt) = {
+    val WIDTH = width.getOrElse(Seq(a, b).flatMap(_.widthOption).max)
+    val m = Module(new SignedPrefixAdder(WIDTH, prefixSum))
+    m.a := extend(a, WIDTH, true)
+    m.b := extend(b, WIDTH, true)
+    m.z
+  }
 
   def brentKun(a: UInt, b: UInt, cin: Bool = false.B, width: Option[Int] = None) = apply(BrentKungSum, width)(a, b, cin)
 
