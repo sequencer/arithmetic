@@ -1,6 +1,6 @@
 package addition.prefixadder.graph
 
-import addition.prefixadder.PrefixAdder
+import addition.prefixadder.UnsignedPrefixAdder
 import addition.prefixadder.common.CommonPrefixSum
 
 import scala.util.matching.Regex
@@ -58,6 +58,6 @@ object CommonSumByConsole extends HasPrefixSumWithGraphImp with CommonPrefixSum 
   val prefixGraph: PrefixGraph = PrefixGraph(filePath)
 }
 
-class ConsoleCommonAdderWithGraph extends PrefixAdder(CommonSumByConsole.prefixGraph.width, CommonSumByConsole) {
+class ConsoleCommonAdderWithGraph extends UnsignedPrefixAdder(CommonSumByConsole.prefixGraph.width, CommonSumByConsole) {
   override val desiredName = CommonSumByConsole.fileName
 }

@@ -1,7 +1,8 @@
 package addition.prefixadder
 
-import addition.FullAdder
+import addition.{UnsignedFullAdder,SignedFullAdder}
 import chisel3._
+import chisel3.util.Cat
 import logger.LazyLogging
 import scala.quoted.Quotes.reflectModule.IfModule
 
@@ -66,7 +67,7 @@ class UnsignedPrefixAdder(val width: Int, prefixSum: PrefixSum) extends Unsigned
   val sum: Seq[Bool] = ps.zip(cs).map { case (p, c) => p ^ c }
 
   // Recombine bits into bitvector
-  (cout,z) := VecInit(sum).asUInt
+  Cat(cout,z) := VecInit(sum).asUInt
 }
 
 class SignedPrefixAdder(val width: Int, prefixSum: PrefixSum) extends SignedFullAdder {

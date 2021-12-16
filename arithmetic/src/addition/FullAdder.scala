@@ -2,6 +2,7 @@ package addition
 
 import chisel3._
 import scala.math.{max}
+import chisel3.util.Cat
 
 trait FullAdder[T] extends Module {
   val a: T
@@ -16,8 +17,8 @@ trait UnsignedFullAdder extends FullAdder[UInt] {
   val b: UInt = IO(Input(UInt(width.W)))
   val z: UInt = IO(Output(UInt(width.W)))
 
-  val cin: Bool = IO(Input(Bool))
-  val cout:Bool = IO(Output(Bool))
+  val cin: Bool = IO(Input(Bool()))
+  val cout:Bool = IO(Output(Bool()))
   
   assert(a +& b +& cin === Cat(cout,z))
 }

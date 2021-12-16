@@ -1,6 +1,6 @@
 package addition.prefixadder.common
 
-import addition.prefixadder.PrefixAdder
+import addition.prefixadder.{ UnsignedPrefixAdder, SignedPrefixAdder }
 import chisel3.Bool
 
 /** [[RippleCarrySum]]: N-1 area, N-1 depth
@@ -67,4 +67,4 @@ object RippleCarrySum extends CommonPrefixSum {
   }
 }
 
-class RippleCarryAdder(width: Int) extends PrefixAdder(width, RippleCarrySum)
+class RippleCarryAdder(width: Int) extends UnsignedPrefixAdder(width, RippleCarrySum)
