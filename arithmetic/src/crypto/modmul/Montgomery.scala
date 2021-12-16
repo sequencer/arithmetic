@@ -57,7 +57,7 @@ class Montgomery(pWidth: Int = 4096, addPipe: Int) extends Module {
         val s2 = "00100"
         val s3 = "01000"
         val s4 = "01000"
-        TruthTable(
+        TruthTable.fromString(
           Seq(
             to(s0, valid = N)(s0),
             to(s0, valid = Y)(s1),
