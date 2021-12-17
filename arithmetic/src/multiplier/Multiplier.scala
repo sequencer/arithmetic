@@ -30,6 +30,7 @@ trait UnsignedMultiplier extends Multiplier[UInt] {
 trait FixedPointMultiplier extends Multiplier[FixedPoint] {
 
   val aBPWidth: Int
+  
   val bBPWidth: Int
 
   require(aBPWidth > 0)

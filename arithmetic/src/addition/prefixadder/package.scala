@@ -4,7 +4,6 @@ import addition.prefixadder.common.{BrentKungSum, KoggeStoneSum, RippleCarrySum}
 import chisel3._
 import chisel3.util.Cat
 import utils.{extend, sIntToBitPat}
-import javax.xml.crypto.Data
 
 package object prefixadder {
 
@@ -17,7 +16,7 @@ package object prefixadder {
     Cat(m.cout, m.z)
   }
 
-  def apply(prefixSum: PrefixSum, width: Option[Int] = None)(a: SInt, b: SInt) = {
+  def SignedPrefixAdd(prefixSum: PrefixSum, width: Option[Int] = None)(a: SInt, b: SInt) = {
     val WIDTH = width.getOrElse(Seq(a, b).flatMap(_.widthOption).max)
     val m = Module(new SignedPrefixAdder(WIDTH, prefixSum))
     m.a := extend(a, WIDTH, true)

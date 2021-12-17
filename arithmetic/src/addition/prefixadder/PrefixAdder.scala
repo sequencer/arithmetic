@@ -4,7 +4,7 @@ import addition.{UnsignedFullAdder,SignedFullAdder}
 import chisel3._
 import chisel3.util.Cat
 import logger.LazyLogging
-import scala.quoted.Quotes.reflectModule.IfModule
+
 
 
 trait PrefixSum extends LazyLogging {

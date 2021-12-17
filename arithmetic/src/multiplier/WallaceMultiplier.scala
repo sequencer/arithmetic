@@ -159,7 +159,7 @@ class UnsignedWallaceMultiplier(
 
 class FixedPointWallaceMultiplier(
   val aWidth:  Int,
-  val aBPwidth: Int,
+  val aBPWidth: Int,
   val bWidth:  Int,
   val bBPWidth: Int
 )(radixLog2:  Int = 2,
@@ -169,6 +169,6 @@ class FixedPointWallaceMultiplier(
   val impl = Module(new WallaceMultiplierImpl(aWidth, bWidth, true)(radixLog2, sumUpAdder, pipeAt))
   impl.a := a.asSInt
   impl.b := b.asSInt
-  z := impl.z.asFixedPoint((aBPwidth + bBPWidth).BP)
+  z := impl.z.asFixedPoint((aBPWidth + bBPWidth).BP)
 }
 
