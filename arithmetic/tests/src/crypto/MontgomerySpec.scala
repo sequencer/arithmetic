@@ -5,6 +5,7 @@ import chisel3.stage.{ChiselGeneratorAnnotation, ChiselStage}
 import chisel3.tester.{ChiselUtestTester, testableClock, testableData}
 import firrtl.{EmittedFirrtlCircuitAnnotation, EmittedVerilogCircuitAnnotation}
 import utest._
+//import org.apache.commons.math3.primes.Primes.nextPrime
 
 object MontgomerySpec extends TestSuite with ChiselUtestTester {
   def tests: Tests = Tests {
@@ -19,13 +20,17 @@ object MontgomerySpec extends TestSuite with ChiselUtestTester {
       )).collectFirst{case EmittedVerilogCircuitAnnotation(e) => }
     }
     test("Montgomery behavior") {
-      val p = 41
-      val R_inv = 25
-      val width = 6
-      val addPipe = 1
+      val u = new Utility()
+      val length = scala.util.Random.nextInt(30) + 1 // avoid 0
+      val p = u.randPrime(length)
+      val width = p.toBinaryString.length
+      val R_inv = u.modinv((scala.math.pow(2, width)).toInt, p)
+      val addPipe = scala.util.Random.nextInt(10) + 1
       var a = scala.util.Random.nextInt(p)
       var b = scala.util.Random.nextInt(p)
-      var res = a * b * R_inv % p
+      val res = BigInt(a) *BigInt(b) * BigInt(R_inv) % BigInt(p)
+      println("Parameter" ,p, width, R_inv, a, b, res)
+
       testCircuit(new Montgomery(width, addPipe), Seq(chiseltest.simulator.WriteVcdAnnotation)){dut: Montgomery =>
         dut.p.poke(p.U)
         dut.pPrime.poke(true.B)
@@ -35,7 +40,7 @@ object MontgomerySpec extends TestSuite with ChiselUtestTester {
         dut.clock.step()
         dut.valid.poke(true.B)
 
-        for(a <- 1 to 100) {
+        for(a <- 1 to 1001) {
           dut.clock.step()
           if(dut.out_valid.peek().litValue == 1) {
             utest.assert(dut.out.peek().litValue == res)

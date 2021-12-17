@@ -1,10 +1,10 @@
 // import Mill dependency
-import mill._
-import scalalib._
-import scalafmt._
-import publish._
 import coursier.maven.MavenRepository
+import mill._
 import mill.scalalib.TestModule.Utest
+import mill.scalalib._
+import mill.scalalib.publish._
+import mill.scalalib.scalafmt._
 
 object v {
   val scala = "2.12.13"
@@ -15,6 +15,7 @@ object v {
   val utest = ivy"com.lihaoyi::utest:latest.integration"
   val upickle = ivy"com.lihaoyi::upickle:latest.integration"
   val osLib = ivy"com.lihaoyi::os-lib:latest.integration"
+//  val prime = ivy"org.apache.commons:commons-math3:3.6.1"
 }
 
 object arithmetic extends arithmetic
