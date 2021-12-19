@@ -31,7 +31,8 @@ object MontgomerySpec extends TestSuite with ChiselUtestTester {
       val res = BigInt(a) *BigInt(b) * BigInt(R_inv) % BigInt(p)
       println("Parameter" ,p, width, R_inv, a, b, res)
 
-      testCircuit(new Montgomery(width, addPipe), Seq(chiseltest.simulator.WriteVcdAnnotation)){dut: Montgomery =>
+      testCircuit(new Montgomery(width, addPipe), Seq(chiseltest.simulator.VcsBackendAnnotation)){dut: Montgomery =>
+        dut.clock.setTimeout(0)
         dut.p.poke(p.U)
         dut.pPrime.poke(true.B)
         dut.a.poke(a.U)
@@ -40,9 +41,10 @@ object MontgomerySpec extends TestSuite with ChiselUtestTester {
         dut.clock.step()
         dut.valid.poke(true.B)
 
-        for(a <- 1 to 1001) {
+        for(a <- 1 to 2000) {
           dut.clock.step()
           if(dut.out_valid.peek().litValue == 1) {
+            println("Parameter" ,p, width, R_inv, a, b, res)
             utest.assert(dut.out.peek().litValue == res)
           }
         }

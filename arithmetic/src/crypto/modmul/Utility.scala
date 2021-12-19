@@ -6,8 +6,10 @@ class Utility {
     if(p <= 2) {
       return false
     }
-    for (j <- 2 until p){
+    var j = 2
+    while ((j * j) <= p) {
       if ((p%j)==0) return false
+      j = j + 1
     }
     return true
   }
