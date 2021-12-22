@@ -17,4 +17,5 @@ test_run_dir/
 *.sv
 *.dot
 *.fir
+*.key
 *.json
