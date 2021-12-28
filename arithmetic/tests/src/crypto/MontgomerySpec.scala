@@ -19,7 +19,7 @@ object MontgomerySpec extends TestSuite with ChiselUtestTester {
       val res = BigInt(a) * BigInt(b) * BigInt(R_inv) % BigInt(p)
       println("Parameter" ,p, width, R_inv, a, b, res)
 
-      testCircuit(new Montgomery(width, addPipe), Seq(chiseltest.simulator.VcsBackendAnnotation, chiseltest.internal.NoThreadingAnnotation, chiseltest.simulator.WriteVcdAnnotation)){dut: Montgomery =>
+      testCircuit(new Montgomery(width, addPipe), Seq(chiseltest.simulator.WriteFsdbAnnotation, chiseltest.internal.NoThreadingAnnotation, chiseltest.simulator.WriteVcdAnnotation)){dut: Montgomery =>
         dut.clock.setTimeout(0)
         dut.p.poke(p.U)
         dut.pPrime.poke(true.B)

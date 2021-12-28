@@ -16,7 +16,7 @@ object BarrettSpec extends TestSuite with ChiselUtestTester {
       var addPipe = scala.util.Random.nextInt(10) + 1
       var mulPipe = scala.util.Random.nextInt(10) + 1
 
-      testCircuit(new Barrett(p, addPipe, mulPipe), Seq(chiseltest.simulator.VcsBackendAnnotation, chiseltest.internal.NoThreadingAnnotation, chiseltest.simulator.WriteVcdAnnotation)){dut: Barrett =>
+      testCircuit(new Barrett(p, addPipe, mulPipe), Seq(chiseltest.simulator.VcsBackendAnnotation, chiseltest.internal.NoThreadingAnnotation, chiseltest.simulator.WriteFsdbAnnotation)){dut: Barrett =>
       dut.clock.setTimeout(0)
         dut.input.bits.a.poke(a.U)
         dut.input.bits.b.poke(b.U)
