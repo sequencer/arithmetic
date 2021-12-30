@@ -21,13 +21,15 @@ object BarrettSpec extends TestSuite with ChiselUtestTester {
         dut.input.bits.a.poke(a.U)
         dut.input.bits.b.poke(b.U)
         dut.input.valid.poke(true.B)
-        println(a, b)
-        for(a <- 1 to 200) {
+        var flag = false
+        for(a <- 1 to 100) {
           dut.clock.step()
           if(dut.z.valid.peek().litValue == 1) {
+            flag = true
             utest.assert(dut.z.bits.peek().litValue == res)
           }
         }
+        utest.assert(flag)
       }
     }
   }

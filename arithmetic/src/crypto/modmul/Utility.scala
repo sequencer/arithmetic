@@ -14,10 +14,11 @@ class Utility {
     return true
   }
 
-  // Generate random prime with max value 2 ^ length
+  // Generate random prime with length-bit
   def randPrime(length: Int): Int = {
     var max = (scala.math.pow(2, length)).toInt
-    var p = scala.util.Random.nextInt(max) + 2 // avoid 0 and 1
+    var min = (scala.math.pow(2, length - 1)).toInt
+    var p = scala.util.Random.nextInt(max - min) + min
     while (!isPrime(p)) {
       p = scala.util.Random.nextInt(max) + 2
     }
