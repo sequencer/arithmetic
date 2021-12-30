@@ -5,8 +5,6 @@ import chisel3._
 import chisel3.util.Cat
 import logger.LazyLogging
 
-
-
 trait PrefixSum extends LazyLogging {
 
   /** Generate the final prefix tree
@@ -67,8 +65,5 @@ class PrefixAdder(val width: Int, prefixSum: PrefixSum) extends FullAdder {
   val sum: Seq[Bool] = ps.zip(cs).map { case (p, c) => p ^ c }
 
   // Recombine bits into bitvector
-  Cat(cout,z) := VecInit(sum).asUInt
+  Cat(cout, z) := VecInit(sum).asUInt
 }
-
-
-

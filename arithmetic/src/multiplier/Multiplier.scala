@@ -30,13 +30,13 @@ trait UnsignedMultiplier extends Multiplier[UInt] {
 trait FixedPointMultiplier extends Multiplier[FixedPoint] {
 
   val aBPWidth: Int
-  
+
   val bBPWidth: Int
 
   require(aBPWidth > 0)
   require(bBPWidth > 0)
-  val a: FixedPoint = IO(Input(FixedPoint( aWidth.W, aBPWidth.BP )))
-  val b: FixedPoint = IO(Input(FixedPoint( bWidth.W, bBPWidth.BP )))
+  val a: FixedPoint = IO(Input(FixedPoint(aWidth.W, aBPWidth.BP)))
+  val b: FixedPoint = IO(Input(FixedPoint(bWidth.W, bBPWidth.BP)))
   val z: FixedPoint = IO(Output(FixedPoint((aWidth + bWidth).W, (aBPWidth + bBPWidth).BP)))
   assert(a * b === z)
 }

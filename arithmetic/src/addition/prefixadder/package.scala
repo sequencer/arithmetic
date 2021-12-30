@@ -19,7 +19,9 @@ package object prefixadder {
 
   def brentKun(a: UInt, b: UInt, cin: Bool = false.B, width: Option[Int] = None) = apply(BrentKungSum, width)(a, b, cin)
 
-  def koggeStone(a: UInt, b: UInt, cin: Bool = false.B, width: Option[Int] = None) = apply(KoggeStoneSum, width)(a, b, cin)
+  def koggeStone(a: UInt, b: UInt, cin: Bool = false.B, width: Option[Int] = None) =
+    apply(KoggeStoneSum, width)(a, b, cin)
 
-  def rippleCarry(a: UInt, b: UInt, cin: Bool = false.B, width: Option[Int] = None) = apply(RippleCarrySum, width)(a, b, cin)
+  def rippleCarry(a: UInt, b: UInt, cin: Bool = false.B, width: Option[Int] = None) =
+    apply(RippleCarrySum, width)(a, b, cin)
 }
