@@ -138,10 +138,19 @@ class SignedWallaceMultiplier(
   sumUpAdder: PrefixSum = BrentKungSum,
   pipeAt:     Seq[Int] = Nil)
     extends SignedMultiplier {
-  val impl = Module(new WallaceMultiplierImpl(aWidth, bWidth, true)(radixLog2, sumUpAdder, pipeAt))
-  impl.a := a
-  impl.b := b
-  z := impl.z
+      if(aWidth < bWidth)
+      {
+        val impl = Module(new WallaceMultiplierImpl(aWidth, bWidth, true)(radixLog2, sumUpAdder, pipeAt))
+        impl.a := a
+        impl.b := b
+        z := impl.z
+      }
+      else{
+        val impl = Module(new WallaceMultiplierImpl(bWidth, aWidth, true)(radixLog2, sumUpAdder, pipeAt))
+        impl.a := b
+        impl.b := a
+        z := impl.z
+      }
 }
 
 class UnsignedWallaceMultiplier(
@@ -151,10 +160,19 @@ class UnsignedWallaceMultiplier(
   sumUpAdder: PrefixSum = BrentKungSum,
   pipeAt:     Seq[Int] = Nil)
     extends UnsignedMultiplier {
-  val impl = Module(new WallaceMultiplierImpl(aWidth, bWidth, false)(radixLog2, sumUpAdder, pipeAt))
-  impl.a := a
-  impl.b := b
-  z := impl.z
+      if(aWidth < bWidth)
+      {
+        val impl = Module(new WallaceMultiplierImpl(aWidth, bWidth, true)(radixLog2, sumUpAdder, pipeAt))
+        impl.a := a
+        impl.b := b
+        z := impl.z
+      }
+      else{// swap(a,b)
+        val impl = Module(new WallaceMultiplierImpl(bWidth, aWidth, true)(radixLog2, sumUpAdder, pipeAt))
+        impl.a := b
+        impl.b := a
+        z := impl.z
+      }
 }
 
 class FixedPointWallaceMultiplier(
@@ -166,9 +184,19 @@ class FixedPointWallaceMultiplier(
   sumUpAdder: PrefixSum = BrentKungSum,
   pipeAt:     Seq[Int] = Nil)
     extends FixedPointMultiplier {
-  val impl = Module(new WallaceMultiplierImpl(aWidth, bWidth, true)(radixLog2, sumUpAdder, pipeAt))
-  impl.a := a.asSInt
-  impl.b := b.asSInt
-  z := impl.z.asFixedPoint((aBPWidth + bBPWidth).BP)
+      if(aWidth < bWidth)
+      {
+        val impl = Module(new WallaceMultiplierImpl(aWidth, bWidth, true)(radixLog2, sumUpAdder, pipeAt))
+        impl.a := a.asSInt
+        impl.b := b.asSInt
+        z := impl.z.asFixedPoint((aBPWidth + bBPWidth).BP)
+      }
+      else{
+        val impl = Module(new WallaceMultiplierImpl(bWidth, aWidth, true)(radixLog2, sumUpAdder, pipeAt))
+        impl.a := b.asSInt
+        impl.b := a.asSInt
+        z := impl.z.asFixedPoint((aBPWidth + bBPWidth).BP)
+      }
+  
 }
 

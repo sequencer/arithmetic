@@ -1,6 +1,6 @@
 package addition.prefixadder.common
 
-import addition.prefixadder.{ UnsignedPrefixAdder, SignedPrefixAdder }
+import addition.prefixadder.PrefixAdder
 import chisel3.Bool
 
 /** [[KoggeStoneSum]]: O(NlogN) area, logN depth
@@ -43,4 +43,4 @@ object KoggeStoneSum extends CommonPrefixSum {
   }
 }
 
-class KoggeStoneAdder(width: Int) extends UnsignedPrefixAdder(width, KoggeStoneSum)
+class KoggeStoneAdder(width: Int) extends PrefixAdder(width, KoggeStoneSum)

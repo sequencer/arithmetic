@@ -1,6 +1,6 @@
 package addition.prefixadder.common
 
-import addition.prefixadder.{ UnsignedPrefixAdder, SignedPrefixAdder }
+import addition.prefixadder.PrefixAdder
 import chisel3.Bool
 
 /** [[BrentKungSum]]: 2N area, 2logN depth
@@ -89,4 +89,4 @@ object BrentKungSum extends CommonPrefixSum {
   }
 }
 
-class BrentKungAdder(width: Int) extends UnsignedPrefixAdder(width, BrentKungSum)
+class BrentKungAdder(width: Int) extends PrefixAdder(width, BrentKungSum)

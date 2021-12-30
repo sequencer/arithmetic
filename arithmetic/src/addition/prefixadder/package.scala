@@ -9,19 +9,11 @@ package object prefixadder {
 
   def apply(prefixSum: PrefixSum, width: Option[Int] = None)(a: UInt, b: UInt, cin: Bool = false.B) = {
     val WIDTH = width.getOrElse(Seq(a, b).flatMap(_.widthOption).max)
-    val m = Module(new UnsignedPrefixAdder(WIDTH, prefixSum))
-    m.a := a
-    m.b := b
+    val m = Module(new PrefixAdder(WIDTH, prefixSum))
+    m.a := extend(a, WIDTH)
+    m.b := extend(a, WIDTH)
     m.cin := cin
     Cat(m.cout, m.z)
-  }
-
-  def SignedPrefixAdd(prefixSum: PrefixSum, width: Option[Int] = None)(a: SInt, b: SInt) = {
-    val WIDTH = width.getOrElse(Seq(a, b).flatMap(_.widthOption).max)
-    val m = Module(new SignedPrefixAdder(WIDTH, prefixSum))
-    m.a := extend(a, WIDTH, true)
-    m.b := extend(b, WIDTH, true)
-    m.z
   }
 
   def brentKun(a: UInt, b: UInt, cin: Bool = false.B, width: Option[Int] = None) = apply(BrentKungSum, width)(a, b, cin)

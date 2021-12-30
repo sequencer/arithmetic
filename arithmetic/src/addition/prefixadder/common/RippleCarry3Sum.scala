@@ -1,6 +1,6 @@
 package addition.prefixadder.common
 
-import addition.prefixadder.{ UnsignedPrefixAdder, SignedPrefixAdder }
+import addition.prefixadder.PrefixAdder
 import chisel3.Bool
 
 /** the 3 fan in version of [[RippleCarrySum]]
@@ -33,4 +33,4 @@ object RippleCarry3Sum extends CommonPrefixSum {
   }
 }
 
-class RippleCarry3Adder(width: Int) extends UnsignedPrefixAdder(width, RippleCarry3Sum)
+class RippleCarry3Adder(width: Int) extends PrefixAdder(width, RippleCarry3Sum)
