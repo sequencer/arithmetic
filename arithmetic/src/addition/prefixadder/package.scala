@@ -8,10 +8,11 @@ import utils.{extend, sIntToBitPat}
 package object prefixadder {
 
   def apply(prefixSum: PrefixSum, width: Option[Int] = None)(a: UInt, b: UInt, cin: Bool = false.B) = {
-    val WIDTH = width.getOrElse(Seq(a, b).flatMap(_.widthOption).max)
-    val m = Module(new PrefixAdder(WIDTH, prefixSum))
-    m.a := extend(a, WIDTH)
-    m.b := extend(a, WIDTH)
+    val Width = width.getOrElse(Seq(a, b).flatMap(_.widthOption).max)
+    val m = Module(new PrefixAdder(Width, prefixSum))
+    // Todo : if Sign extend(,,true), else extend(,,false)?
+    m.a := extend(a, Width, false)
+    m.b := extend(b, Width, false)
     m.cin := cin
     Cat(m.cout, m.z)
   }
