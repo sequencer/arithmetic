@@ -68,7 +68,7 @@ class Montgomery(pWidth: Int = 4096, addPipe: Int) extends Module {
         val s5 = "00100000"
         val s6 = "01000000"
         val s7 = "10000000"
-        val t = TruthTable.fromString(
+        TruthTable.fromString(
           Seq(
             to(s0, valid = N)(s0),
             to(s0, valid = Y, a_i = Y, u = N)(s1),
@@ -94,8 +94,6 @@ class Montgomery(pWidth: Int = 4096, addPipe: Int) extends Module {
             "????????"
           ).mkString("\n")
         )
-        // println(t)
-        t
       }
     )
     .asTypeOf(StateType.Type())

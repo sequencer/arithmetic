@@ -35,13 +35,11 @@ object MontgomerySpec extends TestSuite with ChiselUtestTester {
           dut.clock.step()
           if(dut.out_valid.peek().litValue == 1) {
             flag = true
-            print(dut.out.peek().litValue)
             // need to wait a cycle because there is s5 -> s6 or s4 -> s6 in the state machine
             dut.clock.step()
             utest.assert(dut.out.peek().litValue == res)
           }
         }
-        println("Parameter" ,p, width, R_inv, a, b, res)
         utest.assert(flag)
       }
     }

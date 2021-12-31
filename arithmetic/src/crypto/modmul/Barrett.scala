@@ -60,7 +60,7 @@ class Barrett(val p: BigInt, val mulPipe: Int, val addPipe: Int) extends ModMul 
         val s5 = "00100000"
         val s6 = "01000000"
         val s7 = "10000000"
-        val t = TruthTable(
+        TruthTable(
           Seq(
             to(s0, inputValid = N)(s0),
             to(s0, inputValid = Y)(s1),
@@ -81,7 +81,6 @@ class Barrett(val p: BigInt, val mulPipe: Int, val addPipe: Int) extends ModMul 
           ),
           BitPat.dontCare(state.getWidth)
         )
-        t
       }
     )
     .asTypeOf(StateType.Type())
