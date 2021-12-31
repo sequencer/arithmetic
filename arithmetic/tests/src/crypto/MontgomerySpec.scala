@@ -6,7 +6,7 @@ import utest._
 
 object MontgomerySpec extends TestSuite with ChiselUtestTester {
   def tests: Tests = Tests {
-    test("montgomery") {
+    test("Montgomery should pass") {
       val u = new Utility()
       val length = scala.util.Random.nextInt(20) + 10 // (10, 30)
       var p = u.randPrime(length)
@@ -16,17 +16,9 @@ object MontgomerySpec extends TestSuite with ChiselUtestTester {
       var addPipe = scala.util.Random.nextInt(10) + 1
       var a = scala.util.Random.nextInt(p)
       var b = scala.util.Random.nextInt(p)
-
-      // p = 860011
-      // width = 20
-      // R_inv = 479292
-      // a = 690112
-      // b = 695455      
       val res = BigInt(a) * BigInt(b) * BigInt(R_inv) % BigInt(p)
-      println("Parameter" ,p, width, R_inv, a, b, res)
 
-      testCircuit(new Montgomery(width, addPipe), Seq(chiseltest.simulator.VcsBackendAnnotation, chiseltest.internal.NoThreadingAnnotation, chiseltest.simulator.WriteFsdbAnnotation)){dut: Montgomery =>
-        //  testCircuit(new Montgomery(width, addPipe), Seq(chiseltest.internal.NoThreadingAnnotation, chiseltest.simulator.WriteVcdAnnotation)){dut: Montgomery =>
+      testCircuit(new Montgomery(width, addPipe), Seq(chiseltest.internal.NoThreadingAnnotation, chiseltest.simulator.WriteVcdAnnotation)){dut: Montgomery =>
         dut.clock.setTimeout(0)
         dut.p.poke(p.U)
         dut.pPrime.poke(true.B)

@@ -6,7 +6,7 @@ import utest._
 
 object BarrettSpec extends TestSuite with ChiselUtestTester {
   def tests: Tests = Tests {
-    test("barrett") {
+    test("Barrett should pass") {
       val u = new Utility()
       val length = scala.util.Random.nextInt(30) + 2 // avoid 0 and 1
       val p = u.randPrime(length)
@@ -16,8 +16,8 @@ object BarrettSpec extends TestSuite with ChiselUtestTester {
       var addPipe = scala.util.Random.nextInt(10) + 1
       var mulPipe = scala.util.Random.nextInt(10) + 1
 
-      testCircuit(new Barrett(p, addPipe, mulPipe), Seq(chiseltest.simulator.VcsBackendAnnotation, chiseltest.internal.NoThreadingAnnotation, chiseltest.simulator.WriteFsdbAnnotation)){dut: Barrett =>
-      dut.clock.setTimeout(0)
+      testCircuit(new Barrett(p, addPipe, mulPipe), Seq(chiseltest.internal.NoThreadingAnnotation, chiseltest.simulator.WriteVcdAnnotation)){dut: Barrett =>
+        dut.clock.setTimeout(0)
         dut.input.bits.a.poke(a.U)
         dut.input.bits.b.poke(b.U)
         dut.input.valid.poke(true.B)
