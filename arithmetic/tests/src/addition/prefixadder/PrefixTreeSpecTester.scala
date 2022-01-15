@@ -30,7 +30,7 @@ object BrentKungSum8ByGraph extends HasPrefixSumWithGraphImp with CommonPrefixSu
   )
 }
 
-class DemoPrefixAdderWithGraph extends PrefixAdder(BrentKungSum8ByGraph.prefixGraph.width, BrentKungSum8ByGraph)
+class DemoPrefixAdderWithGraph extends PrefixAdder(BrentKungSum8ByGraph.prefixGraph.width - 1, BrentKungSum8ByGraph)
 
 object PrefixTreeSpecTester extends FormalSuite {
 
@@ -48,7 +48,7 @@ object PrefixTreeSpecTester extends FormalSuite {
       val d = new CommonPrefixSum with HasPrefixSumWithGraphImp {
         val prefixGraph: PrefixGraph = PrefixGraph(os.resource / "graph.json")
       }
-      verify(new PrefixAdder(d.prefixGraph.width, d), Seq(BoundedCheck(1)))
+      verify(new PrefixAdder(d.prefixGraph.width - 1, d), Seq(BoundedCheck(1)))
     }
     test("should abort in PrefixNode generation") {
       try {
