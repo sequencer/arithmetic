@@ -17,6 +17,7 @@ package object prefixadder {
   ) = {
     val w = width.getOrElse(Seq(a, b).flatMap(_.widthOption).max)
     val m = Module(new PrefixAdder(w, prefixSum))
+    // This need synthesis tool to do constant propagation
     m.a := extend(a, w, hasSign)
     m.b := extend(b, w, hasSign)
     m.cin := cin
