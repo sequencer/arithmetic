@@ -18,7 +18,6 @@ object barrel {
     val elementType: T = chiselTypeOf(inputs.head)
     shiftInput
       .asBools()
-      .reverse
       .grouped(shiftGranularity)
       .map(VecInit(_).asUInt())
       .zipWithIndex
