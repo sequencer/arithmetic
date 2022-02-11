@@ -25,7 +25,7 @@ object barrel {
         case (prev, (shiftBits, layer)) =>
           Mux1H(
             UIntToOH(shiftBits),
-            Seq.tabulate(shiftBits.getWidth)(i => {
+            Seq.tabulate(1 << shiftBits.getWidth)(i => {
               val layerShift: Int = i * (1 << (layer * shiftGranularity))
               VecInit(shiftType match {
                 case LeftRotate =>
