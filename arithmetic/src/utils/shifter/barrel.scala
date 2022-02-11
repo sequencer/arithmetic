@@ -26,7 +26,9 @@ object barrel {
           Mux1H(
             UIntToOH(shiftBits),
             Seq.tabulate(1 << shiftBits.getWidth)(i => {
-              val layerShift: Int = i * (1 << (layer * shiftGranularity))
+              // shift no more than inputs length
+              // prev.drop will not warn about overflow!
+              val layerShift: Int = (i * (1 << (layer * shiftGranularity))).min(prev.length)
               VecInit(shiftType match {
                 case LeftRotate =>
                   prev.drop(layerShift) ++ prev.take(layerShift)
