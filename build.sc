@@ -39,7 +39,6 @@ class arithmetic extends ScalaModule with ScalafmtModule with PublishModule { m 
   override def scalacPluginIvyDeps = Agg(v.chisel3Plugin)
 
   override def ivyDeps = super.ivyDeps() ++ Agg(
-<<<<<<< HEAD
     v.chisel3,
     v.chiseltest,
     v.upickle,
