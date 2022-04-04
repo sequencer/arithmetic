@@ -31,6 +31,8 @@ class SRT(
   // because we need a CSA to minimize the critical path
   val partialReminderCarry = Reg(UInt())
   val partialReminderSum = Reg(UInt())
+
+  // dMultiplier
   val divider = Reg(UInt())
 
   val quotient = Reg(UInt())
@@ -48,7 +50,7 @@ class SRT(
 
   val csa = new CarrySaveAdder(CSACompressor3_2, ???)
   csa.in(0) := partialReminderSum
-  csa.in(1) := (partialReminderCarry ## !qdsSign)
+  csa.in(1) := (partialReminderCarry ## !qdsSign) //？这里有点问题
   csa.in(2) := Mux1H(Map(
     ??? -> ,
     ??? ->
@@ -59,7 +61,7 @@ class SRT(
     ??? -> partialReminderSum
   ))
   partialReminderCarry := Mux1H(Map(
-    ??? -> 0.U,
+    ??? -> 0.U, 
     ??? -> (csa.out(1) << log2Ceil(n)),
     ??? -> partialReminderCarry
   ))

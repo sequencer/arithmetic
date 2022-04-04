@@ -20,7 +20,7 @@ object v {
 //  val breezeViz = ivy"org.scalanlp::breeze-viz:2.0"
   val spire = ivy"org.typelevel::spire:0.17.0"
   val evilplot = ivy"io.github.cibotech::evilplot:0.8.1"
-  //  val prime = ivy"org.apache.commons:commons-math3:3.6.1"
+//  val prime = ivy"org.apache.commons:commons-math3:3.6.1"
 }
 
 object arithmetic extends arithmetic
