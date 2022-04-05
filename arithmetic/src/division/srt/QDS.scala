@@ -4,18 +4,23 @@ import chisel3.util.{RegEnable, Valid}
 
 class QDSInput extends Bundle {
   val partialReminderCarry: UInt = ???
-  val partialReminderSum: UInt = ???
+  val partialReminderSum:   UInt = ???
 }
 
 class QDSOutput extends Bundle {
-  val selectedQuotient: UInt = ???
+  val selectedQuotientOH: UInt = ???
 }
 
-class QDS extends Module {
+/**
+  */
+class QDS(table: String) extends Module {
+  // IO
   val input = IO(Input(new QDSInput))
   val output = IO(Output(new QDSOutput))
   // used to select a column of SRT Table
   val partialDivider = IO(Flipped(Valid(UInt())))
+
+  // State
   val partialDividerReg = RegEnable(partialDivider.bits, partialDivider.valid)
   // for the first cycle: use partialDivider on the IO
   // for the reset of cycles: use partialDividerReg
@@ -23,5 +28,16 @@ class QDS extends Module {
   //                                         Reg -> Output is single-cycle
   // to avoid glitch, valid should be larger than raise time of partialDividerReg
   val partialDividerLatch = Mux(partialDivider.valid, partialDivider.bits, partialDividerReg)
+
+  // Datapath
+  val columnSelect = partialDividerLatch
+  val rowSelect = input.partialReminderCarry + input.partialReminderSum
+  val selectRom: Vec[Vec[UInt]] = ???
+  val mkVec = selectRom(columnSelect)
+  val selectPoints = mkVec.map{mk =>
+    // get the select point
+    input.partialReminderCarry + input.partialReminderSum - mk
+  }
+  // decoder or findFirstOne here, prefer decoder
 
 }
