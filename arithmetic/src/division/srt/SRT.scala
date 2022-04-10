@@ -5,10 +5,10 @@ import addition.csa.common.CSACompressor3_2
 import chisel3._
 import chisel3.util.{DecoupledIO, Mux1H, ValidIO, log2Ceil}
 
-class SRTInput(dividendWidth: Int, dividerWidth: Int, n: Int) extends Bundle {
-  val dividend = UInt(dividendWidth.W)
-  val divider = UInt(dividerWidth.W)
-  val counter = UInt(log2Ceil(n).W)
+class SRTInput(dividendWidth: Int, dividerWidth: Int, n: Int, radix: Int) extends Bundle {
+  val dividend = UInt(dividendWidth.W) //0.1**********
+  val divider = UInt(dividerWidth.W)   //0.1**********
+  val counter = UInt((log2Ceil(n/log2Ceil(radix))).W)          // n为需要计算的二进制位数
 }
 
 class SRTOutput(reminderWidth: Int, quotientWidth: Int) extends Bundle {
@@ -17,10 +17,11 @@ class SRTOutput(reminderWidth: Int, quotientWidth: Int) extends Bundle {
 }
 
 // only SRT4 currently
-class SRT(
+class SRT( 
   dividendWidth: Int,
   dividerWidth:  Int,
-  n:             Int)
+  n:             Int,
+  radix:         Int = 4)
     extends Module {
   // IO
   val input = Flipped(DecoupledIO(new SRTInput(dividendWidth, dividerWidth, n)))
@@ -28,29 +29,44 @@ class SRT(
 
   // State
   // because we need a CSA to minimize the critical path
-  val partialReminderCarry = Reg(UInt())
-  val partialReminderSum = Reg(UInt())
+  val partialReminderCarry = Reg(UInt((dividendWidth + log2Ceil(radix)).W))
+  val partialReminderSum   = Reg(UInt((dividendWidth + log2Ceil(radix)).W))
 
   // dMultiplier
-  val divider = Reg(UInt())
+  val divider = RegInit(input.divider)
 
-  val quotient = Reg(UInt())
-  val quotientMinusOne = Reg(UInt())
+  val quotient = Reg(UInt(n.W))         //?
+  val quotientMinusOne = Reg(UInt(n.W)) //?
 
   // counter = 0 quotientToFix = 0 ->
-  val counter = Reg(UInt())
+  val counter = Reg(UInt((log2Ceil(n/log2Ceil(radix))).W))
 
   // Control
   // sign of select quotient, true -> negative, false -> positive
   val qdsSign: Bool = Wire(Bool())
 
   // Datapath
-  val qds = Module(new QDS("???"))
+  val qds = Module(new QDS())
   // TODO: bit select here
   qds.input.partialReminderSum := partialReminderSum
   qds.input.partialReminderCarry := partialReminderCarry
 
   counter := counter - 1.U
+  //整个srt的最终输出
+  when(counter == 0.U){
+    val sz = Module(new SZ(dividendWidth))
+    sz.input.partialReminderSum := partialReminderSum
+    sz.input.partialReminderCarry := partialReminderCarry
+    when(sz.output.sign){
+      ??? //修正，多减的给加回去，上的商给还原
+    }
+    //拉高valid，输出商和余数
+    output.valid := true.B
+    output.remainder := remainder
+    output.quotient := quotient
+
+  }
+
 
   // for SRT4 -> CSA32
   // for SRT8 -> CSA32+CSA32
@@ -74,44 +90,26 @@ class SRT(
   // }
   partialReminderSum := Mux1H(
     Map(
-      ??? -> input.bits.dividend,
-      ??? -> (csa.out(0) << log2Ceil(n)),
-      ??? -> partialReminderSum
+      (counter === n/log2Ceil(radix)) -> input.bits.dividend,
+      (counter > 0.U) -> (csa.out(0) << log2Ceil(n)),
+      (counter === 0.U) -> partialReminderSum
     )
   )
   partialReminderCarry := Mux1H(
     Map(
-      ??? -> 0.U,
-      ??? -> (csa.out(1) << log2Ceil(n)),
-      ??? -> partialReminderCarry
+      (counter === n/log2Ceil(radix)) -> 0.U,
+      (counter > 0.U) -> (csa.out(1) << log2Ceil(n)-1),
+      (counter === 0.U) -> partialReminderCarry
     )
   )
 
-  val csa = new CarrySaveAdder(CSACompressor3_2, ???)
-  csa.in(0) := partialReminderSum
-  csa.in(1) := (partialReminderCarry ## !qdsSign) //？这里有点问题
-  csa.in(2) := Mux1H(Map(
-    ??? -> ,
-    ??? ->
-  ))
-  partialReminderSum := Mux1H(Map(
-    ??? -> input.bits.dividend,
-    ??? -> (csa.out(0) << log2Ceil(n)),
-    ??? -> partialReminderSum
-  ))
-  partialReminderCarry := Mux1H(Map(
-    ??? -> 0.U, 
-    ??? -> (csa.out(1) << log2Ceil(n)),
-    ??? -> partialReminderCarry
-  ))
-
   // On-The-Fly conversion
-  val otf = Module(new OTF)
+  val otf = Module(new OTF(radix, quotient.getWidth, qds.output.selectedQuotientOH.getWidth))
   otf.input.quotient := quotient
   otf.input.quotientMinusOne := quotientMinusOne
   otf.input.selectedQuotientOH := qds.output.selectedQuotientOH
+
   quotient := otf.output.quotient
   quotientMinusOne := otf.output.quotientMinusOne
   output.bits.quotient := quotient
-
 }

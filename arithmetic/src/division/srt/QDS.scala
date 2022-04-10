@@ -3,27 +3,25 @@ import chisel3._
 import chisel3.util.{RegEnable, Valid, log2Ceil}
 
 class QDSInput extends Bundle {
-  val partialReminderCarry: UInt = ???
-  val partialReminderSum:   UInt = ???
+  val partialReminderCarry: UInt = UInt(rWidth.W)
+  val partialReminderSum:   UInt = UInt(rWidth.W)
 }
 
 class QDSOutput extends Bundle {
-  val selectedQuotient: UInt = UInt((log2Ceil(n)+1).W)
-  val selectedQuotientOH: UInt = ???
+  // val selectedQuotient: UInt = UInt((log2Ceil(n)+1).W)
+  val selectedQuotientOH: UInt = UInt(ohWidth.W)
 }
 
 /**
   */
-class QDS(table: String) extends Module {
+class QDS(table: String, rWidth: Int, ohWidth: Int) extends Module {
   // IO
-  val input = IO(Input(new QDSInput))
-  val output = IO(Output(new QDSOutput))
+  val input = IO(Input(new QDSInput(rWidth)))
+  val output = IO(Output(new QDSOutput(ohWidth)))
+  
   // used to select a column of SRT Table
-
   val partialDivider = IO(Flipped(Valid(UInt()))) 
   val partialDividerReg = RegEnable(partialDivider.bits, partialDivider.valid) 
-
-  val partialDivider = IO(Flipped(Valid(UInt())))
 
   // State
   val partialDividerReg = RegEnable(partialDivider.bits, partialDivider.valid)
