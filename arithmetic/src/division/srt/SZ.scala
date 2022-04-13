@@ -2,8 +2,9 @@ package division.srt
 
 import chisel3._
 import addition.prefixadder._
+import addition.prefixadder.common.{BrentKungSum}
 
-class SZInput extends Bundle {
+class SZInput(rWidth: Int) extends Bundle {
   val partialReminderCarry: UInt = UInt(rWidth.W)
   val partialReminderSum:   UInt = UInt(rWidth.W)
 }
@@ -27,12 +28,12 @@ class SZ(rWidth: Int, prefixSum: PrefixSum = BrentKungSum) extends Module {
   val psc: Seq[(Bool, Bool)] = ws.zip(wc).map { case (s, c) => (~(s ^ c), (s | c)) }
 
   // call the prefixtree to associativeOp
-  val pairs: Seq[(Bool, Bool)] = prefixSum.zeroLayer(psc.map(_._1) +: false.B, false.B +: psc.map(_._2))
+  val pairs: Seq[(Bool, Bool)] = prefixSum.zeroLayer(psc.map(_._1) :+ false.B, false.B +: psc.map(_._2))
   val pgs:   Vector[(Bool, Bool)] = prefixSum(pairs)
   val gs:    Vector[Bool] = pgs.map(_._2)
   val ps:    Vector[Bool] = pgs.map(_._1)
 
   // maybe have a problem.
-  output.zero := ps.asUInt.head(1)
-  output.sign := (ps.asUInt.head(1) ^ gs.asUInt.head(1)) & (~output.zero)
+  output.zero := VecInit(ps).asUInt.head(1)
+  output.sign := (output.zero ^ VecInit(gs).asUInt.head(1)) & (~output.zero)
 }

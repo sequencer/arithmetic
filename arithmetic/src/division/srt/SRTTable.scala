@@ -56,8 +56,8 @@ case class SRTTable(
 
   lazy val aMax:   Algebraic = a
   lazy val aMin:   Algebraic = -a
-  lazy val deltaD: Algebraic = pow(2, -dTruncateWidth.toDouble)  // length of dStep
-  lazy val deltaX: Algebraic = pow(2, -xTruncateWidth.toDouble)  // length of romegeStep
+  lazy val deltaD: Algebraic = pow(2, -dTruncateWidth.toDouble)  
+  lazy val deltaX: Algebraic = pow(2, -xTruncateWidth.toDouble)  
 
   /** redundancy factor
     * @note 5.8
@@ -86,7 +86,8 @@ case class SRTTable(
     }
   }
 
-  // // from each m select a Constant, select rule: symmetry, how define the rule
+  // TODO: select a Constant from each m, then offer the table to QDS.
+  // select rule: symmetry and draw a line parallel to the Y-axis, how define the rule
   // lazy val qdsTables: Seq[(Algebraic, Algebraic)] = {
   //   tables.map {
   //     case (i, ps) =>
@@ -150,7 +151,7 @@ case class SRTTable(
     )
   }
 
-  //select four points, then drop first and last points  
+  // select four points, then drop the first and the last one.  
   /** for range `dLeft` to `dRight`, return the `rOmegaCeil` and `rOmegaFloor`
     * this is used for constructing the rectangle where m_k(i) is located.
     */
