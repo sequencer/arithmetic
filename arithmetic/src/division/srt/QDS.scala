@@ -1,6 +1,6 @@
 package division.srt
 import chisel3._
-import chisel3.util.{log2Ceil, RegEnable, Valid, BitPat}
+import chisel3.util.{log2Ceil, BitPat, RegEnable, Valid}
 import chisel3.util.experimental.decode._
 
 class QDSInput(rWidth: Int) extends Bundle {
@@ -16,9 +16,7 @@ class QDS(rWidth: Int, ohWidth: Int) extends Module {
   // IO
   val input = IO(Input(new QDSInput(rWidth)))
   val output = IO(Output(new QDSOutput(ohWidth)))
-
-  // used to select a column of SRT Table, 这个需要手动连接吗
-  val partialDivider = IO(Flipped(Valid(UInt(3.W)))) //这个从哪里来
+  val partialDivider = IO(Flipped(Valid(UInt(3.W))))
 
   // State, in order to keep divider's value
   val partialDividerReg = RegEnable(partialDivider.bits, partialDivider.valid)
@@ -52,11 +50,11 @@ class QDS(rWidth: Int, ohWidth: Int) extends Module {
     VecInit("b110_1100".U, "b111_1000".U, "b000_1000".U, "b001_0110".U),
     VecInit("b110_1000".U, "b111_1000".U, "b000_1000".U, "b001_1000".U)
   )
-  val mkVec = selectRom(columnSelect) 
-  val selectPoints = VecInit(mkVec.map{ mk =>
-    // maybe have a problem.
-    (input.partialReminderCarry + input.partialReminderSum + mk).head(1)
-  }).asUInt()
+  val mkVec = selectRom(columnSelect)
+  val selectPoints = VecInit(mkVec.map { mk =>
+    // maybe have a problem."+&" extend signed to avoid overflow. only for srt4, because -44/16 < y^ < 42/16.
+    (input.partialReminderCarry +& input.partialReminderSum + mk).head(1)
+  }).asUInt
 
   // decoder or findFirstOne here, prefer decoder, the decoder only for srt4
   output.selectedQuotientOH := chisel3.util.experimental.decode.decoder(
@@ -66,7 +64,7 @@ class QDS(rWidth: Int, ohWidth: Int) extends Module {
         BitPat("b1???") -> BitPat("b10000"),
         BitPat("b01??") -> BitPat("b01000"),
         BitPat("b001?") -> BitPat("b00100"),
-        BitPat("b0001") -> BitPat("b00010"),
+        BitPat("b0001") -> BitPat("b00010")
       ),
       BitPat("b00001")
     )
