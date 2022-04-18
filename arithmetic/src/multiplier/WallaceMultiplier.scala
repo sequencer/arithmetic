@@ -72,6 +72,7 @@ class WallaceMultiplierImpl(
       addAll(toNextLayer, depth + 1)
     }
   }
+
   // produce Seq(b, 2 * b, ..., 2^digits * b), output width = width + radixLog2 - 1
   val bMultipleWidth = (width + radixLog2 - 1).W
   def prepareBMultiples(digits: Int): Seq[SInt] = {

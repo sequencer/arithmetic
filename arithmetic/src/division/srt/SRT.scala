@@ -8,13 +8,14 @@ import chisel3.util.{log2Ceil, Counter, DecoupledIO, Mux1H, ValidIO}
 
 import scala.math.ceil
 
-// 带csa的srt除法器 1/2<= d < 1, 1/2 < rho <=1, 0 < q  < 2
-// 0, radix = 4
-// 1，商数范围 :a = 2, {-2, -1, 0, 1, -2},
-// 2, 冗余因子rho = 2/(4-1) =2/3
-// 3，估值(截断位宽)：3位整数，4位小数 t = 4
-// 4，选商函数 通过输入的y^（xxx.xxxx）和截断的d（0.1xxx）来进行选商，计算出选商查找表，来进行查找选商[d_i,d_i+1)
-// 5, -44/16 < y^ < 42/16
+/** SRT4
+ * 1/2<= d < 1, 1/2 < rho <=1, 0 < q  < 2
+ * 0, radix = 4
+ * a = 2, {-2, -1, 0, 1, -2},
+ * t = 4
+ * y^（xxx.xxxx）, d^（0.1xxx）
+ * -44/16 < y^ < 42/16
+ */
 
 // TODO: width
 class SRTInput(dividendWidth: Int, dividerWidth: Int, n: Int) extends Bundle {
@@ -38,7 +39,6 @@ class SRT(
   dTruncateWidth: Int = 4,
   rTruncateWidth: Int = 4)
     extends Module {
-  // the numbers of cycle
   val ohWidth: Int = 2 * a + 1
 
   // IO
