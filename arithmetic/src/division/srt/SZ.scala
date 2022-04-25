@@ -10,20 +10,20 @@ class SZInput(rWidth: Int) extends Bundle {
 }
 
 class SZOutput(rWidth: Int) extends Bundle {
-  val sign: Bool = Bool()
-  val zero: Bool = Bool()
-  val remainder: UInt = UInt((rWidth + 1).W)
+  val sign:      Bool = Bool()
+  val zero:      Bool = Bool()
+  val remainder: UInt = UInt((rWidth).W)
 }
 
 class SZ(rWidth: Int, prefixSum: PrefixSum = BrentKungSum) extends Module {
   val input = IO(Input(new SZInput(rWidth)))
   val output = IO(Output(new SZOutput(rWidth)))
-
   //controlpath
 
   //datapath
   // csa(ws,wc,-2^-b) => Seq[(Bool,Bool)]
   // drop signed bits
+  // prefixtree by group
   val ws = input.partialReminderCarry.asBools
   val wc = input.partialReminderSum.asBools
   val psc: Seq[(Bool, Bool)] = ws.zip(wc).map { case (s, c) => (!(s ^ c), (s | c)) }
@@ -34,8 +34,8 @@ class SZ(rWidth: Int, prefixSum: PrefixSum = BrentKungSum) extends Module {
   val ps:    Vector[Bool] = pgs.map(_._1)
   val gs:    Vector[Bool] = pgs.map(_._2)
 
-  val a: Vector[Bool] = false.B +: gs
-  val b: Seq[Bool] = pairs.map(_._1) :+ false.B
+  val a:   Vector[Bool] = false.B +: gs
+  val b:   Seq[Bool] = pairs.map(_._1) :+ false.B
   val sum: Seq[Bool] = a.zip(b).map { case (p, c) => p ^ c }
 
   // maybe have a problem.
