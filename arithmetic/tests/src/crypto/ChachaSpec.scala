@@ -1,10 +1,13 @@
 package crypto.chacha
 
 import chisel3._
-import chisel3.experimental.VecLiteralException
 import chisel3.experimental.VecLiterals.AddVecLiteralConstructor
 import chisel3.tester.{ChiselUtestTester, testableClock, testableData}
-import utest._
+import org.bouncycastle.crypto.engines.ChaChaEngine
+import org.bouncycastle.crypto.params.{KeyParameter, ParametersWithIV}
+import utest._;
+
+//import java.security.SecureRandom;;
 
 class ChachaTest {
   def print_state(state: Array[Int], s: String)= {
@@ -62,23 +65,15 @@ class ChachaTest {
       state(i) = stateInput(i)
     }
     for(j <- 0 to 9) {
-      // println(2*j)
       state = quarterroun(state, 0, 4,  8, 12);
-      // print_state(state, "1")
       state = quarterroun(state, 1, 5,  9, 13);
-      // print_state(state, "2")
       state = quarterroun(state, 2, 6, 10, 14);
-      // print_state(state, "3")
       state = quarterroun(state, 3, 7, 11, 15);
-      // print_state(state, "odd")
       
-      // println(2*j + 1)
       state = quarterroun(state, 0, 5, 10, 15);
       state = quarterroun(state, 1, 6, 11, 12);
       state = quarterroun(state, 2, 7,  8, 13);
       state = quarterroun(state, 3, 4,  9, 14);
-      // print_state(state, "even")
-      
     }
     return state
   }
@@ -95,26 +90,47 @@ class ChachaTest {
     }
     x(a) += x(b)
     x(d) = rotl32(x(d) ^ x(a), 16)
-    // print_state(x, "1")
 
     x(c) += x(d)
     x(b) = rotl32(x(b) ^ x(c), 12)
-    // print_state(x, "2")
 
     x(a) += x(b)
     x(d) = rotl32(x(d) ^ x(a),  8)
-    // print_state(x, "3")
 
     x(c) += x(d)
     x(b) = rotl32(x(b) ^ x(c),  7)
-    // print_state(x, "4")
     return x
+  }
+  def doChaCha(encrypt:Boolean, data: Array[Byte], key: Array[Byte],  nonce: Array[Byte]):(Array[Byte]) = {
+    val cipher:ChaChaEngine = new ChaChaEngine(20);
+    val paramKey: KeyParameter = new KeyParameter(key);
+    val param: ParametersWithIV = new ParametersWithIV(paramKey, nonce);
+    cipher.init(encrypt, param); // true - encrypt, false - decrypt
+    val result = new Array[Byte](data.length);
+    cipher.processBytes(data, 0, data.length, result, 0);
+    return result
+  }
+
+  def bytes2int(_bytes: Array[Byte], _offset: Int): Int = {
+    var b0 = _bytes(_offset + 0) & 0xff
+    var b1 = _bytes(_offset + 1) & 0xff
+    var b2 = _bytes(_offset + 2) & 0xff
+    var b3 = _bytes(_offset + 3) & 0xff
+    // return ((b3 << 24) | (b2 << 16) | (b1 << 8) | b0)
+    return ((b0 << 24) | (b1 << 16) | (b2 << 8) | b3)
   }
 }
 
 object ChachaSpec extends TestSuite with ChiselUtestTester {
   def tests: Tests = Tests {
     test("Chacha should pass") {
+      
+//        byte[] data = Hex.decode("10000000000000000000000000000000");
+//        byte[] key = Hex.decode("80000000000000000000000000000000");
+//        byte[] nonce = Hex.decode("80000000000000000000000000000000");
+//        byte[] result = new ChaChaTest().doChaCha(true, data, key, nonce);
+//        System.out.println(result);
+
       var chachaTest = new ChachaTest()
       var nonce_len = 2
       var (key, nonce) = chachaTest.randomVar(nonce_len)
@@ -125,12 +141,31 @@ object ChachaSpec extends TestSuite with ChiselUtestTester {
       }
       var state = chachaTest.stateInit(key, counter, nonce)
       var res = chachaTest.chacha_block((state))
+      chachaTest.print_state(res, "my test")
 
-      // chachaTest.print_state(key, "\nkey")
-      // chachaTest.print_state(counter, "\ncounter")
-      // chachaTest.print_state(nonce, "\nnonce")
-      // chachaTest.print_state(state, "\nstate")
-      // chachaTest.print_state(res, "\nfinal res")
+      val byte_key: Array[Byte] = new Array[Byte](4 * key.length)
+      for(i <- 0 to key.length-1) {
+        val tmp = BigInt(key(i)).toByteArray
+        for(j <- 0 to tmp.length-1) {
+          byte_key(i * 4 + j ) = tmp(j)
+        }
+      }
+      val byte_nonce: Array[Byte] = new Array[Byte](4 * nonce.length)
+      for(i <- 0 to nonce.length-1) {
+        val tmp = BigInt(nonce(i)).toByteArray
+        for(j <- 0 to tmp.length-1) {
+          byte_nonce(i * 4 + j ) = tmp(j)
+        }
+      }
+      val byte_data: Array[Byte] = new Array[Byte](32 * 2)
+      for(i <- 0 to byte_data.length-1) {
+        byte_data(i) = 0x00.toByte
+      }
+
+      val java_res = chachaTest.doChaCha(true, byte_data, byte_key, byte_nonce)
+      for(i <- 0 to key.length*2-1) {
+        println((chachaTest.bytes2int(java_res, 4 *i)).toHexString)
+      }
 
       var chachaParam = new ChaChaParameter(32 * nonce_len)
       // testCircuit(new ChaCha(chachaParam), Seq(chiseltest.simulator.VcsBackendAnnotation, chiseltest.internal.NoThreadingAnnotation, chiseltest.simulator.WriteFsdbAnnotation)){dut: ChaCha =>
