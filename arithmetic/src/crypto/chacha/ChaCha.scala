@@ -163,7 +163,7 @@ class ChaCha(parameter: ChaChaParameter) extends Module {
   output.bits.nonce := nonce
   output.bits.counter := counter
   output.valid := (rounds === 19.U) && state(4).asBool
-  matrix.zipWithIndex.foreach { // the output shoule be reorgnized
+  matrix.zipWithIndex.foreach { // the output should be reorganized
     case (row, i) =>
       output.bits.x(i)(0) := matrix((4 - i) % 4)(i)
       output.bits.x(i)(1) := matrix((5 - i) % 4)(i)
