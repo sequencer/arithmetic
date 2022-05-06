@@ -57,55 +57,6 @@ class ChachaTest {
     return state
   }
 
-  def chacha_block(stateInput: Array[Int]): Array[Int] = {
-    var state = new Array[Int](stateInput.length)
-    var i = 0
-    var j = 0
-    for(i <- 0 to stateInput.length-1) {
-      state(i) = stateInput(i)
-    }
-    val loop = 20 /2
-    for(j <- 0 to loop-1) {
-      state = quarterround(state, 0, 4,  8, 12);
-      state = quarterround(state, 1, 5,  9, 13);
-      state = quarterround(state, 2, 6, 10, 14);
-      state = quarterround(state, 3, 7, 11, 15);
-      
-      state = quarterround(state, 0, 5, 10, 15);
-      state = quarterround(state, 1, 6, 11, 12);
-      state = quarterround(state, 2, 7,  8, 13);
-      state = quarterround(state, 3, 4,  9, 14);
-    }
-    for(i <- 0 to stateInput.length-1) {
-      state(i) = state(i) + stateInput(i)
-    }
-    return state
-  }
-
-  def rotl32(x:Int, n:Int):Int= {
-    return  x << n | (x >>> (-n & 31));
-  }
-  
-  def quarterround(input: Array[Int], a:Int, b:Int, c:Int, d:Int):Array[Int] = {
-    var x = new Array[Int](input.length)
-    var i = 0
-    for(i <- 0 to input.length-1) {
-      x(i) = input(i)
-    }
-    x(a) += x(b)
-    x(d) = rotl32(x(d) ^ x(a), 16)
-
-    x(c) += x(d)
-    x(b) = rotl32(x(b) ^ x(c), 12)
-
-    x(a) += x(b)
-    x(d) = rotl32(x(d) ^ x(a),  8)
-
-    x(c) += x(d)
-    x(b) = rotl32(x(b) ^ x(c),  7)
-    return x
-  }
-
   def doChaCha(state: Array[Int]):Array[Int] = {
     val round = 20               
     val result = new Array[Int](state.length);
@@ -117,70 +68,71 @@ class ChachaTest {
 object ChachaSpec extends TestSuite with ChiselUtestTester {
   def tests: Tests = Tests {
     test("Chacha should pass") {
-      
-      var chachaTest = new ChachaTest()
+      // set the nonce length
       var nonce_len = 2
-      var (key, nonce) = chachaTest.randomVar(nonce_len)
-      // set count to 0
-      var counter = new Array[Int](4-nonce_len)  
-      for(i <- 0 to counter.length-1) {
-        counter(i) = 0
-      }
-
-      var state = chachaTest.stateInit(key, counter, nonce)
-      var res = chachaTest.chacha_block((state))
-
-      val java_res = chachaTest.doChaCha(state)      
-
       var chachaParam = new ChaChaParameter(32 * nonce_len)
+
       testCircuit(new ChaCha(chachaParam), Seq(chiseltest.internal.NoThreadingAnnotation, chiseltest.simulator.WriteVcdAnnotation)){dut: ChaCha =>
-        dut.clock.setTimeout(0)
-        val tmp_k1 = Vec(4, UInt(32.W)).Lit(
-          0 -> BigInt(key(0).toHexString, 16).U,
-          1 -> BigInt(key(1).toHexString, 16).U, 
-          2 -> BigInt(key(2).toHexString, 16).U, 
-          3 -> BigInt(key(3).toHexString, 16).U
-        )
-        val tmp_k2 = Vec(4, UInt(32.W)).Lit(
-          0 -> BigInt(key(4).toHexString, 16).U, 
-          1 -> BigInt(key(5).toHexString, 16).U, 
-          2 -> BigInt(key(6).toHexString, 16).U, 
-          3 -> BigInt(key(7).toHexString, 16).U
-        )
-        dut.key.poke(Vec(2, Vec(4, UInt(32.W))).Lit(0->tmp_k1, 1->tmp_k2))
 
-        var tmp_nonce = nonce(0).toHexString
-        var tmp_n = nonce(1).toHexString
-        var tmp_n_len = 8 - tmp_n.length() // make sure the length is 8 (32 / 4 = 8)
-        if(tmp_n_len > 0) {
-          for(i <- 0 to  tmp_n_len-1) {
-            tmp_n = "0" + tmp_n
+        for(test_rounds <- 0 to 2) { // test for 3 rounds         
+          var chachaTest = new ChachaTest()
+          var (key, nonce) = chachaTest.randomVar(nonce_len)
+          // set count to 0
+          var counter = new Array[Int](4-nonce_len)
+          for(i <- 0 to counter.length-1) {
+            counter(i) = 0
           }
-        }
-        tmp_nonce = tmp_nonce + tmp_n
-        dut.nonce.poke(BigInt(tmp_nonce, 16).U(64.W))
+          var state = chachaTest.stateInit(key, counter, nonce)
+          val res = chachaTest.doChaCha(state)
 
-        dut.clock.step()
-        dut.clock.step()
-        // delay two cycles then set valid = true
-        dut.valid.poke(true.B)
-        dut.clock.step()
-        var flag = false
-        var a = 1
-        for(a <- 1 to 200) {
+          // set the key to hardware
+          dut.clock.setTimeout(0)
+          val tmp_k1 = Vec(4, UInt(32.W)).Lit(
+            0 -> BigInt(key(0).toHexString, 16).U,
+            1 -> BigInt(key(1).toHexString, 16).U,
+            2 -> BigInt(key(2).toHexString, 16).U,
+            3 -> BigInt(key(3).toHexString, 16).U
+          )
+          val tmp_k2 = Vec(4, UInt(32.W)).Lit(
+            0 -> BigInt(key(4).toHexString, 16).U,
+            1 -> BigInt(key(5).toHexString, 16).U,
+            2 -> BigInt(key(6).toHexString, 16).U,
+            3 -> BigInt(key(7).toHexString, 16).U
+          )
+          dut.key.poke(Vec(2, Vec(4, UInt(32.W))).Lit(0->tmp_k1, 1->tmp_k2))
+
+          // set the nonce to hardware
+          var tmp_nonce = nonce(0).toHexString
+          var tmp_n = nonce(1).toHexString
+          var tmp_n_len = 8 - tmp_n.length() // make sure the length is 8 (32 / 4 = 8)
+          if(tmp_n_len > 0) {
+            for(i <- 0 to tmp_n_len-1) {
+              tmp_n = "0" + tmp_n
+            }
+          }
+          tmp_nonce = tmp_nonce + tmp_n
+          dut.nonce.poke(BigInt(tmp_nonce, 16).U(64.W))
+
           dut.clock.step()
-          if(dut.output.valid.peek().litValue == 1) {
-            flag = true
-            // wait one cycle
+          dut.clock.step()
+          // delay two cycles then set valid = true
+          dut.valid.poke(true.B)
+          var flag = false
+          for(a <- 1 to 200 if !flag) {
             dut.clock.step()
-            for(i <- 0 to 3) {
-              for(j <- 0 to 3) {
-                 utest.assert((dut.output.bits.x(i)(j).peek().litValue.toInt + state(i*4+j)) == res(i*4+j));
+            if(dut.output.valid.peek().litValue == 1) {
+              flag = true
+              // wait one cycle
+              dut.clock.step()
+              for(i <- 0 to 3) {
+                for(j <- 0 to 3) {
+                  utest.assert((dut.output.bits.x(i)(j).peek().litValue.toInt + state(i*4+j)) == res(i*4+j));
+                }
               }
             }
           }
+          utest.assert(flag)
         }
-        utest.assert(flag)
       }
     }
   }
