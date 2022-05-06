@@ -2,13 +2,16 @@ package crypto.chacha
 
 import chisel3._
 import chisel3.util.{Decoupled, Mux1H}
+import chisel3.experimental.VecLiterals.AddVecLiteralConstructor
 
 case class ChaChaParameter(nonceWidth: Int)
 class ChaCha(parameter: ChaChaParameter) extends Module {
-  val chacha_head_1 = 0x61707865.U(32.W)
-  val chacha_head_2 = 0x3320646e.U(32.W)
-  val chacha_head_3 = 0x79622d32.U(32.W)
-  val chacha_head_4 = 0x6b206574.U(32.W)
+  val chachaHead = Vec(4, UInt(32.W)).Lit(
+    0 -> 0x61707865.U,
+    1 -> 0x3320646e.U,
+    2 -> 0x79622d32.U,
+    3 -> 0x6b206574.U
+  )
 
   // allocate key for this ChaCha Module
   // outer nonce should be updated as well.
@@ -33,7 +36,7 @@ class ChaCha(parameter: ChaChaParameter) extends Module {
   val update = RegInit(false.B)
   // counter update logic
   counter := Mux(update, counter + 1.U, counter)
-  val last_row = counter ## nonce
+  val lastRow = counter ## nonce
 
   // matrix
   val matrix: Seq[Seq[UInt]] = Seq.fill(4)(Seq.fill(4)(RegInit(0.U(32.W))))
@@ -99,18 +102,7 @@ class ChaCha(parameter: ChaChaParameter) extends Module {
       xor.b := adder.c
       a := Mux1H(
         Map(
-          readData -> Mux(
-            rounds === 0.U,
-            Mux1H(
-              Map(
-                (i == 0).B -> chacha_head_1,
-                (i == 1).B -> chacha_head_2,
-                (i == 2).B -> chacha_head_3,
-                (i == 3).B -> chacha_head_4
-              )
-            ),
-            matrix(i)(0)
-          ),
+          readData -> Mux(rounds === 0.U, chachaHead(i), matrix(i)(0)),
           updateA -> adder.c,
           keepA -> a
         )
@@ -119,14 +111,7 @@ class ChaCha(parameter: ChaChaParameter) extends Module {
         Map(
           readData -> Mux(
             rounds === 0.U,
-            Mux1H(
-              Map(
-                (i == 0).B -> key(0)(0),
-                (i == 1).B -> key(0)(1),
-                (i == 2).B -> key(0)(2),
-                (i == 3).B -> key(0)(3)
-              )
-            ),
+            key(0)(i),
             Mux1H(
               Map(
                 permuteOdd -> matrix((i + 1) % 4)(1),
@@ -143,14 +128,7 @@ class ChaCha(parameter: ChaChaParameter) extends Module {
         Map(
           readData -> Mux(
             rounds === 0.U,
-            Mux1H(
-              Map(
-                (i == 0).B -> key(1)(0),
-                (i == 1).B -> key(1)(1),
-                (i == 2).B -> key(1)(2),
-                (i == 3).B -> key(1)(3)
-              )
-            ),
+            key(1)(i),
             Mux1H(
               Map(
                 permuteOdd -> matrix((i + 2) % 4)(2),
@@ -166,14 +144,7 @@ class ChaCha(parameter: ChaChaParameter) extends Module {
         Map(
           readData -> Mux(
             rounds === 0.U,
-            Mux1H(
-              Map(
-                (i == 0).B -> last_row(127, 127 - 32 + 1),
-                (i == 1).B -> last_row(127 - 32, 127 - 64 + 1),
-                (i == 2).B -> last_row(127 - 64, 127 - 96 + 1),
-                (i == 3).B -> last_row(127 - 96, 0)
-              )
-            ),
+            lastRow(127 - i * 32, 127 - (i + 1) * 32 + 1),
             Mux1H(
               Map(
                 permuteOdd -> matrix((i + 3) % 4)(3),

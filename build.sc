@@ -15,7 +15,7 @@ object v {
   val utest = ivy"com.lihaoyi::utest:latest.integration"
   val upickle = ivy"com.lihaoyi::upickle:latest.integration"
   val osLib = ivy"com.lihaoyi::os-lib:latest.integration"
-//  val prime = ivy"org.apache.commons:commons-math3:3.6.1"
+  val bc = ivy"org.bouncycastle:bcprov-jdk15to18:1.71"  
 }
 
 object arithmetic extends arithmetic
@@ -41,7 +41,7 @@ class arithmetic extends ScalaModule with ScalafmtModule with PublishModule { m 
   )
 
   object tests extends Tests with Utest {
-    override def ivyDeps = m.ivyDeps() ++ Agg(v.utest)
+    override def ivyDeps = m.ivyDeps() ++ Agg(v.utest, v.bc)
   }
 
   def pomSettings = PomSettings(
