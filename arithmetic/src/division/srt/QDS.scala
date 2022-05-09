@@ -66,12 +66,12 @@ class QDS(rWidth: Int, ohWidth: Int, partialDividerWidth: Int) extends Module {
     selectPoints,
     TruthTable(
       Seq(
-        BitPat("b1???") -> BitPat("b10000"),
-        BitPat("b01??") -> BitPat("b01000"),
-        BitPat("b001?") -> BitPat("b00100"),
-        BitPat("b0001") -> BitPat("b00010")
+        BitPat("b1???") -> BitPat("b00001"), //-2
+        BitPat("b01??") -> BitPat("b00010"), //-1
+        BitPat("b001?") -> BitPat("b00100"), //0
+        BitPat("b0001") -> BitPat("b01000") //1
       ),
-      BitPat("b00001")
+      BitPat("b10000") //2
     )
   )
 }

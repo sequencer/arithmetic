@@ -8,27 +8,42 @@ object SRT4Test extends TestSuite with ChiselUtestTester{
   def tests: Tests = Tests {
     test("SRT4 should pass") {
       // parameters
-      val dividendWidth: Int = 4
-      val dividerWidth: Int  = 3
-      val n: Int = 3
-//      val dividend: Int = 7
-//      val divider:  Int = 3
-      val countr: Int = 2
-      val remainder: Int = dividend / divider
-      val quotient:  Int = dividend % divider
+      val dividendWidth: Int = 8
+      val dividerWidth: Int  = 8
+      val n: Int = 10
+      val dividend: Int = 15 << 3
+      val divider:  Int = 3 << 5
+//      val counter: Int = 2
+      val counter: Int = 1
+      val quotient: Int = dividend / divider
+      val remainder:  Int = dividend % divider
       // test
       testCircuit(new SRT(dividendWidth, dividerWidth, n),
         Seq(chiseltest.internal.NoThreadingAnnotation,
         chiseltest.simulator.WriteVcdAnnotation)){
           dut: SRT =>
-          dut.clock.setTimeout(0)
+//          dut.clock.setTimeout(0)
           dut.input.valid.poke(true.B)
-          dut.input.bits.dividend.poke("b0111".U)
-          dut.input.bits.divider.poke("b011".U)
-          dut.input.bits.counter.poke(countr.U)
-          dut.clock.step(countr)
-          dut.output.bits.quotient.expect(quotient.U)
-          dut.output.bits.reminder.expect(remainder.U)
+//          dut.input.bits.dividend.poke("b01111000".U)
+//          dut.input.bits.divider.poke( "b01100000".U)
+            dut.input.bits.dividend.poke("b01111000".U)
+            dut.input.bits.divider.poke( "b01100000".U)
+          dut.input.bits.counter.poke(counter.U)
+          dut.clock.step()
+          dut.input.valid.poke(false.B)
+          var flag = false
+          for(a <- 1 to 20 if !flag) {
+            if(dut.output.valid.peek().litValue == 1) {
+              flag = true
+              dut.clock.step()
+//              dut.output.bits.quotient.expect(5.U)
+//              dut.output.bits.reminder.expect(0.U)
+              dut.output.bits.quotient.expect(1.U)
+              dut.output.bits.reminder.expect("b11000".U)
+            }
+            dut.clock.step()
+          }
+            utest.assert(flag)
       }
     }
   }

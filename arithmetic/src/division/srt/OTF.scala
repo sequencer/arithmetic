@@ -33,8 +33,8 @@ class OTF(radix: Int, qWidth: Int, ohWidth: Int) extends Module {
 
   // val cShiftQ:  Bool = qNext >= 0.U
   // val cShiftQM: Bool = qNext <=  0.U
-  val cShiftQ:  Bool = input.selectedQuotientOH(ohWidth / 2, 0).orR
-  val cShiftQM: Bool = input.selectedQuotientOH(ohWidth - 1, ohWidth / 2).orR
+  val cShiftQ:  Bool = input.selectedQuotientOH(ohWidth - 1, ohWidth / 2).orR
+  val cShiftQM: Bool = input.selectedQuotientOH(ohWidth / 2, 0).orR
 
   val qIn:  UInt = Mux(cShiftQ, qNext, radix.U + qNext)(1, 0)
   val qmIn: UInt = Mux(!cShiftQM, qNext - 1.U, (radix - 1).U + qNext)(1, 0)
