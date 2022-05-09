@@ -17,7 +17,6 @@ import scala.math.ceil
   * -44/16 < y^ < 42/16
   */
 
-// TODO: counter & n
 class SRTInput(dividendWidth: Int, dividerWidth: Int, n: Int) extends Bundle {
   val dividend = UInt(dividendWidth.W) //0.1**********
   val divider = UInt(dividerWidth.W) //0.1**********
@@ -33,7 +32,7 @@ class SRTOutput(reminderWidth: Int, quotientWidth: Int) extends Bundle {
 class SRT(
   dividendWidth:  Int,
   dividerWidth:   Int,
-  n:              Int, // the longest width,
+  n:              Int, // the longest width
   radixLog2:      Int = 2,
   a:              Int = 2,
   dTruncateWidth: Int = 4,
@@ -54,31 +53,31 @@ class SRT(
   val divider = Reg(UInt(dividerWidth.W))
   val quotient = Reg(UInt(n.W))
   val quotientMinusOne = Reg(UInt(n.W))
-  val counter = Reg(UInt(log2Ceil(n).W))
+  val counter = RegInit(0.U(log2Ceil(n).W))
 
   // Control
   // sign of select quotient, true -> negative, false -> positive
   val qdsSign: Bool = Wire(Bool())
 
-  // Datapath
+  //  Datapath
   //  according two adders
   val isLastCycle: Bool = !counter.orR
-  output.valid := Mux(isLastCycle, true.B, false.B)
-  input.ready := Mux(isLastCycle, true.B, false.B)
+  output.valid := isLastCycle
+  input.ready := isLastCycle
 
+  // lastCycle-> correct-> output
   val remainderNoCorrect: UInt = partialReminderSum(xLen - 3, 0) + partialReminderCarry(xLen - 3, 0)
   val needCorrect:        Bool = Mux(isLastCycle, remainderNoCorrect.head(1).asBool, false.B)
   val remainderCorrect:   UInt = partialReminderSum(xLen - 3, 0) + partialReminderCarry(xLen - 3, 0) + divider
-  // TODO: ">> radixLog2" is not a better op
-  output.bits.reminder := Mux(needCorrect, remainderCorrect, remainderNoCorrect) >> radixLog2
-  output.bits.quotient := quotient
+  output.bits.reminder := Mux(needCorrect, remainderCorrect, remainderNoCorrect)
+  output.bits.quotient := quotient - needCorrect.asUInt
 
   // qds
   val rWidth: Int = 1 + radixLog2 + rTruncateWidth
   val qds = Module(new QDS(rWidth, ohWidth, dTruncateWidth - 1))
   qds.input.partialReminderSum := partialReminderSum.head(rWidth)
   qds.input.partialReminderCarry := partialReminderCarry.head(rWidth)
-  qds.partialDivider.valid := input.valid
+  qds.partialDivider.valid := input.valid && input.ready
   qds.partialDivider.bits := input.bits.divider
     .head(dTruncateWidth + 1)(dTruncateWidth - 2, 0) //0.1********** -> 0.1*** -> ***
   qdsSign := qds.output.selectedQuotientOH(ohWidth - 1, ohWidth / 2).orR
@@ -109,42 +108,26 @@ class SRT(
   otf.input.quotientMinusOne := quotientMinusOne
   otf.input.selectedQuotientOH := qds.output.selectedQuotientOH
 
-  //  divider := Mux(input.valid && input.ready, input.bits.divider, divider)
-  //  counter := Mux(input.valid && input.ready, input.bits.counter, counter - 1.U)
-  // TODO: sel maybe have a problem
-  divider := Mux(input.valid, input.bits.divider, divider)
-  counter := Mux(input.valid, input.bits.counter, counter - 1.U)
+  divider := Mux(input.valid && input.ready, input.bits.divider, divider)
+  counter := Mux(input.valid && input.ready, input.bits.counter, counter - 1.U)
 
-  quotientMinusOne := Mux1H(
-    Map(
-      input.valid -> 0.U,
-      (!input.valid & counter.orR) -> otf.output.quotientMinusOne,
-      isLastCycle -> quotientMinusOne
-    )
-  )
-
-  quotient := Mux1H(
-    Map(
-      input.valid -> 0.U,
-      (!input.valid & counter.orR) -> otf.output.quotient,
-      isLastCycle -> (quotient - needCorrect.asUInt)
-    )
-  )
+  quotient:= Mux(isLastCycle, 0.U, otf.output.quotient)
+  quotientMinusOne:= Mux(isLastCycle, 0.U, otf.output.quotientMinusOne)
 
   partialReminderSum := Mux1H(
     Map(
-      input.valid -> input.bits.dividend,
-      (!input.valid & counter.orR) -> (csa.out(1) << radixLog2)(xLen - 1, 0),
-      isLastCycle -> partialReminderSum
+      isLastCycle -> input.bits.dividend,
+      (counter > 1.U)  -> (csa.out(1) << radixLog2)(xLen - 1, 0),
+      (counter === 1.U) -> csa.out(1)(xLen - 1, 0)
     )
   )
-
   partialReminderCarry := Mux1H(
     Map(
-      input.valid -> 0.U,
-      (!input.valid & counter.orR) -> (csa.out(0) << radixLog2 + 1)(xLen - 1, 0),
-      isLastCycle -> partialReminderCarry
+      isLastCycle -> 0.U,
+      (counter > 1.U) -> (csa.out(0) << radixLog2 + 1)(xLen - 1, 0),
+      (counter === 1.U) -> (csa.out(0) << 1)(xLen - 1, 0)
     )
   )
-
 }
+
+

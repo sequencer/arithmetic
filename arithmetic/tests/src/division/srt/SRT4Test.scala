@@ -13,8 +13,8 @@ object SRT4Test extends TestSuite with ChiselUtestTester{
       val n: Int = 10
       val dividend: Int = 15 << 3
       val divider:  Int = 3 << 5
-//      val counter: Int = 2
-      val counter: Int = 1
+      val counter: Int = 2
+//      val counter: Int = 1
       val quotient: Int = dividend / divider
       val remainder:  Int = dividend % divider
       // test
@@ -24,10 +24,10 @@ object SRT4Test extends TestSuite with ChiselUtestTester{
           dut: SRT =>
 //          dut.clock.setTimeout(0)
           dut.input.valid.poke(true.B)
-//          dut.input.bits.dividend.poke("b01111000".U)
-//          dut.input.bits.divider.poke( "b01100000".U)
-            dut.input.bits.dividend.poke("b01111000".U)
-            dut.input.bits.divider.poke( "b01100000".U)
+          dut.input.bits.dividend.poke("b01111000".U)
+          dut.input.bits.divider.poke( "b01100000".U)
+//            dut.input.bits.dividend.poke("b01111000".U)
+//            dut.input.bits.divider.poke( "b01100000".U)
           dut.input.bits.counter.poke(counter.U)
           dut.clock.step()
           dut.input.valid.poke(false.B)
@@ -36,10 +36,10 @@ object SRT4Test extends TestSuite with ChiselUtestTester{
             if(dut.output.valid.peek().litValue == 1) {
               flag = true
               dut.clock.step()
-//              dut.output.bits.quotient.expect(5.U)
-//              dut.output.bits.reminder.expect(0.U)
-              dut.output.bits.quotient.expect(1.U)
-              dut.output.bits.reminder.expect("b11000".U)
+              dut.output.bits.quotient.expect(5.U)
+              dut.output.bits.reminder.expect(0.U)
+//              dut.output.bits.quotient.expect(1.U)
+//              dut.output.bits.reminder.expect("b11000".U)
             }
             dut.clock.step()
           }
