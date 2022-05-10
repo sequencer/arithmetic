@@ -53,6 +53,7 @@ case class SRTTable(
     .yLabel(s"${radix.toInt}ω[j]")
     .rightLegend()
     .standard()
+
   lazy val aMax:   Algebraic = a
   lazy val aMin:   Algebraic = -a
   lazy val deltaD: Algebraic = pow(2, -dTruncateWidth.toDouble)
@@ -62,6 +63,7 @@ case class SRTTable(
     * @note 5.8
     */
   lazy val rho: Algebraic = a / (radix - 1)
+  //                     k            d       m    xSet
   lazy val tables: Seq[(Int, Seq[(Algebraic, Seq[Algebraic])])] = {
     (aMin.toInt to aMax.toInt).drop(1).map { k =>
       k -> dSet.dropRight(1).map { d =>
@@ -84,13 +86,24 @@ case class SRTTable(
     }
   }
 
+  // TODO: select a Constant from each m, then offer the table to QDS.
+  // select rule: symmetry and draw a line parallel to the Y-axis, how define the rule
+  // lazy val qdsTables: Seq[(Algebraic, Algebraic)] = {
+  //   tables.map {
+  //     case (i, ps) =>
+  //         ps.flatMap { case (d, xs) => xs.filter{ x: Algebraic => ??? }.map(x => ((d<<dTruncateWidth).toInt, (x<<xTruncateWidth).toInt)) },
+  //   }
+  // }
+
   private val xStep = (xMax - xMin) / deltaX
   // @note 5.7
   require(a >= radix / 2)
   private val xSet = Seq.tabulate((xStep + 1).toInt) { n => xMin + deltaX * n }
+
   private val dStep: Algebraic = (dMax - dMin) / deltaD
   assert((rho > 1 / 2) && (rho <= 1))
   private val dSet = Seq.tabulate((dStep + 1).toInt) { n => dMin + deltaD * n }
+
   private val mesh =
     ScatterPlot(
       xSet.flatMap { y =>
@@ -138,6 +151,7 @@ case class SRTTable(
     )
   }
 
+  // select four points, then drop the first and the last one.
   /** for range `dLeft` to `dRight`, return the `rOmegaCeil` and `rOmegaFloor`
     * this is used for constructing the rectangle where m_k(i) is located.
     */
@@ -149,6 +163,7 @@ case class SRTTable(
       .dropRight(1) match { case Seq(l, r) => (l, r) }
   }
 
+  // U_k = (k + rho) * d, L_k = (k - rho) * d
   /** find the intersection point between L`k` and `d` */
   private def L(k: Algebraic, d: Algebraic): Algebraic = lRate(k) * d
 
