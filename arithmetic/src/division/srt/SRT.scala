@@ -17,6 +17,7 @@ import scala.math.ceil
   * -44/16 < y^ < 42/16
   */
 
+
 class SRTInput(dividendWidth: Int, dividerWidth: Int, n: Int) extends Bundle {
   val dividend = UInt(dividendWidth.W) //0.1**********
   val divider = UInt(dividerWidth.W) //0.1**********
