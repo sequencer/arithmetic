@@ -111,13 +111,13 @@ class SRT(
   divider := Mux(input.valid && input.ready, input.bits.divider, divider)
   counter := Mux(input.valid && input.ready, input.bits.counter, counter - 1.U)
 
-  quotient:= Mux(isLastCycle, 0.U, otf.output.quotient)
-  quotientMinusOne:= Mux(isLastCycle, 0.U, otf.output.quotientMinusOne)
+  quotient := Mux(isLastCycle, 0.U, otf.output.quotient)
+  quotientMinusOne := Mux(isLastCycle, 0.U, otf.output.quotientMinusOne)
 
   partialReminderSum := Mux1H(
     Map(
       isLastCycle -> input.bits.dividend,
-      (counter > 1.U)  -> (csa.out(1) << radixLog2)(xLen - 1, 0),
+      (counter > 1.U) -> (csa.out(1) << radixLog2)(xLen - 1, 0),
       (counter === 1.U) -> csa.out(1)(xLen - 1, 0)
     )
   )
@@ -129,5 +129,3 @@ class SRT(
     )
   )
 }
-
-

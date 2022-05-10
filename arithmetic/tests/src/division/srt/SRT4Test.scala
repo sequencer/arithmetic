@@ -36,8 +36,8 @@ object SRT4Test extends TestSuite with ChiselUtestTester{
             if(dut.output.valid.peek().litValue == 1) {
               flag = true
               dut.clock.step()
-              dut.output.bits.quotient.expect(5.U)
-              dut.output.bits.reminder.expect(0.U)
+              dut.output.bits.quotient.expect(0.U)
+              dut.output.bits.reminder.expect("b01111000".U)
 //              dut.output.bits.quotient.expect(1.U)
 //              dut.output.bits.reminder.expect("b11000".U)
             }
