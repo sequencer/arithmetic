@@ -4,7 +4,7 @@ import addition.csa.CarrySaveAdder
 import addition.csa.common.CSACompressor3_2
 import utils.{extend}
 import chisel3._
-import chisel3.util.{log2Ceil, Counter, DecoupledIO, Mux1H, ValidIO}
+import chisel3.util.{log2Ceil, Counter, DecoupledIO, Fill, Mux1H, ValidIO}
 
 import scala.math.ceil
 
@@ -18,8 +18,8 @@ import scala.math.ceil
   */
 
 class SRTInput(dividendWidth: Int, dividerWidth: Int, n: Int) extends Bundle {
-  val dividend = UInt(dividendWidth.W) //0.1**********
-  val divider = UInt(dividerWidth.W) //0.1**********
+  val dividend = UInt(dividendWidth.W) //.1**********
+  val divider = UInt(dividerWidth.W) //.1**********
   val counter = UInt(log2Ceil(n).W) //the width of quotient.
 }
 
@@ -39,7 +39,7 @@ class SRT(
   rTruncateWidth: Int = 4)
     extends Module {
 
-  val xLen:    Int = dividendWidth + radixLog2
+  val xLen:    Int = dividendWidth + radixLog2 + 1
   val ohWidth: Int = 2 * a + 1
 
   // IO
@@ -66,9 +66,10 @@ class SRT(
   input.ready := isLastCycle
 
   // lastCycle-> correct-> output
+  // only mux is in lastCycle, adder is not inlastCycle
   val remainderNoCorrect: UInt = partialReminderSum(xLen - 3, 0) + partialReminderCarry(xLen - 3, 0)
-  val needCorrect:        Bool = Mux(isLastCycle, remainderNoCorrect.head(1).asBool, false.B)
   val remainderCorrect:   UInt = partialReminderSum(xLen - 3, 0) + partialReminderCarry(xLen - 3, 0) + divider
+  val needCorrect:        Bool = remainderNoCorrect.head(1).asBool
   output.bits.reminder := Mux(needCorrect, remainderCorrect, remainderNoCorrect)
   output.bits.quotient := quotient - needCorrect.asUInt
 
@@ -79,7 +80,7 @@ class SRT(
   qds.input.partialReminderCarry := partialReminderCarry.head(rWidth)
   qds.partialDivider.valid := input.valid && input.ready
   qds.partialDivider.bits := input.bits.divider
-    .head(dTruncateWidth + 1)(dTruncateWidth - 2, 0) //0.1********** -> 0.1*** -> ***
+    .head(dTruncateWidth)(dTruncateWidth - 1, 0) //.1********** -> .1*** -> ***
   qdsSign := qds.output.selectedQuotientOH(ohWidth - 1, ohWidth / 2).orR
 
   // for SRT4 -> CSA32
@@ -97,8 +98,8 @@ class SRT(
         case -2 => divider << 1
         case -1 => divider
         case 0  => 0.U
-        case 1  => extend(~divider, xLen)
-        case 2  => extend(~divider << 1, xLen)
+        case 1  => Fill(1 + radixLog2, 1.U(1.W)) ## ~divider
+        case 2  => Fill(radixLog2, 1.U(1.W)) ## (~divider << 1)
       })
     )
 
@@ -113,6 +114,25 @@ class SRT(
 
   quotient := Mux(isLastCycle, 0.U, otf.output.quotient)
   quotientMinusOne := Mux(isLastCycle, 0.U, otf.output.quotientMinusOne)
+//  //shiftleft before csa
+//  partialReminderSum := Mux(isLastCycle, input.bits.dividend >> radixLog2, csa.out(1))
+//  partialReminderCarry := Mux(isLastCycle, 0.U, csa.out(0) << 1)
+//  val csa = Module(new CarrySaveAdder(CSACompressor3_2, xLen))
+//  //csa.in(0) := Mux(counter === input.bits.counter, input.bits.dividend, partialReminderSum )
+//  csa.in(0) := partialReminderSum << radixLog2
+//  csa.in(1) := ((partialReminderCarry << radixLog2)(xLen - 1, 1) ## qdsSign)
+//  csa.in(2) :=
+//    Mux1H(
+//      qds.output.selectedQuotientOH,
+//      //this is for SRT4, for SRT8 or SRT16, this should be changed
+//      VecInit((-2 to 2).map {
+//        case -2 => divider << 1
+//        case -1 => divider
+//        case 0  => 0.U
+//        case 1  => Fill(1 + radixLog2, 1.U(1.W)) ## ~divider
+//        case 2  => Fill(radixLog2, 1.U(1.W)) ## (~divider << 1)
+//      })
+//    )
 
   partialReminderSum := Mux1H(
     Map(
