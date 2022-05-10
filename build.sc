@@ -15,6 +15,11 @@ object v {
   val utest = ivy"com.lihaoyi::utest:latest.integration"
   val upickle = ivy"com.lihaoyi::upickle:latest.integration"
   val osLib = ivy"com.lihaoyi::os-lib:latest.integration"
+//  val breeze = ivy"com.github.ktakagaki.breeze::breeze:2.0"
+//  val breezeNatives = ivy"com.github.ktakagaki.breeze::breeze-natives:2.0"
+//  val breezeViz = ivy"org.scalanlp::breeze-viz:2.0"
+  val spire = ivy"org.typelevel::spire:0.17.0"
+  val evilplot = ivy"io.github.cibotech::evilplot:0.8.1"
 //  val prime = ivy"org.apache.commons:commons-math3:3.6.1"
 }
 
@@ -38,6 +43,11 @@ class arithmetic extends ScalaModule with ScalafmtModule with PublishModule { m 
     v.chiseltest,
     v.upickle,
     v.osLib,
+//    v.breeze,
+//    v.breezeViz,
+//    v.breezeNatives,
+    v.spire,
+    v.evilplot
   )
 
   object tests extends Tests with Utest {
