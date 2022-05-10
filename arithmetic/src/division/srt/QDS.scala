@@ -29,6 +29,7 @@ class QDS(rWidth: Int, ohWidth: Int, partialDividerWidth: Int) extends Module {
   val partialDividerLatch = Mux(partialDivider.valid, partialDivider.bits, partialDividerReg)
 
   // Datapath
+
   // from XiangShan/P269 in <Digital Arithmetic> : /16， should have got from SRTTable.
   // val qSelTable = Array(
   //   Array(12, 4, -4, -13),
@@ -74,4 +75,5 @@ class QDS(rWidth: Int, ohWidth: Int, partialDividerWidth: Int) extends Module {
       BitPat("b10000") //2
     )
   )
+
 }
