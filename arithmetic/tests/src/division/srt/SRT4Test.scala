@@ -11,12 +11,13 @@ object SRT4Test extends TestSuite with ChiselUtestTester{
       val dividendWidth: Int = 7
       val dividerWidth: Int  = 7
       val n: Int = 10
-      val dividend: Int = 15 << 3
-      val divider:  Int = 3 << 5
+      val dividend: Int = scala.util.Random.nextInt(scala.math.pow(2, n).toInt)
+      val divider: Int = scala.util.Random.nextInt(scala.math.pow(2, n).toInt)
       val counter: Int = 2
       val quotient: Int = dividend / divider
       val remainder:  Int = dividend % divider
       // test
+      //println(chisel3.stage.ChiselStage.emitVerilog(new SRT(dividendWidth, dividerWidth, n)))
       testCircuit(new SRT(dividendWidth, dividerWidth, n),
         Seq(chiseltest.internal.NoThreadingAnnotation,
         chiseltest.simulator.WriteVcdAnnotation)){
@@ -39,6 +40,7 @@ object SRT4Test extends TestSuite with ChiselUtestTester{
               dut.clock.step()
           }
             utest.assert(flag)
+          dut.clock.step(scala.util.Random.nextInt(5))
       }
     }
   }
