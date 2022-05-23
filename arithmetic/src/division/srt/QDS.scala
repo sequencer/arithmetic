@@ -47,14 +47,14 @@ class QDS(rWidth: Int, ohWidth: Int, partialDividerWidth: Int) extends Module {
     VecInit("b111_0010".U, "b111_1100".U, "b000_0110".U, "b000_1111".U),
     VecInit("b111_0001".U, "b111_1100".U, "b000_0110".U, "b001_0000".U),
     VecInit("b111_0000".U, "b111_1100".U, "b000_0110".U, "b001_0010".U),
-    VecInit("b110_1101".U, "b111_1010".U, "b000_1000".U, "b001_0100".U),
+    VecInit("b110_1110".U, "b111_1010".U, "b000_1000".U, "b001_0100".U),
     VecInit("b110_1100".U, "b111_1010".U, "b000_1000".U, "b001_0100".U),
     VecInit("b110_1100".U, "b111_1000".U, "b000_1000".U, "b001_0110".U),
     VecInit("b110_1000".U, "b111_1000".U, "b000_1000".U, "b001_1000".U)
   )
 
   val mkVec = selectRom(columnSelect)
-  val adderWidth = rWidth + 1
+  val adderWidth = rWidth + 2
   val selectPoints = VecInit(mkVec.map { mk =>
     // extend signed to avoid overflow. only for srt4, because -44/16 < y^ < 42/16.
     (extend(input.partialReminderCarry, adderWidth).asUInt
