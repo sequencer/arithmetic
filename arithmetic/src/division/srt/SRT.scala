@@ -2,11 +2,8 @@ package division.srt
 
 import addition.csa.CarrySaveAdder
 import addition.csa.common.CSACompressor3_2
-import utils.extend
 import chisel3._
-import chisel3.util.{log2Ceil, Counter, DecoupledIO, Fill, Mux1H, RegEnable, ValidIO}
-
-import scala.math.ceil
+import chisel3.util.{log2Ceil, DecoupledIO, Fill, Mux1H, RegEnable, ValidIO}
 
 /** SRT4
   * 1/2 <= d < 1, 1/2 < rho <=1, 0 < q  < 2
@@ -18,7 +15,7 @@ import scala.math.ceil
   */
 
 class SRTInput(dividendWidth: Int, dividerWidth: Int, n: Int) extends Bundle {
-  val dividend = UInt(dividendWidth.W) //.1**********
+  val dividend = UInt(dividendWidth.W) //.***********
   val divider = UInt(dividerWidth.W) //.1**********
   val counter = UInt(log2Ceil(n).W) //the width of quotient.
 }
@@ -59,7 +56,6 @@ class SRT(
   val qdsSign: Bool = Wire(Bool())
   // sign of Cycle, true -> (counter === 0.U)
   val isLastCycle: Bool = Wire(Bool())
-
   // State
   // because we need a CSA to minimize the critical path
   val partialReminderCarry = RegEnable(partialReminderCarryNext, 0.U(wLen.W), input.fire || !isLastCycle)
@@ -91,7 +87,7 @@ class SRT(
   qds.partialDivider.valid := input.fire
   qds.partialDivider.bits := input.bits.divider
     .head(dTruncateWidth)(dTruncateWidth - 1, 0) //.1********** -> .1*** -> ***
-  qdsSign := qds.output.selectedQuotientOH(ohWidth - 1, ohWidth / 2).orR
+  qdsSign := qds.output.selectedQuotientOH(ohWidth - 1, ohWidth / 2 + 1).orR
 
   // for SRT4 -> CSA32
   // for SRT8 -> CSA32+CSA32
@@ -109,7 +105,7 @@ class SRT(
         case -1 => divider
         case 0  => 0.U
         case 1  => Fill(1 + radixLog2, 1.U(1.W)) ## ~divider
-        case 2  => Fill(radixLog2, 1.U(1.W)) ## (~divider << 1)
+        case 2  => Fill(radixLog2, 1.U(1.W)) ## ~(divider << 1)
       })
     )
 
