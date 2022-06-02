@@ -30,7 +30,7 @@ class QDS(rWidth: Int, ohWidth: Int, partialDividerWidth: Int) extends Module {
 
   // Datapath
 
-  // from XiangShan/P269 in <Digital Arithmetic> : /16， should have got from SRTTable.
+  // from P269 in <Digital Arithmetic> : /16， should have got from SRTTable.
   // val qSelTable = Array(
   //   Array(12, 4, -4, -13),
   //   Array(14, 4, -6, -15),
@@ -53,12 +53,11 @@ class QDS(rWidth: Int, ohWidth: Int, partialDividerWidth: Int) extends Module {
     VecInit("b110_1000".U, "b111_1000".U, "b000_1000".U, "b001_1000".U)
   )
 
+  val adderWidth = rWidth + 1
+  val yTruncate: UInt = input.partialReminderCarry + input.partialReminderSum
   val mkVec = selectRom(columnSelect)
-  val adderWidth = rWidth + 2
   val selectPoints = VecInit(mkVec.map { mk =>
-    // extend signed to avoid overflow. only for srt4, because -44/16 < y^ < 42/16.
-    (extend(input.partialReminderCarry, adderWidth).asUInt
-      + extend(input.partialReminderSum, adderWidth).asUInt
+    (extend(yTruncate, adderWidth).asUInt
       + extend(mk, adderWidth).asUInt).head(1)
   }).asUInt
 
@@ -67,13 +66,12 @@ class QDS(rWidth: Int, ohWidth: Int, partialDividerWidth: Int) extends Module {
     selectPoints,
     TruthTable(
       Seq(
-        BitPat("b1???") -> BitPat("b00001"), //-2
-        BitPat("b01??") -> BitPat("b00010"), //-1
-        BitPat("b001?") -> BitPat("b00100"), //0
-        BitPat("b0001") -> BitPat("b01000") //1
+        BitPat("b???0") -> BitPat("b10000"), //2
+        BitPat("b??01") -> BitPat("b01000"), //1
+        BitPat("b?011") -> BitPat("b00100"), //0
+        BitPat("b0111") -> BitPat("b00010") //-1
       ),
-      BitPat("b10000") //2
+      BitPat("b00001") //-2
     )
   )
-
 }
