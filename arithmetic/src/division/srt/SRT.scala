@@ -15,7 +15,7 @@ import chisel3.util.{log2Ceil, DecoupledIO, Fill, Mux1H, RegEnable, ValidIO}
   */
 
 class SRTInput(dividendWidth: Int, dividerWidth: Int, n: Int) extends Bundle {
-  val dividend = UInt(dividendWidth.W) //.***********
+  val dividend = UInt(dividendWidth.W) //000.***********00
   val divider = UInt(dividerWidth.W) //.1**********
   val counter = UInt(log2Ceil(n).W) //the width of quotient.
 }
@@ -47,23 +47,24 @@ class SRT(
   val partialReminderCarryNext = Wire(UInt(wLen.W))
   val partialReminderSumNext = Wire(UInt(wLen.W))
   val dividerNext = Wire(UInt(dividerWidth.W))
-  val counterNext = Wire(UInt(n.W))
+  val counterNext = Wire(UInt(log2Ceil(n).W))
   val quotientNext = Wire(UInt(n.W))
-  val quotientMinusOneNext = Wire(UInt(log2Ceil(n).W))
+  val quotientMinusOneNext = Wire(UInt(n.W))
 
   // Control
   // sign of select quotient, true -> negative, false -> positive
   val qdsSign: Bool = Wire(Bool())
   // sign of Cycle, true -> (counter === 0.U)
   val isLastCycle: Bool = Wire(Bool())
+  val enable:      Bool = input.fire || !isLastCycle
   // State
   // because we need a CSA to minimize the critical path
-  val partialReminderCarry = RegEnable(partialReminderCarryNext, 0.U(wLen.W), input.fire || !isLastCycle)
-  val partialReminderSum = RegEnable(partialReminderSumNext, 0.U(wLen.W), input.fire || !isLastCycle)
-  val divider = RegEnable(dividerNext, 0.U(dividerWidth.W), input.fire || !isLastCycle)
-  val quotient = RegEnable(quotientNext, 0.U(n.W), input.fire || !isLastCycle)
-  val quotientMinusOne = RegEnable(quotientMinusOneNext, 0.U(n.W), input.fire || !isLastCycle)
-  val counter = RegEnable(counterNext, 0.U(log2Ceil(n).W), input.fire || !isLastCycle)
+  val partialReminderCarry = RegEnable(partialReminderCarryNext, 0.U(wLen.W), enable)
+  val partialReminderSum = RegEnable(partialReminderSumNext, 0.U(wLen.W), enable)
+  val divider = RegEnable(dividerNext, 0.U(dividerWidth.W), enable)
+  val quotient = RegEnable(quotientNext, 0.U(n.W), enable)
+  val quotientMinusOne = RegEnable(quotientMinusOneNext, 0.U(n.W), enable)
+  val counter = RegEnable(counterNext, 0.U(log2Ceil(n).W), enable)
 
   //  Datapath
   //  according two adders
@@ -71,12 +72,11 @@ class SRT(
   output.valid := isLastCycle
   input.ready := isLastCycle
 
-  // only mux is in last Cycle, adder is in every Cycle
-  val remainderNoCorrect: UInt = partialReminderSum(wLen - 3, radixLog2) + partialReminderCarry(wLen - 3, radixLog2)
+  val remainderNoCorrect: UInt = partialReminderSum + partialReminderCarry
   val remainderCorrect: UInt =
-    partialReminderSum(wLen - 3, radixLog2) + partialReminderCarry(wLen - 3, radixLog2) + divider
-  val needCorrect: Bool = remainderNoCorrect.head(1).asBool
-  output.bits.reminder := Mux(needCorrect, remainderCorrect, remainderNoCorrect)
+    partialReminderSum + partialReminderCarry + (divider << 2)
+  val needCorrect: Bool = remainderNoCorrect(wLen - 3).asBool
+  output.bits.reminder := Mux(needCorrect, remainderCorrect, remainderNoCorrect)(wLen - 3, radixLog2)
   output.bits.quotient := quotient - needCorrect.asUInt
 
   // qds
