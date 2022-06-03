@@ -42,3 +42,15 @@ class OTF(radix: Int, qWidth: Int, ohWidth: Int) extends Module {
   output.quotient := Mux(cShiftQ, input.quotient, input.quotientMinusOne)(qWidth - 2, 0) ## qIn
   output.quotientMinusOne := Mux(!cShiftQM, input.quotient, input.quotientMinusOne)(qWidth - 2, 0) ## qmIn
 }
+
+object OTF {
+  def apply(radix: Int, qWidth: Int, ohWidth: Int)(quotient: UInt, quotientMinusOne: UInt, selectedQuotientOH: UInt): Vec[UInt] = {
+    val m = new OTF(radix, qWidth, ohWidth)
+    m.input.quotient := quotient
+    m.input.quotientMinusOne := quotientMinusOne
+    m.input.selectedQuotientOH := selectedQuotientOH
+    val out = VecInit(m.output.quotient, m.output.quotientMinusOne)
+    out
+  }
+}
+

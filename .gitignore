@@ -25,3 +25,4 @@ verdiLog
 *.cmd
 *.log
 *.json
+*.iml
