@@ -4,9 +4,10 @@ import chisel3.util.{BitPat, RegEnable, Valid}
 import chisel3.util.experimental.decode._
 import utils.extend
 
-class QDSInput(rWidth: Int) extends Bundle {
+class QDSInput(rWidth: Int, partialDividerWidth: Int) extends Bundle {
   val partialReminderCarry: UInt = UInt(rWidth.W)
   val partialReminderSum:   UInt = UInt(rWidth.W)
+  val partialDivider: UInt = UInt(partialDividerWidth.W)
 }
 
 class QDSOutput(ohWidth: Int) extends Bundle {
@@ -15,20 +16,8 @@ class QDSOutput(ohWidth: Int) extends Bundle {
 
 class QDS(rWidth: Int, ohWidth: Int, partialDividerWidth: Int) extends Module {
   // IO
-  val input = IO(Input(new QDSInput(rWidth)))
+  val input = IO(Input(new QDSInput(rWidth, partialDividerWidth)))
   val output = IO(Output(new QDSOutput(ohWidth)))
-  val partialDivider = IO(Flipped(Valid(UInt(partialDividerWidth.W))))
-
-  // State, in order to keep divider's value
-  val partialDividerReg = RegEnable(partialDivider.bits, partialDivider.valid)
-  // for the first cycle: use partialDivider on the IO
-  // for the reset of cycles: use partialDividerReg
-  // for synthesis: the constraint should be IO -> Output is a multi-cycle design
-  //                                         Reg -> Output is single-cycle
-  // to avoid glitch, valid should be larger than raise time of partialDividerReg
-  val partialDividerLatch = Mux(partialDivider.valid, partialDivider.bits, partialDividerReg)
-
-  // Datapath
 
   // from P269 in <Digital Arithmetic> : /16， should have got from SRTTable.
   // val qSelTable = Array(
@@ -41,7 +30,7 @@ class QDS(rWidth: Int, ohWidth: Int, partialDividerWidth: Int) extends Module {
   //   Array(20, 8, -8, -22),
   //   Array(24, 8, -8, -24)/16
   // )
-  val columnSelect = partialDividerLatch
+  val columnSelect = input.partialDivider
   val selectRom: Vec[Vec[UInt]] = VecInit(
     VecInit("b111_0100".U, "b111_1100".U, "b000_0100".U, "b000_1101".U),
     VecInit("b111_0010".U, "b111_1100".U, "b000_0110".U, "b000_1111".U),
@@ -74,4 +63,14 @@ class QDS(rWidth: Int, ohWidth: Int, partialDividerWidth: Int) extends Module {
       BitPat("b00001") //-2
     )
   )
+}
+
+object QDS{
+  def apply(rWidth: Int, ohWidth: Int, partialDividerWidth: Int)(partialReminderSum: UInt, partialReminderCarry: UInt, partialDivider: UInt): UInt = {
+    val m = new QDS(rWidth, ohWidth, partialDividerWidth)
+    m.input.partialReminderSum := partialReminderSum
+    m.input.partialReminderCarry := partialReminderCarry
+    m.input.partialDivider := partialDivider
+    m.output.selectedQuotientOH
+  }
 }

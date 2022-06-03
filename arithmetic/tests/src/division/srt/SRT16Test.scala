@@ -3,15 +3,18 @@ package division.srt
 import chisel3._
 import chisel3.tester.{ChiselUtestTester, testableClock, testableData}
 import utest._
-import scala.util.{Random}
 
-object SRT4Test extends TestSuite with ChiselUtestTester {
+import scala.util.Random
+
+object SRT16Test extends TestSuite with ChiselUtestTester {
   def tests: Tests = Tests {
     test("SRT4 should pass") {
       def testcase: Unit ={
         // parameters
+        val radixLog2: Int = 4
         val n: Int = 64
-        val m: Int = n - 1
+        // guard
+        val m: Int = n - radixLog2 - 1
         val p: Int = Random.nextInt(m)
         val q: Int = Random.nextInt(m)
         val dividend: BigInt = BigInt(p, Random)
@@ -28,13 +31,14 @@ object SRT4Test extends TestSuite with ChiselUtestTester {
         val zeroHeadDividend: Int = m - zeroCheck(dividend)
         val zeroHeadDivider: Int = m - zeroCheck(divider)
         val needComputerWidth: Int = zeroHeadDivider - zeroHeadDividend + 1 + 1
-        val noguard: Boolean = needComputerWidth % 2 == 0
-        val counter: Int = (needComputerWidth + 1) / 2
+        val noguard: Boolean =  needComputerWidth % radixLog2 == 0
+        val guardWidth: Int =  if (noguard) 0 else 4 - needComputerWidth % 4
+        val counter: Int = (needComputerWidth + guardWidth) / radixLog2
         if ((divider == 0) || (divider > dividend) || (needComputerWidth <= 0))
           return
         val quotient: BigInt = dividend / divider
         val remainder: BigInt = dividend % divider
-        val leftShiftWidthDividend: Int = zeroHeadDividend - (if (noguard) 0 else 1)
+        val leftShiftWidthDividend: Int = zeroHeadDividend - guardWidth
         val leftShiftWidthDivider: Int = zeroHeadDivider
 //        println("dividend = %8x, dividend = %d ".format(dividend, dividend))
 //        println("divider  = %8x, divider  = %d".format(divider, divider))
@@ -43,10 +47,10 @@ object SRT4Test extends TestSuite with ChiselUtestTester {
 //        println("quotient   = %d,  remainder  = %d".format(quotient, remainder))
 //        println("counter   = %d, needComputerWidth = %d".format(counter, needComputerWidth))
         // test
-        testCircuit(new SRT4(n, n, n),
+        testCircuit(new SRT16(n, n, n),
           Seq(chiseltest.internal.NoThreadingAnnotation,
             chiseltest.simulator.WriteVcdAnnotation)) {
-          dut: SRT4 =>
+          dut: SRT16 =>
             dut.clock.setTimeout(0)
             dut.input.valid.poke(true.B)
             dut.input.bits.dividend.poke((dividend << leftShiftWidthDividend).U)

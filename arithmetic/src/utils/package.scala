@@ -55,4 +55,10 @@ package object utils {
     else
       BitPat((x + (1 << w)).U(w.W))
   }
+
+  def staticLeftShift(x: UInt, n: Int): UInt={
+    val length: Int = x.getWidth
+    (x << n)(length- 1 - n, 0)
+  }
+
 }
