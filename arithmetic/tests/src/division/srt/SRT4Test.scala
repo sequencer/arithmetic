@@ -8,9 +8,10 @@ import scala.util.{Random}
 object SRT4Test extends TestSuite with ChiselUtestTester {
   def tests: Tests = Tests {
     test("SRT4 should pass") {
-      def testcase: Unit ={
+      def testcase(width: Int): Unit ={
         // parameters
-        val n: Int = 64
+        val radixLog2: Int = 2
+        val n: Int = width
         val m: Int = n - 1
         val p: Int = Random.nextInt(m)
         val q: Int = Random.nextInt(m)
@@ -28,7 +29,7 @@ object SRT4Test extends TestSuite with ChiselUtestTester {
         val zeroHeadDividend: Int = m - zeroCheck(dividend)
         val zeroHeadDivider: Int = m - zeroCheck(divider)
         val needComputerWidth: Int = zeroHeadDivider - zeroHeadDividend + 1 + 1
-        val noguard: Boolean = needComputerWidth % 2 == 0
+        val noguard: Boolean = needComputerWidth % radixLog2 == 0
         val counter: Int = (needComputerWidth + 1) / 2
         if ((divider == 0) || (divider > dividend) || (needComputerWidth <= 0))
           return
@@ -69,10 +70,10 @@ object SRT4Test extends TestSuite with ChiselUtestTester {
             dut.clock.step(scala.util.Random.nextInt(10))
         }
       }
-      
-      testcase
-//      for( i <- 1 to 1000){
-//        testcase
+
+      testcase(64)
+//      for( i <- 1 to 100){
+//        testcase(128)
 //      }
     }
   }

@@ -4,7 +4,7 @@ import addition.csa.CarrySaveAdder
 import addition.csa.common.CSACompressor3_2
 import chisel3._
 import chisel3.util.{log2Ceil, DecoupledIO, Fill, Mux1H, RegEnable, ValidIO}
-import utils.staticLeftShift
+import utils.leftShift
 
 /** SRT4
   * 1/2 <= d < 1, 1/2 < rho <=1, 0 < q  < 2
@@ -16,7 +16,7 @@ import utils.staticLeftShift
   */
 
 class SRTInput(dividendWidth: Int, dividerWidth: Int, n: Int) extends Bundle {
-  val dividend = UInt(dividendWidth.W) //000.***********00
+  val dividend = UInt(dividendWidth.W) //.***********
   val divider = UInt(dividerWidth.W) //.1**********
   val counter = UInt(log2Ceil(n).W) //the width of quotient.
 }
@@ -28,14 +28,14 @@ class SRTOutput(reminderWidth: Int, quotientWidth: Int) extends Bundle {
 
 // only SRT4 currently
 class SRT4(
-           dividendWidth:  Int,
-           dividerWidth:   Int,
-           n:              Int, // the longest width
-           radixLog2:      Int = 2,
-           a:              Int = 2,
-           dTruncateWidth: Int = 4,
-           rTruncateWidth: Int = 4)
-  extends Module {
+  dividendWidth:  Int,
+  dividerWidth:   Int,
+  n:              Int, // the longest width
+  radixLog2:      Int = 2,
+  a:              Int = 2,
+  dTruncateWidth: Int = 4,
+  rTruncateWidth: Int = 4)
+    extends Module {
 
   val xLen:    Int = dividendWidth + radixLog2 + 1
   val wLen:    Int = xLen + radixLog2
@@ -49,7 +49,7 @@ class SRT4(
   val quotientNext, quotientMinusOneNext = Wire(UInt(n.W))
   val dividerNext = Wire(UInt(dividerWidth.W))
   val counterNext = Wire(UInt(log2Ceil(n).W))
-  
+
   // Control
   // sign of select quotient, true -> negative, false -> positive
   // sign of Cycle, true -> (counter === 0.U)
@@ -66,37 +66,35 @@ class SRT4(
 
   //  Datapath
   //  according two adders
-  isLastCycle  := !counter.orR
+  isLastCycle := !counter.orR
   output.valid := isLastCycle
-  input.ready  := isLastCycle
-  enable       := input.fire || !isLastCycle
+  input.ready := isLastCycle
+  enable := input.fire || !isLastCycle
 
   val remainderNoCorrect: UInt = partialReminderSum + partialReminderCarry
   val remainderCorrect: UInt =
     partialReminderSum + partialReminderCarry + (divider << 2)
   val needCorrect: Bool = remainderNoCorrect(wLen - 3).asBool
-  output.bits.reminder := Mux(needCorrect, remainderCorrect, remainderNoCorrect)(wLen - 3, radixLog2)
-  output.bits.quotient := quotient - needCorrect.asUInt
-//  output.bits.quotient := Mux(needCorrect, quotientMinusOne, quotient)
+  output.bits.reminder := Mux(needCorrect, remainderCorrect, remainderNoCorrect)(wLen - 4, radixLog2)
+  output.bits.quotient := Mux(needCorrect, quotientMinusOne, quotient)
 
   // qds
   val rWidth: Int = 1 + radixLog2 + rTruncateWidth
-  val qds = Module(new QDS(rWidth, ohWidth, dTruncateWidth - 1))
-  qds.input.partialReminderSum := staticLeftShift(partialReminderSum, radixLog2).head(rWidth)
-  qds.input.partialReminderCarry := staticLeftShift(partialReminderCarry, radixLog2).head(rWidth)
-  qds.input.partialDivider := dividerNext.head(dTruncateWidth)(dTruncateWidth - 1, 0) //.1********** -> .1*** -> ***
-  qdsSign := qds.output.selectedQuotientOH(ohWidth - 1, ohWidth / 2 + 1).orR
+  val selectedQuotientOH: UInt =
+    QDS(rWidth, ohWidth, dTruncateWidth - 1)(
+      leftShift(partialReminderSum, radixLog2).head(rWidth),
+      leftShift(partialReminderCarry, radixLog2).head(rWidth),
+      dividerNext.head(dTruncateWidth)(dTruncateWidth - 2, 0) //.1********* -> 1*** -> ***
+    )
+  qdsSign := selectedQuotientOH(ohWidth - 1, ohWidth / 2 + 1).orR
 
-  // for SRT4 -> CSA32
-  // for SRT8 -> CSA32+CSA32
-  // for SRT16 -> CSA53+CSA32
-  // SRT16 <- SRT4 + SRT4*5
+  // csa for SRT4 -> CSA32, SRT8 -> CSA32+CSA32, SRT16 -> CSA53+CSA32, SRT16 <- SRT4 + SRT4*5
   val csa = Module(new CarrySaveAdder(CSACompressor3_2, xLen))
-  csa.in(0) := staticLeftShift(partialReminderSum, radixLog2).head(wLen - radixLog2)
-  csa.in(1) := staticLeftShift(partialReminderCarry, radixLog2).head(wLen - radixLog2 -1) ## qdsSign
+  csa.in(0) := leftShift(partialReminderSum, radixLog2).head(wLen - radixLog2)
+  csa.in(1) := leftShift(partialReminderCarry, radixLog2).head(wLen - radixLog2 - 1) ## qdsSign
   csa.in(2) :=
     Mux1H(
-      qds.output.selectedQuotientOH,
+      selectedQuotientOH,
       //this is for SRT4, for SRT8 or SRT16, this should be changed
       VecInit((-2 to 2).map {
         case -2 => divider << 1
@@ -108,17 +106,12 @@ class SRT4(
     )
 
   // On-The-Fly conversion
-  val otf = Module(new OTF(1 << radixLog2, n, ohWidth))
-  otf.input.quotient := quotient
-  otf.input.quotientMinusOne := quotientMinusOne
-  otf.input.selectedQuotientOH := qds.output.selectedQuotientOH
+  val otf = OTF(1 << radixLog2, n, ohWidth)(quotient, quotientMinusOne, selectedQuotientOH)
 
   dividerNext := Mux(input.fire, input.bits.divider, divider)
   counterNext := Mux(input.fire, input.bits.counter, counter - 1.U)
-
-  quotientNext := Mux(input.fire, 0.U, otf.output.quotient)
-  quotientMinusOneNext := Mux(input.fire, 0.U, otf.output.quotientMinusOne)
-
+  quotientNext := Mux(input.fire, 0.U, otf(0))
+  quotientMinusOneNext := Mux(input.fire, 0.U, otf(1))
   partialReminderSumNext := Mux(input.fire, input.bits.dividend, csa.out(1) << radixLog2)
   partialReminderCarryNext := Mux(input.fire, 0.U, csa.out(0) << 1 + radixLog2)
 }

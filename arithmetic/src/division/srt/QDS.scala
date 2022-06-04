@@ -7,7 +7,7 @@ import utils.extend
 class QDSInput(rWidth: Int, partialDividerWidth: Int) extends Bundle {
   val partialReminderCarry: UInt = UInt(rWidth.W)
   val partialReminderSum:   UInt = UInt(rWidth.W)
-  val partialDivider: UInt = UInt(partialDividerWidth.W)
+  val partialDivider:       UInt = UInt(partialDividerWidth.W)
 }
 
 class QDSOutput(ohWidth: Int) extends Bundle {
@@ -65,9 +65,16 @@ class QDS(rWidth: Int, ohWidth: Int, partialDividerWidth: Int) extends Module {
   )
 }
 
-object QDS{
-  def apply(rWidth: Int, ohWidth: Int, partialDividerWidth: Int)(partialReminderSum: UInt, partialReminderCarry: UInt, partialDivider: UInt): UInt = {
-    val m = new QDS(rWidth, ohWidth, partialDividerWidth)
+object QDS {
+  def apply(
+    rWidth:               Int,
+    ohWidth:              Int,
+    partialDividerWidth:  Int
+  )(partialReminderSum:   UInt,
+    partialReminderCarry: UInt,
+    partialDivider:       UInt
+  ): UInt = {
+    val m = Module(new QDS(rWidth, ohWidth, partialDividerWidth))
     m.input.partialReminderSum := partialReminderSum
     m.input.partialReminderCarry := partialReminderCarry
     m.input.partialDivider := partialDivider

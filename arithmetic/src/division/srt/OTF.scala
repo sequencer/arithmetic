@@ -17,7 +17,6 @@ class OTFOutput(qWidth: Int) extends Bundle {
 class OTF(radix: Int, qWidth: Int, ohWidth: Int) extends Module {
   val input = IO(Input(new OTFInput(qWidth, ohWidth)))
   val output = IO(Output(new OTFOutput(qWidth)))
-  // control
 
   // datapath
   // q_j+1 in this circle, only for srt4
@@ -35,17 +34,23 @@ class OTF(radix: Int, qWidth: Int, ohWidth: Int) extends Module {
   // val cShiftQM: Bool = qNext <=  0.U
   val cShiftQ:  Bool = input.selectedQuotientOH(ohWidth - 1, ohWidth / 2).orR
   val cShiftQM: Bool = input.selectedQuotientOH(ohWidth / 2, 0).orR
-
-  val qIn:  UInt = Mux(cShiftQ, qNext, radix.U + qNext)(1, 0)
-  val qmIn: UInt = Mux(!cShiftQM, qNext - 1.U, (radix - 1).U + qNext)(1, 0)
+  val qIn:      UInt = Mux(cShiftQ, qNext, radix.U + qNext)(1, 0)
+  val qmIn:     UInt = Mux(!cShiftQM, qNext - 1.U, (radix - 1).U + qNext)(1, 0)
 
   output.quotient := Mux(cShiftQ, input.quotient, input.quotientMinusOne)(qWidth - 2, 0) ## qIn
   output.quotientMinusOne := Mux(!cShiftQM, input.quotient, input.quotientMinusOne)(qWidth - 2, 0) ## qmIn
 }
 
 object OTF {
-  def apply(radix: Int, qWidth: Int, ohWidth: Int)(quotient: UInt, quotientMinusOne: UInt, selectedQuotientOH: UInt): Vec[UInt] = {
-    val m = new OTF(radix, qWidth, ohWidth)
+  def apply(
+    radix:              Int,
+    qWidth:             Int,
+    ohWidth:            Int
+  )(quotient:           UInt,
+    quotientMinusOne:   UInt,
+    selectedQuotientOH: UInt
+  ): Vec[UInt] = {
+    val m = Module(new OTF(radix, qWidth, ohWidth))
     m.input.quotient := quotient
     m.input.quotientMinusOne := quotientMinusOne
     m.input.selectedQuotientOH := selectedQuotientOH
@@ -53,4 +58,3 @@ object OTF {
     out
   }
 }
-
