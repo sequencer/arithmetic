@@ -8,15 +8,14 @@ import scala.util.Random
 
 object SRT16Test extends TestSuite with ChiselUtestTester {
   def tests: Tests = Tests {
-    test("SRT4 should pass") {
-      def testcase: Unit ={
+    test("SRT16 should pass") {
+      def testcase(width: Int): Unit ={
         // parameters
         val radixLog2: Int = 4
-        val n: Int = 64
-        // guard
-        val m: Int = n - radixLog2 - 1
-        val p: Int = Random.nextInt(m)
-        val q: Int = Random.nextInt(m)
+        val n: Int = width
+        val m: Int = n - 1
+        val p: Int = Random.nextInt(m - radixLog2 +1) //order to offer guardwidth
+        val q: Int = Random.nextInt(m - radixLog2 +1)
         val dividend: BigInt = BigInt(p, Random)
         val divider: BigInt = BigInt(q, Random)
         def zeroCheck(x: BigInt): Int = {
@@ -40,12 +39,6 @@ object SRT16Test extends TestSuite with ChiselUtestTester {
         val remainder: BigInt = dividend % divider
         val leftShiftWidthDividend: Int = zeroHeadDividend - guardWidth
         val leftShiftWidthDivider: Int = zeroHeadDivider
-//        println("dividend = %8x, dividend = %d ".format(dividend, dividend))
-//        println("divider  = %8x, divider  = %d".format(divider, divider))
-//        println("zeroHeadDividend  = %d,  dividend << zeroHeadDividend = %d".format(zeroHeadDividend, dividend << leftShiftWidthDividend))
-//        println("zeroHeadDivider   = %d,  divider << zeroHeadDivider  = %d".format(zeroHeadDivider, divider << leftShiftWidthDivider))
-//        println("quotient   = %d,  remainder  = %d".format(quotient, remainder))
-//        println("counter   = %d, needComputerWidth = %d".format(counter, needComputerWidth))
         // test
         testCircuit(new SRT16(n, n, n),
           Seq(chiseltest.internal.NoThreadingAnnotation,
@@ -73,10 +66,10 @@ object SRT16Test extends TestSuite with ChiselUtestTester {
             dut.clock.step(scala.util.Random.nextInt(10))
         }
       }
-      
-      testcase
-//      for( i <- 1 to 1000){
-//        testcase
+
+      testcase(64)
+//      for( i <- 1 to 100){
+//        testcase(128)
 //      }
     }
   }
