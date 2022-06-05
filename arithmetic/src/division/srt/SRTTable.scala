@@ -68,7 +68,7 @@ case class SRTTable(
     (aMin.toInt to aMax.toInt).drop(1).map { k =>
       k -> dSet.dropRight(1).map { d =>
         val (floor, ceil) = xRange(k, d, d + deltaD)
-        val m: Seq[Algebraic] = xSet.filter { x: Algebraic => x <= ceil && x >= floor }
+        val m: Seq[Algebraic] = xSet.filter { x: Algebraic => x <= (ceil - deltaX) && x >= floor }
         (d, m)
       }
     }
@@ -98,7 +98,7 @@ case class SRTTable(
   private val xStep = (xMax - xMin) / deltaX
   // @note 5.7
   require(a >= radix / 2)
-  private val xSet = Seq.tabulate((xStep + 1).toInt) { n => xMin + deltaX * n }
+  private val xSet = Seq.tabulate((xStep/2 + 1).toInt) { n => deltaX * n } ++ Seq.tabulate((xStep/2 + 1).toInt) { n => -deltaX * n }
 
   private val dStep: Algebraic = (dMax - dMin) / deltaD
   assert((rho > 1 / 2) && (rho <= 1))

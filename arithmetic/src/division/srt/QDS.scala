@@ -1,6 +1,6 @@
 package division.srt
 import chisel3._
-import chisel3.util.{BitPat, RegEnable, Valid}
+import chisel3.util.{BitPat}
 import chisel3.util.experimental.decode._
 import utils.extend
 

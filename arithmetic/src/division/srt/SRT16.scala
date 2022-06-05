@@ -98,8 +98,8 @@ class SRT16(
   wc2 := csa2(0) << radixLog2 + 1
 
   // On-The-Fly conversion
-  val otf1 = OTF(1 << radixLog2, n, ohWidth)(quotient, quotientMinusOne, qds1SelectedQuotientOH)
-  val otf2 = OTF(1 << radixLog2, n, ohWidth)(otf1(0), otf1(1), qds2SelectedQuotientOH)
+  val otf1 = OTF(radixLog2, n, ohWidth)(quotient, quotientMinusOne, qds1SelectedQuotientOH)
+  val otf2 = OTF(radixLog2, n, ohWidth)(otf1(0), otf1(1), qds2SelectedQuotientOH)
 
   dividerNext := Mux(input.fire, input.bits.divider, divider)
   counterNext := Mux(input.fire, input.bits.counter, counter - 1.U)

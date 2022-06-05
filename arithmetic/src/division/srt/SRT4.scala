@@ -106,7 +106,7 @@ class SRT4(
     )
 
   // On-The-Fly conversion
-  val otf = OTF(1 << radixLog2, n, ohWidth)(quotient, quotientMinusOne, selectedQuotientOH)
+  val otf = OTF(radixLog2, n, ohWidth)(quotient, quotientMinusOne, selectedQuotientOH)
 
   dividerNext := Mux(input.fire, input.bits.divider, divider)
   counterNext := Mux(input.fire, input.bits.counter, counter - 1.U)
