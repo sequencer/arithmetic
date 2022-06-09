@@ -10,7 +10,10 @@ class Montgomery(pWidth: Int = 4096, addPipe: Int) extends Module {
   val pPrime = IO(Input(Bool()))
   val a = IO(Input(UInt(pWidth.W)))
   val b = IO(Input(UInt(pWidth.W)))
-  val input_width = IO(Input(UInt(pWidth.W))) // input_width should be 2^(ceil(log2(p))-1)  (i.e., if p = 0b100111, input_width = 0b100000)
+  val input_width =
+    IO(
+      Input(UInt(pWidth.W))
+    ) // input_width should be 2^(ceil(log2(p))-1)  (i.e., if p = 0b100111, input_width = 0b100000)
   val valid = IO(Input(Bool())) // input valid
   val out = IO(Output(UInt(pWidth.W)))
   val out_valid = IO(Output(Bool())) // output valid
