@@ -10,11 +10,11 @@ class Montgomery(pWidth: Int = 4096, addPipe: Int) extends Module {
   val pPrime = IO(Input(Bool()))
   val a = IO(Input(UInt(pWidth.W)))
   val b = IO(Input(UInt(pWidth.W)))
-  val b_add_p = IO(Input(UInt((pWidth + 1).W))) // b + p
   val valid = IO(Input(Bool())) // input valid
   val out = IO(Output(UInt(pWidth.W)))
   val out_valid = IO(Output(Bool())) // output valid
 
+  val b_add_p = Reg(UInt((pWidth + 1).W))
   val u = Reg(Bool())
   val i = Reg(UInt((pWidth).W))
   val nextT = Reg(UInt((pWidth + 2).W))
@@ -37,7 +37,7 @@ class Montgomery(pWidth: Int = 4096, addPipe: Int) extends Module {
   }
 
   val state = RegInit(StateType.s0)
-  val isAdd = (state.asUInt & "b10101110".U).orR
+  val isAdd = (state.asUInt & "b10101111".U).orR
   adder.valid := isAdd
   val addDoneNext = RegInit(false.B)
   addDoneNext := addDone
@@ -71,10 +71,11 @@ class Montgomery(pWidth: Int = 4096, addPipe: Int) extends Module {
         TruthTable.fromString(
           Seq(
             to(s0, valid = N)(s0),
-            to(s0, valid = Y, a_i = Y, u = N)(s1),
-            to(s0, valid = Y, a_i = N, u = Y)(s2),
-            to(s0, valid = Y, a_i = Y, u = Y)(s3),
-            to(s0, valid = Y, a_i = N, u = N)(s7),
+            to(s0, valid = Y, addDone = N)(s0),
+            to(s0, valid = Y, addDone = Y, a_i = Y, u = N)(s1),
+            to(s0, valid = Y, addDone = Y, a_i = N, u = Y)(s2),
+            to(s0, valid = Y, addDone = Y, a_i = Y, u = Y)(s3),
+            to(s0, valid = Y, addDone = Y, a_i = N, u = N)(s7),
             to(s1, addDone = Y)(s4),
             to(s1, addDone = N)(s1),
             to(s2, addDone = Y)(s4),
@@ -106,6 +107,8 @@ class Montgomery(pWidth: Int = 4096, addPipe: Int) extends Module {
     )
   )
 
+  b_add_p := Mux(addDone & state.asUInt()(0), debounceAdd, b_add_p)
+
   u := Mux1H(
     Map(
       state.asUInt()(0) -> (a(0).asUInt & b(0).asUInt & pPrime.asUInt),
@@ -131,17 +134,22 @@ class Montgomery(pWidth: Int = 4096, addPipe: Int) extends Module {
     )
   )
 
-  adder.a := nextT
+  adder.a := Mux1H(
+    Map(
+      state.asUInt()(0) -> p,
+      (state.asUInt & "b11111110".U).orR -> nextT
+    )
+  )
   adder.b := Mux1H(
     Map(
-      state.asUInt()(1) -> b,
+      (state.asUInt & "b00000011".U).orR -> b,
       state.asUInt()(2) -> p,
       state.asUInt()(3) -> b_add_p,
       state.asUInt()(7) -> 0.U,
       state.asUInt()(5) -> -p
     )
   )
-  val debounceAdd = Mux(addDone, adder.z, 0.U)
+  lazy val debounceAdd = Mux(addDone, adder.z, 0.U)
   when(addDone)(add_stable := debounceAdd)
 
   // output
