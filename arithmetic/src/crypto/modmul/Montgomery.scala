@@ -10,6 +10,7 @@ class Montgomery(pWidth: Int = 4096, addPipe: Int) extends Module {
   val pPrime = IO(Input(Bool()))
   val a = IO(Input(UInt(pWidth.W)))
   val b = IO(Input(UInt(pWidth.W)))
+  val input_width = IO(Input(UInt(pWidth.W))) // input_width should be 2^(ceil(log2(p))-1)  (i.e., if p = 0b100111, input_width = 0b100000)
   val valid = IO(Input(Bool())) // input valid
   val out = IO(Output(UInt(pWidth.W)))
   val out_valid = IO(Output(Bool())) // output valid
@@ -44,9 +45,10 @@ class Montgomery(pWidth: Int = 4096, addPipe: Int) extends Module {
   lazy val addDone = if (addPipe != 0) Counter(isAdd && (~addDoneNext), addPipe + 1)._2 else true.B
   val addSign = ((add_stable >> 1) < p.asUInt)
   val a_i = Reg(Bool())
+  val iBreak = (i.asUInt >= input_width.asUInt)
   state := chisel3.util.experimental.decode
     .decoder(
-      state.asUInt() ## addDoneNext ## valid ## i.head(1) ## addSign ## u ## a_i, {
+      state.asUInt() ## addDoneNext ## valid ## i.head(1) ## iBreak ## addSign ## u ## a_i, {
         val Y = "1"
         val N = "0"
         val DC = "?"
@@ -55,11 +57,12 @@ class Montgomery(pWidth: Int = 4096, addPipe: Int) extends Module {
           addDone: String = DC,
           valid:   String = DC,
           iHead:   String = DC,
+          iBreak:  String = DC,
           addSign: String = DC,
           u:       String = DC,
           a_i:     String = DC
         )(stateO:  String
-        ) = s"$stateI$addDone$valid$iHead$addSign$u$a_i->$stateO"
+        ) = s"$stateI$addDone$valid$iHead$iBreak$addSign$u$a_i->$stateO"
         val s0 = "00000001"
         val s1 = "00000010"
         val s2 = "00000100"
@@ -84,12 +87,12 @@ class Montgomery(pWidth: Int = 4096, addPipe: Int) extends Module {
             to(s3, addDone = N)(s3),
             to(s7, addDone = Y)(s4),
             to(s7, addDone = N)(s7),
-            to(s4, iHead = Y, addSign = N)(s5),
-            to(s4, iHead = Y, addSign = Y)(s6),
-            to(s4, iHead = N, a_i = Y, u = N)(s1),
-            to(s4, iHead = N, a_i = N, u = Y)(s2),
-            to(s4, iHead = N, a_i = Y, u = Y)(s3),
-            to(s4, iHead = N, a_i = N, u = N)(s7),
+            to(s4, iBreak = Y, addSign = N)(s5),
+            to(s4, iBreak = Y, addSign = Y)(s6),
+            to(s4, iHead = N, iBreak = N, a_i = Y, u = N)(s1),
+            to(s4, iHead = N, iBreak = N, a_i = N, u = Y)(s2),
+            to(s4, iHead = N, iBreak = N, a_i = Y, u = Y)(s3),
+            to(s4, iHead = N, iBreak = N, a_i = N, u = N)(s7),
             to(s5, addDone = Y)(s6),
             to(s5, addDone = N)(s5),
             "????????"
