@@ -87,18 +87,28 @@ case class SRTTable(
   }
 
   // TODO: select a Constant from each m, then offer the table to QDS.
-  // select rule: symmetry and draw a line parallel to the Y-axis, how define the rule
-  // lazy val qdsTables: Seq[(Algebraic, Algebraic)] = {
-  //   tables.map {
-  //     case (i, ps) =>
-  //         ps.flatMap { case (d, xs) => xs.filter{ x: Algebraic => ??? }.map(x => ((d<<dTruncateWidth).toInt, (x<<xTruncateWidth).toInt)) },
-  //   }
-  // }
+  // select rule: symmetry and draw a line parallel to the X-axis, how define the rule
+  lazy val tablesToQDS: Seq[Seq[Int]] = {
+    (aMin.toInt to aMax.toInt).drop(1).map { k =>
+      k -> dSet.dropRight(1).map { d =>
+        val (floor, ceil) = xRange(k, d, d + deltaD)
+        val m: Seq[Algebraic] = xSet.filter { x: Algebraic => x <= (ceil - deltaX) && x >= floor }
+        (d, m.head)
+      }
+    }
+  }.flatMap {
+    case (i, ps) =>
+      ps.map {
+        case (x, y) => (x.toDouble, y.toDouble * 16)
+      }
+  }.groupBy(_._1).toSeq.sortBy(_._1).map { case (x, y) => y.map { case (x, y) => y.toInt }.reverse }
 
   private val xStep = (xMax - xMin) / deltaX
   // @note 5.7
   require(a >= radix / 2)
-  private val xSet = Seq.tabulate((xStep/2 + 1).toInt) { n => deltaX * n } ++ Seq.tabulate((xStep/2 + 1).toInt) { n => -deltaX * n }
+  private val xSet = Seq.tabulate((xStep / 2 + 1).toInt) { n => deltaX * n } ++ Seq.tabulate((xStep / 2 + 1).toInt) {
+    n => -deltaX * n
+  }
 
   private val dStep: Algebraic = (dMax - dMin) / deltaD
   assert((rho > 1 / 2) && (rho <= 1))

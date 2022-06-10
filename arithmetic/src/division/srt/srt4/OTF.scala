@@ -1,7 +1,7 @@
-package division.srt
+package division.srt.srt4
 
 import chisel3._
-import chisel3.util.{Mux1H}
+import chisel3.util.Mux1H
 
 class OTFInput(qWidth: Int, ohWidth: Int) extends Bundle {
   val quotient = UInt(qWidth.W)
@@ -38,8 +38,8 @@ class OTF(radixLog2: Int, qWidth: Int, ohWidth: Int) extends Module {
   val qIn:      UInt = Mux(cShiftQ, qNext, radix.U + qNext)(radixLog2 - 1, 0)
   val qmIn:     UInt = Mux(!cShiftQM, qNext - 1.U, (radix - 1).U + qNext)(radixLog2 - 1, 0)
 
-  output.quotient := Mux(cShiftQ, input.quotient, input.quotientMinusOne)(qWidth - 2, 0) ## qIn
-  output.quotientMinusOne := Mux(!cShiftQM, input.quotient, input.quotientMinusOne)(qWidth - 2, 0) ## qmIn
+  output.quotient := Mux(cShiftQ, input.quotient, input.quotientMinusOne)(qWidth - radixLog2, 0) ## qIn
+  output.quotientMinusOne := Mux(!cShiftQM, input.quotient, input.quotientMinusOne)(qWidth - radixLog2, 0) ## qmIn
 }
 
 object OTF {

@@ -1,4 +1,4 @@
-package division.srt
+package division.srt.srt4
 
 import chisel3._
 import chisel3.tester.{ChiselUtestTester, testableClock, testableData}
@@ -17,6 +17,8 @@ object SRT4Test extends TestSuite with ChiselUtestTester {
         val q: Int = Random.nextInt(m)
         val dividend: BigInt = BigInt(p, Random)
         val divider: BigInt = BigInt(q, Random)
+//        val dividend: BigInt = BigInt("65")
+//        val divider: BigInt = BigInt("1")
         def zeroCheck(x: BigInt): Int = {
           var flag = false
           var a: Int = m
@@ -73,7 +75,7 @@ object SRT4Test extends TestSuite with ChiselUtestTester {
 
       testcase(64)
 //      for( i <- 1 to 100){
-//        testcase(128)
+//        testcase(64)
 //      }
     }
   }
