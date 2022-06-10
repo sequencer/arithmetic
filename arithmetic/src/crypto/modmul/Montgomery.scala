@@ -156,7 +156,7 @@ class Montgomery(pWidth: Int = 4096, addPipe: Int) extends Module {
     )
   )
   lazy val debounceAdd = Mux(addDone, adder.z, 0.U)
-  when(addDone)(add_stable := debounceAdd)
+  add_stable := Mux(addDone, debounceAdd, add_stable)
 
   // output
   out := nextT
