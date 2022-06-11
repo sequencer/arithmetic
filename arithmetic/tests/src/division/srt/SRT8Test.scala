@@ -70,7 +70,7 @@ object SRT8Test extends TestSuite with ChiselUtestTester {
 
       testcase(64)
 //      for( i <- 1 to 50){
-//        testcase(128)
+//        testcase(64)
 //      }
     }
   }

@@ -14,6 +14,7 @@ import utils.leftShift
   * dTruncateWidth = 4, rTruncateWidth = 8
   * y^（xxx.xxxx）, d^（0.1xxx）
   * -44/16 < y^ < 42/16
+  * floor((-r*rho - 2^-t)_t) <= y^ <= floor((r*rho - ulp)_t)
   */
 
 class SRT4(
@@ -69,9 +70,9 @@ class SRT4(
 
   // qds
   val rWidth: Int = 1 + radixLog2 + rTruncateWidth
-
+  val tables: Seq[Seq[Int]] = SRTTable(1 << radixLog2, a, dTruncateWidth, rTruncateWidth).tablesToQDS
   val selectedQuotientOH: UInt =
-    QDS(rWidth, ohWidth, dTruncateWidth - 1)(
+    QDS(rWidth, ohWidth, dTruncateWidth - 1, tables)(
       leftShift(partialReminderSum, radixLog2).head(rWidth),
       leftShift(partialReminderCarry, radixLog2).head(rWidth),
       dividerNext.head(dTruncateWidth)(dTruncateWidth - 2, 0) //.1********* -> 1*** -> ***

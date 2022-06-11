@@ -21,7 +21,7 @@ class QDS(rWidth: Int, ohWidth: Int, partialDividerWidth: Int, tables: Seq[Seq[I
   val output = IO(Output(new QDSOutput(ohWidth)))
 
   // get from SRTTable.
-  val selectRom = VecInit(tables.map {
+  lazy val selectRom = VecInit(tables.map {
     case x =>
       VecInit(x.map {
         case x =>
@@ -31,7 +31,7 @@ class QDS(rWidth: Int, ohWidth: Int, partialDividerWidth: Int, tables: Seq[Seq[I
               else (-x).toBinaryString
             )
             .toString
-            .U
+            .U(rWidth.W)
       })
   })
 

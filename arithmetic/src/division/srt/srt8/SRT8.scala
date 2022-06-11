@@ -4,7 +4,7 @@ import division.srt._
 import division.srt.SRTTable
 import chisel3._
 import chisel3.util._
-import utils.leftShift
+import utils.{leftShift}
 
 /** SRT8
   * 1/2 <= d < 1, 1/2 < rho <=1, 0 < q  < 2
@@ -13,6 +13,8 @@ import utils.leftShift
   * dTruncateWidth = 4, rTruncateWidth = 4
   * y^（xxxx.xxxx）, d^（0.1xxx）
   * table from SRTTable
+  * -129/16 < y^ < 127/16
+  * floor((-r*rho - 2^-t)_t) <= y^ <= floor((r*rho - ulp)_t)
   */
 
 class SRT8(
@@ -68,8 +70,9 @@ class SRT8(
 
   // qds
   val rWidth: Int = 1 + radixLog2 + rTruncateWidth
+  val tables: Seq[Seq[Int]] = SRTTable(1 << radixLog2, a, dTruncateWidth, rTruncateWidth).tablesToQDS
   val selectedQuotientOH: UInt =
-    QDS(rWidth, ohWidth, dTruncateWidth - 1)(
+    QDS(rWidth, ohWidth, dTruncateWidth - 1, tables)(
       leftShift(partialReminderSum, radixLog2).head(rWidth),
       leftShift(partialReminderCarry, radixLog2).head(rWidth),
       dividerNext.head(dTruncateWidth)(dTruncateWidth - 2, 0) //.1********* -> 1*** -> ***
@@ -81,14 +84,14 @@ class SRT8(
   val qHigh: UInt = selectedQuotientOH(9, 5)
   val qLow:  UInt = selectedQuotientOH(4, 0)
   // csa for SRT8 -> CSA32+CSA32
-  val divideMap0 = VecInit((-2 to 2).map {
+  val dividerMap0 = VecInit((-2 to 2).map {
     case -2 => divider << 3 // -8
     case -1 => divider << 2 // -4
     case 0  => 0.U //  0
     case 1  => Fill(2, 1.U(1.W)) ## ~(divider << 2) // 4
     case 2  => Fill(1, 1.U(1.W)) ## ~(divider << 3) // 8
   })
-  val divideMap1 = VecInit((-2 to 2).map {
+  val dividerMap1 = VecInit((-2 to 2).map {
     case -2 => divider << 1 // -2
     case -1 => divider // -1
     case 0  => 0.U //  0
@@ -99,14 +102,14 @@ class SRT8(
     VecInit(
       leftShift(partialReminderSum, radixLog2).head(wLen - radixLog2),
       leftShift(partialReminderCarry, radixLog2).head(wLen - radixLog2 - 1) ## qdsSign0,
-      Mux1H(qHigh, divideMap0)
+      Mux1H(qHigh, dividerMap0)
     )
   )
   val csa1 = addition.csa.c32(
     VecInit(
       csa0(1).head(wLen - radixLog2),
       leftShift(csa0(0), 1).head(wLen - radixLog2 - 1) ## qdsSign1,
-      Mux1H(qLow, divideMap1)
+      Mux1H(qLow, dividerMap1)
     )
   )
 

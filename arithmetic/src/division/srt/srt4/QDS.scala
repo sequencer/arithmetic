@@ -2,8 +2,7 @@ package division.srt.srt4
 
 import chisel3._
 import chisel3.util.BitPat
-import chisel3.util.experimental.decode._
-import division.srt.SRTTable
+import chisel3.util.experimental.decode.{TruthTable}
 import utils.extend
 
 class QDSInput(rWidth: Int, partialDividerWidth: Int) extends Bundle {
@@ -16,7 +15,7 @@ class QDSOutput(ohWidth: Int) extends Bundle {
   val selectedQuotientOH: UInt = UInt(ohWidth.W)
 }
 
-class QDS(rWidth: Int, ohWidth: Int, partialDividerWidth: Int) extends Module {
+class QDS(rWidth: Int, ohWidth: Int, partialDividerWidth: Int, tables: Seq[Seq[Int]]) extends Module {
   // IO
   val input = IO(Input(new QDSInput(rWidth, partialDividerWidth)))
   val output = IO(Output(new QDSOutput(ohWidth)))
@@ -44,7 +43,6 @@ class QDS(rWidth: Int, ohWidth: Int, partialDividerWidth: Int) extends Module {
   //  )
 
   // get from SRTTable.
-  val tables: Seq[Seq[Int]] = SRTTable(4, 2, 4, 4).tablesToQDS
   lazy val selectRom = VecInit(tables.map {
     case x =>
       VecInit(x.map {
@@ -55,7 +53,7 @@ class QDS(rWidth: Int, ohWidth: Int, partialDividerWidth: Int) extends Module {
               else (-x).toBinaryString
             )
             .toString
-            .U
+            .U(rWidth.W)
       })
   })
 
@@ -87,12 +85,13 @@ object QDS {
   def apply(
     rWidth:               Int,
     ohWidth:              Int,
-    partialDividerWidth:  Int
+    partialDividerWidth:  Int,
+    tables:               Seq[Seq[Int]]
   )(partialReminderSum:   UInt,
     partialReminderCarry: UInt,
     partialDivider:       UInt
   ): UInt = {
-    val m = Module(new QDS(rWidth, ohWidth, partialDividerWidth))
+    val m = Module(new QDS(rWidth, ohWidth, partialDividerWidth, tables))
     m.input.partialReminderSum := partialReminderSum
     m.input.partialReminderCarry := partialReminderCarry
     m.input.partialDivider := partialDivider

@@ -22,6 +22,7 @@ class SRT16(
   val xLen:    Int = dividendWidth + radixLog2 + 1
   val wLen:    Int = xLen + radixLog2
   val ohWidth: Int = 2 * a + 1
+  val rWidth:  Int = 1 + radixLog2 + rTruncateWidth
 
   // IO
   val input = IO(Flipped(DecoupledIO(new SRTInput(dividendWidth, dividerWidth, n))))
@@ -64,17 +65,19 @@ class SRT16(
     case 1  => Fill(1 + radixLog2, 1.U(1.W)) ## ~divider
     case 2  => Fill(radixLog2, 1.U(1.W)) ## ~(divider << 1)
   })
-  val csaIn1 = leftShift(partialReminderSum, radixLog2).head(wLen - radixLog2)
-  val csaIn2 = leftShift(partialReminderCarry, radixLog2).head(wLen - radixLog2 - 1)
-  val csa1 = addition.csa.c32(VecInit(csaIn1, csaIn2 ## false.B, dividerMap(0))) // -2
-  val csa2 = addition.csa.c32(VecInit(csaIn1, csaIn2 ## false.B, dividerMap(1))) // -1
-  val csa3 = addition.csa.c32(VecInit(csaIn1, csaIn2 ## false.B, dividerMap(2))) // 0
-  val csa4 = addition.csa.c32(VecInit(csaIn1, csaIn2 ## true.B, dividerMap(3))) // 1
-  val csa5 = addition.csa.c32(VecInit(csaIn1, csaIn2 ## true.B, dividerMap(4))) // 2
+  val csa0InWidth = rWidth + radixLog2 + 1
+  val csaIn1 = leftShift(partialReminderSum, radixLog2).head(csa0InWidth)
+  val csaIn2 = leftShift(partialReminderCarry, radixLog2).head(csa0InWidth)
+
+  val csa1 = addition.csa.c32(VecInit(csaIn1, csaIn2, dividerMap(0).head(csa0InWidth))) // -2  csain 10bit
+  val csa2 = addition.csa.c32(VecInit(csaIn1, csaIn2, dividerMap(1).head(csa0InWidth))) // -1
+  val csa3 = addition.csa.c32(VecInit(csaIn1, csaIn2, dividerMap(2).head(csa0InWidth))) // 0
+  val csa4 = addition.csa.c32(VecInit(csaIn1, csaIn2, dividerMap(3).head(csa0InWidth))) // 1
+  val csa5 = addition.csa.c32(VecInit(csaIn1, csaIn2, dividerMap(4).head(csa0InWidth))) // 2
 
   // qds
-  val rWidth:         Int = 1 + radixLog2 + rTruncateWidth
-  val tables:         Seq[Seq[Int]] = division.srt.SRTTable(1 << radixLog2, a, dTruncateWidth, rTruncateWidth).tablesToQDS
+
+  val tables:         Seq[Seq[Int]] = SRTTable(1 << radixLog2, a, dTruncateWidth, rTruncateWidth).tablesToQDS
   val partialDivider: UInt = dividerNext.head(dTruncateWidth)(dTruncateWidth - 2, 0)
   val qdsOH0: UInt =
     QDS(rWidth, ohWidth, dTruncateWidth - 1, tables)(
@@ -97,13 +100,6 @@ class SRT16(
   val qds4SelectedQuotientOH: UInt = qds(csa4) // 1
   val qds5SelectedQuotientOH: UInt = qds(csa5) // 2
 
-  val csa0OutMap = VecInit((-2 to 2).map {
-    case -2 => csa1
-    case -1 => csa2
-    case 0  => csa3
-    case 1  => csa4
-    case 2  => csa5
-  })
   val qds1SelectedQuotientOHMap = VecInit((-2 to 2).map {
     case -2 => qds1SelectedQuotientOH
     case -1 => qds2SelectedQuotientOH
@@ -113,8 +109,16 @@ class SRT16(
   })
 
   val qdsOH1 = Mux1H(qdsOH0, qds1SelectedQuotientOHMap) // q_j+2 oneHot
+  val qds0sign = qdsOH0(ohWidth - 1, ohWidth / 2 + 1).orR
   val qds1sign = qdsOH1(ohWidth - 1, ohWidth / 2 + 1).orR
-  val csa0Out = Mux1H(qdsOH0, csa0OutMap)
+
+  val csa0Out = addition.csa.c32(
+    VecInit(
+      leftShift(partialReminderSum, radixLog2).head(wLen - radixLog2),
+      leftShift(partialReminderCarry, radixLog2).head(wLen - radixLog2 - 1) ## qds0sign,
+      Mux1H(qdsOH0, dividerMap)
+    )
+  )
   val csa1Out = addition.csa.c32(
     VecInit(
       leftShift(csa0Out(1), radixLog2).head(wLen - radixLog2),

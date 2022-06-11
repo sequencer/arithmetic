@@ -9,9 +9,10 @@ import utils.extend
 object SRTSpec extends TestSuite{
   override def tests: Tests = Tests {
     test("SRT should draw PD") {
-      val srt = SRTTable(8, 7, 4, 4)
+      val srt = SRTTable(4,2,4,4)
+//      println(srt.tables)
 //      println(srt.tablesToQDS)
-      srt.dumpGraph(srt.pd, os.root / "tmp" / "srt8-7-4-4.png")
+      srt.dumpGraph(srt.pd, os.root / "tmp" / "srt4-2-4-4.png")
     }
   }
 }

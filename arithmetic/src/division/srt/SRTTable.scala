@@ -99,7 +99,7 @@ case class SRTTable(
   }.flatMap {
     case (i, ps) =>
       ps.map {
-        case (x, y) => (x.toDouble, y.toDouble * 16)
+        case (x, y) => (x.toDouble, y.toDouble * (1 << xTruncateWidth.toInt))
       }
   }.groupBy(_._1).toSeq.sortBy(_._1).map { case (x, y) => y.map { case (x, y) => y.toInt }.reverse }
 

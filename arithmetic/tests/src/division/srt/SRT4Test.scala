@@ -30,7 +30,7 @@ object SRT4Test extends TestSuite with ChiselUtestTester {
         }
         val zeroHeadDividend: Int = m - zeroCheck(dividend)
         val zeroHeadDivider: Int = m - zeroCheck(divider)
-        val needComputerWidth: Int = zeroHeadDivider - zeroHeadDividend + 1 + 1
+        val needComputerWidth: Int = zeroHeadDivider - zeroHeadDividend + 1 + radixLog2 - 1
         val noguard: Boolean = needComputerWidth % radixLog2 == 0
         val counter: Int = (needComputerWidth + 1) / 2
         if ((divider == 0) || (divider > dividend) || (needComputerWidth <= 0))
@@ -74,7 +74,7 @@ object SRT4Test extends TestSuite with ChiselUtestTester {
       }
 
       testcase(64)
-//      for( i <- 1 to 100){
+//      for( i <- 1 to 50){
 //        testcase(64)
 //      }
     }
