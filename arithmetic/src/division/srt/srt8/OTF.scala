@@ -1,18 +1,8 @@
 package division.srt.srt8
 
+import division.srt._
 import chisel3._
 import chisel3.util.Mux1H
-
-class OTFInput(qWidth: Int, ohWidth: Int) extends Bundle {
-  val quotient = UInt(qWidth.W)
-  val quotientMinusOne = UInt(qWidth.W)
-  val selectedQuotientOH = UInt(ohWidth.W)
-}
-
-class OTFOutput(qWidth: Int) extends Bundle {
-  val quotient = UInt(qWidth.W)
-  val quotientMinusOne = UInt(qWidth.W)
-}
 
 class OTF(radixLog2: Int, qWidth: Int, ohWidth: Int) extends Module {
   val input = IO(Input(new OTFInput(qWidth, ohWidth)))

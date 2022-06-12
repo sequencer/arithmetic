@@ -55,7 +55,7 @@ package object utils {
     else
       BitPat((x + (1 << w)).U(w.W))
   }
-
+  
   // left shift and keep the width of Bits
   def leftShift(x: Bits, n: Int): UInt = {
     val length: Int = x.getWidth

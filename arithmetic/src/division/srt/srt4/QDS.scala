@@ -1,19 +1,11 @@
 package division.srt.srt4
 
+import division.srt._
 import chisel3._
 import chisel3.util.BitPat
-import chisel3.util.experimental.decode.{TruthTable}
-import utils.extend
-
-class QDSInput(rWidth: Int, partialDividerWidth: Int) extends Bundle {
-  val partialReminderCarry: UInt = UInt(rWidth.W)
-  val partialReminderSum:   UInt = UInt(rWidth.W)
-  val partialDivider:       UInt = UInt(partialDividerWidth.W)
-}
-
-class QDSOutput(ohWidth: Int) extends Bundle {
-  val selectedQuotientOH: UInt = UInt(ohWidth.W)
-}
+import chisel3.util.BitPat.bitPatToUInt
+import chisel3.util.experimental.decode.TruthTable
+import utils.{extend, sIntToBitPat}
 
 class QDS(rWidth: Int, ohWidth: Int, partialDividerWidth: Int, tables: Seq[Seq[Int]]) extends Module {
   // IO
@@ -46,14 +38,7 @@ class QDS(rWidth: Int, ohWidth: Int, partialDividerWidth: Int, tables: Seq[Seq[I
   lazy val selectRom = VecInit(tables.map {
     case x =>
       VecInit(x.map {
-        case x =>
-          new StringBuffer("b")
-            .append(
-              if ((-x).toBinaryString.length >= rWidth) (-x).toBinaryString.reverse.substring(0, rWidth).reverse
-              else (-x).toBinaryString
-            )
-            .toString
-            .U(rWidth.W)
+        case x => bitPatToUInt(sIntToBitPat(-x, rWidth))
       })
   })
 

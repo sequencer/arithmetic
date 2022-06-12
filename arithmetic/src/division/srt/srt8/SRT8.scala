@@ -4,7 +4,7 @@ import division.srt._
 import division.srt.SRTTable
 import chisel3._
 import chisel3.util._
-import utils.{leftShift}
+import utils.leftShift
 
 /** SRT8
   * 1/2 <= d < 1, 1/2 < rho <=1, 0 < q  < 2
