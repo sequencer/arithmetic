@@ -40,11 +40,11 @@ object OTF {
   )(quotient:           UInt,
     quotientMinusOne:   UInt,
     selectedQuotientOH: UInt
-  ): Seq[UInt] = {
+  ): Vec[UInt] = {
     val m = Module(new OTF(radixLog2, qWidth, ohWidth))
     m.input.quotient := quotient
     m.input.quotientMinusOne := quotientMinusOne
     m.input.selectedQuotientOH := selectedQuotientOH
-    Seq(m.output.quotient, m.output.quotientMinusOne)
+    VecInit(m.output.quotient, m.output.quotientMinusOne)
   }
 }

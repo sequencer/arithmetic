@@ -46,12 +46,12 @@ object SRTTest extends TestSuite with ChiselUtestTester {
         val remainder: BigInt = dividend % divider
         val leftShiftWidthDividend: Int = zeroHeadDividend - guardWidth
         val leftShiftWidthDivider: Int = zeroHeadDivider
-        //        println("dividend = %8x, dividend = %d ".format(dividend, dividend))
-        //        println("divider  = %8x, divider  = %d".format(divider, divider))
-        //        println("zeroHeadDividend  = %d,  dividend << zeroHeadDividend = %d".format(zeroHeadDividend, dividend << leftShiftWidthDividend))
-        //        println("zeroHeadDivider   = %d,  divider << zeroHeadDivider  = %d".format(zeroHeadDivider, divider << leftShiftWidthDivider))
-        //        println("quotient   = %d,  remainder  = %d".format(quotient, remainder))
-        //        println("counter   = %d, needComputerWidth = %d".format(counter, needComputerWidth))
+//                println("dividend = %8x, dividend = %d ".format(dividend, dividend))
+//                println("divider  = %8x, divider  = %d".format(divider, divider))
+//                println("zeroHeadDividend  = %d,  dividend << zeroHeadDividend = %d".format(zeroHeadDividend, dividend << leftShiftWidthDividend))
+//                println("zeroHeadDivider   = %d,  divider << zeroHeadDivider  = %d".format(zeroHeadDivider, divider << leftShiftWidthDivider))
+//                println("quotient   = %d,  remainder  = %d".format(quotient, remainder))
+//                println("counter   = %d, needComputerWidth = %d".format(counter, needComputerWidth))
         // test
         testCircuit(new SRT(n, n, n, radixLog2, a, dTruncateWidth, rTruncateWidth),
           Seq(chiseltest.internal.NoThreadingAnnotation,
@@ -69,7 +69,7 @@ object SRTTest extends TestSuite with ChiselUtestTester {
               if (dut.output.valid.peek().litValue == 1) {
                 flag = true
                 println(dut.output.bits.quotient.peek().litValue)
-                println(dut.output.bits.reminder.peek().litValue)
+                println(dut.output.bits.reminder.peek().litValue >> zeroHeadDivider)
                 utest.assert(dut.output.bits.quotient.peek().litValue == quotient)
                 utest.assert(dut.output.bits.reminder.peek().litValue >> zeroHeadDivider == remainder)
               }
@@ -79,9 +79,9 @@ object SRTTest extends TestSuite with ChiselUtestTester {
             dut.clock.step(scala.util.Random.nextInt(5))
         }
       }
-      testcase(64)
+//      testcase(64)
       for( i <- 1 to 50){
-        testcase(64,3,7,4)
+        testcase(n = 64, radixLog2 = 3, a = 7, dTruncateWidth = 4, rTruncateWidth = 4)
       }
     }
   }

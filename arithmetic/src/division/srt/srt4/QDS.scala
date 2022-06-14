@@ -7,7 +7,7 @@ import chisel3.util.BitPat.bitPatToUInt
 import chisel3.util.experimental.decode.TruthTable
 import utils.{extend, sIntToBitPat}
 
-class QDS(rWidth: Int, ohWidth: Int, partialDividerWidth: Int, tables: Seq[Seq[Int]]) extends Module {
+class QDS(rWidth: Int, ohWidth: Int, partialDividerWidth: Int, tables: Seq[Seq[Int]], a: Int) extends Module {
   // IO
   val input = IO(Input(new QDSInput(rWidth, partialDividerWidth)))
   val output = IO(Output(new QDSOutput(ohWidth)))
@@ -54,15 +54,30 @@ class QDS(rWidth: Int, ohWidth: Int, partialDividerWidth: Int, tables: Seq[Seq[I
   // decoder or findFirstOne here, prefer decoder, the decoder only for srt4
   output.selectedQuotientOH := chisel3.util.experimental.decode.decoder(
     selectPoints,
-    TruthTable(
-      Seq(
-        BitPat("b???0") -> BitPat("b10000"), //2
-        BitPat("b??01") -> BitPat("b01000"), //1
-        BitPat("b?011") -> BitPat("b00100"), //0
-        BitPat("b0111") -> BitPat("b00010") //-1
-      ),
-      BitPat("b00001") //-2
-    )
+    a match {
+      case 2 =>
+        TruthTable(
+          Seq(
+            BitPat("b???0") -> BitPat("b10000"), //2
+            BitPat("b??01") -> BitPat("b01000"), //1
+            BitPat("b?011") -> BitPat("b00100"), //0
+            BitPat("b0111") -> BitPat("b00010") //-1
+          ),
+          BitPat("b00001") //-2
+        )
+      case 3 =>
+        TruthTable(
+          Seq( // 2 0 -2 1 0 -1
+            BitPat("b??_???0") -> BitPat("b100_100"), //3 = 2 + 1
+            BitPat("b??_??01") -> BitPat("b100_010"), //2 = 2 + 0
+            BitPat("b??_?011") -> BitPat("b010_100"), //1 = 0 + 1
+            BitPat("b??_0111") -> BitPat("b010_010"), //0 = 0 + 0
+            BitPat("b?0_1111") -> BitPat("b010_001"), //-1 = 0 + -1
+            BitPat("b01_1111") -> BitPat("b001_010") //-2 = -2 + 0
+          ),
+          BitPat("b001_001") //-3 = -2 + -1
+        )
+    }
   )
 }
 
@@ -71,12 +86,13 @@ object QDS {
     rWidth:               Int,
     ohWidth:              Int,
     partialDividerWidth:  Int,
-    tables:               Seq[Seq[Int]]
+    tables:               Seq[Seq[Int]],
+    a:                    Int
   )(partialReminderSum:   UInt,
     partialReminderCarry: UInt,
     partialDivider:       UInt
   ): UInt = {
-    val m = Module(new QDS(rWidth, ohWidth, partialDividerWidth, tables))
+    val m = Module(new QDS(rWidth, ohWidth, partialDividerWidth, tables, a))
     m.input.partialReminderSum := partialReminderSum
     m.input.partialReminderCarry := partialReminderCarry
     m.input.partialDivider := partialDivider

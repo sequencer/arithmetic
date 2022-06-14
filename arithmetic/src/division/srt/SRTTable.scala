@@ -87,7 +87,7 @@ case class SRTTable(
   }
 
   // TODO: select a Constant from each m, then offer the table to QDS.
-  // select rule: symmetry and draw a line parallel to the X-axis, how define the rule
+  // todo: ? select rule: symmetry and draw a line parallel to the X-axis, how define the rule
   lazy val tablesToQDS: Seq[Seq[Int]] = {
     (aMin.toInt to aMax.toInt).drop(1).map { k =>
       k -> dSet.dropRight(1).map { d =>
