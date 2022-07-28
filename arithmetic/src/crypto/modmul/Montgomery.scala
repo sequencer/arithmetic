@@ -45,7 +45,7 @@ class Montgomery(pWidth: Int = 4096, addPipe: Int) extends Module {
   adder.valid := isAdd
   val addDoneNext = RegInit(false.B)
   addDoneNext := addDone
-  lazy val addDone = if (addPipe != 0) Counter(isAdd && (~addDoneNext), addPipe + 1)._2 else true.B
+  lazy val addDone = if (addPipe != 0) Counter(valid && isAdd && (~addDoneNext), addPipe + 1)._2 else true.B
   val addSign = ((add_stable >> 1) < p.asUInt)
   val a_i = Reg(Bool())
   val iBreak = (i.asUInt >= input_width.asUInt)
