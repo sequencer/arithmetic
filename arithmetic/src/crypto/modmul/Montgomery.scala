@@ -98,6 +98,8 @@ class Montgomery(pWidth: Int = 4096, addPipe: Int) extends Module {
             to(s4, iHead = N, iBreak = N, a_i = N, u = N)(s7),
             to(s5, addDone = Y)(s6),
             to(s5, addDone = N)(s5),
+            to(s6, valid = N)(s0),
+            to(s6, valid = Y)(s6),
             "????????"
           ).mkString("\n")
         )
