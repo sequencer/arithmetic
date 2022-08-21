@@ -10,10 +10,8 @@ class Montgomery(pWidth: Int = 4096, addPipe: Int) extends Module {
   val pPrime = IO(Input(Bool()))
   val a = IO(Input(UInt(pWidth.W)))
   val b = IO(Input(UInt(pWidth.W)))
-  val input_width =
-    IO(
-      Input(UInt(pWidth.W))
-    ) // input_width should be 2^(ceil(log2(p))-1)  (i.e., if p = 0b100111, input_width = 0b100000)
+  val indexCountBit = 16
+  val input_width = IO(Input(UInt(indexCountBit.W)))
   val valid = IO(Input(Bool())) // input valid
   val out = IO(Output(UInt(pWidth.W)))
   val out_valid = IO(Output(Bool())) // output valid
@@ -21,8 +19,8 @@ class Montgomery(pWidth: Int = 4096, addPipe: Int) extends Module {
   val b_add_p = Reg(UInt((pWidth + 1).W))
   val invP = Reg(UInt((pWidth).W))
   val negP = Reg(UInt((pWidth + 2).W))
-  val u = Reg(Bool())
-  val i = Reg(UInt((pWidth).W))
+  val loop_u = Reg(Bool())
+  val index = Reg(UInt(indexCountBit.W))
   val nextT = Reg(UInt((pWidth + 2).W))
 
   // multicycle prefixadder
@@ -30,13 +28,13 @@ class Montgomery(pWidth: Int = 4096, addPipe: Int) extends Module {
   val add_stable = RegInit(0.U((pWidth + 2).W))
   // Control Path
   object StateType extends ChiselEnum {
-    val s0 = Value("b0000001".U) // nextT = 0, u = a(0)b(0)pPrime, b_add_p = b + p
+    val s0 = Value("b0000001".U) // nextT = 0, loop_u = a(0)b(0)pPrime, b_add_p = b + p
     // loop
     val s1 = Value("b0000010".U) // nextT + b
     val s2 = Value("b0000100".U) // nextT + p
     val s3 = Value("b0001000".U) // nextT + b_add_p
     // loop done
-    val s4 = Value("b0010000".U) // i << 1, u = (nextT(0) + a(i)b(0))pPrime, nextT / 2
+    val s4 = Value("b0010000".U) // index += 1, loop_u = (nextT(0) + a(index)b(0))pPrime, nextT / 2
     val s5 = Value("b0100000".U) // nextT - p
     val s6 = Value("b1000000".U) // done
     val s7 = Value("b10000000".U) // nextT + 0
@@ -51,10 +49,10 @@ class Montgomery(pWidth: Int = 4096, addPipe: Int) extends Module {
   addDoneNext := addDone
   lazy val addDone = if (addPipe != 0) Counter(valid && isAdd && (~addDoneNext), addPipe + 1)._2 else true.B
   val a_i = Reg(Bool())
-  val iBreak = (i.asUInt >= input_width.asUInt)
+  val iBreak = (index.asUInt >= input_width.asUInt)
   state := chisel3.util.experimental.decode
     .decoder(
-      state.asUInt() ## addDoneNext ## valid ## i.head(1) ## iBreak ## u ## a_i, {
+      state.asUInt() ## addDoneNext ## valid ## iBreak ## loop_u ## a_i, {
         val Y = "1"
         val N = "0"
         val DC = "?"
@@ -62,12 +60,11 @@ class Montgomery(pWidth: Int = 4096, addPipe: Int) extends Module {
           stateI:  String,
           addDone: String = DC,
           valid:   String = DC,
-          iHead:   String = DC,
           iBreak:  String = DC,
-          u:       String = DC,
+          loop_u:  String = DC,
           a_i:     String = DC
         )(stateO:  String
-        ) = s"$stateI$addDone$valid$iHead$iBreak$u$a_i->$stateO"
+        ) = s"$stateI$addDone$valid$iBreak$loop_u$a_i->$stateO"
         val s0 = "0000000001"
         val s1 = "0000000010"
         val s2 = "0000000100"
@@ -85,10 +82,10 @@ class Montgomery(pWidth: Int = 4096, addPipe: Int) extends Module {
             to(s0, valid = Y, addDone = Y)(s8),
             to(s8)(s9),
             to(s9, addDone = N)(s9),
-            to(s9, addDone = Y, a_i = Y, u = N)(s1),
-            to(s9, addDone = Y, a_i = N, u = Y)(s2),
-            to(s9, addDone = Y, a_i = Y, u = Y)(s3),
-            to(s9, addDone = Y, a_i = N, u = N)(s7),
+            to(s9, addDone = Y, a_i = Y, loop_u = N)(s1),
+            to(s9, addDone = Y, a_i = N, loop_u = Y)(s2),
+            to(s9, addDone = Y, a_i = Y, loop_u = Y)(s3),
+            to(s9, addDone = Y, a_i = N, loop_u = N)(s7),
             to(s1, addDone = Y)(s4),
             to(s1, addDone = N)(s1),
             to(s2, addDone = Y)(s4),
@@ -98,10 +95,10 @@ class Montgomery(pWidth: Int = 4096, addPipe: Int) extends Module {
             to(s7, addDone = Y)(s4),
             to(s7, addDone = N)(s7),
             to(s4, iBreak = Y)(s5),
-            to(s4, iHead = N, iBreak = N, a_i = Y, u = N)(s1),
-            to(s4, iHead = N, iBreak = N, a_i = N, u = Y)(s2),
-            to(s4, iHead = N, iBreak = N, a_i = Y, u = Y)(s3),
-            to(s4, iHead = N, iBreak = N, a_i = N, u = N)(s7),
+            to(s4, iBreak = N, a_i = Y, loop_u = N)(s1),
+            to(s4, iBreak = N, a_i = N, loop_u = Y)(s2),
+            to(s4, iBreak = N, a_i = Y, loop_u = Y)(s3),
+            to(s4, iBreak = N, a_i = N, loop_u = N)(s7),
             to(s5, addDone = Y)(s6),
             to(s5, addDone = N)(s5),
             to(s6, valid = N)(s0),
@@ -113,28 +110,28 @@ class Montgomery(pWidth: Int = 4096, addPipe: Int) extends Module {
     )
     .asTypeOf(StateType.Type())
 
-  i := Mux1H(
+  index := Mux1H(
     Map(
-      state.asUInt()(0) -> 1.U,
-      state.asUInt()(4) -> i.rotateLeft(1),
-      (state.asUInt & "b1111101110".U).orR -> i
+      state.asUInt()(0) -> 0.U,
+      state.asUInt()(4) -> (index + 1.U),
+      (state.asUInt & "b1111101110".U).orR -> index
     )
   )
 
   b_add_p := Mux(addDone & state.asUInt()(0), debounceAdd, b_add_p)
 
-  u := Mux1H(
+  loop_u := Mux1H(
     Map(
       state.asUInt()(0) -> (a(0).asUInt & b(0).asUInt & pPrime.asUInt),
-      (state.asUInt & "b0010001110".U).orR -> ((add_stable(1) + (((a & (i.rotateLeft(1))).orR) & b(0))) & pPrime.asUInt),
-      (state.asUInt & "b1101110000".U).orR -> u
+      (state.asUInt & "b0010001110".U).orR -> ((add_stable(1) + (a(index + 1.U) & b(0))) & pPrime.asUInt),
+      (state.asUInt & "b1101110000".U).orR -> loop_u
     )
   )
 
   a_i := Mux1H(
     Map(
       state.asUInt()(0) -> a(0),
-      (state.asUInt & "b0010001110".U).orR -> (a & (i.rotateLeft(1))).orR,
+      (state.asUInt & "b0010001110".U).orR -> a(index + 1.U),
       (state.asUInt & "b1101110000".U).orR -> a_i
     )
   )

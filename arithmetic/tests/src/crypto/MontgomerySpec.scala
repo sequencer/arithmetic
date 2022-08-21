@@ -13,22 +13,18 @@ object MontgomerySpec extends TestSuite with ChiselUtestTester {
         var b = BigInt("3249")
         var p = BigInt("3323")
         var width = 64
-        var R = BigInt("4294967296")
-        var R_inv = BigInt("806")
+        var R = BigInt("4096")
+        var R_inv = BigInt("374")
         var addPipe = 10
         var res = (a) * (b) * (R_inv) % (p)
-        var R_div_2 = (R) / BigInt(2)
         var random_width = 0
-        println("addPipe", addPipe)
-        println(width, random_width)
-        println("res = ", res)
         testCircuit(new Montgomery(64, addPipe), Seq(chiseltest.internal.NoThreadingAnnotation, chiseltest.simulator.WriteVcdAnnotation)){dut: Montgomery =>
           dut.clock.setTimeout(0)
           dut.p.poke(p.U)
           dut.pPrime.poke(true.B)
           dut.a.poke(a.U)
           dut.b.poke(b.U)
-          dut.input_width.poke(R_div_2.U)
+          dut.input_width.poke((11).U)
           dut.clock.step()
           dut.clock.step()
           // delay two cycles then set valid = true
@@ -57,18 +53,14 @@ object MontgomerySpec extends TestSuite with ChiselUtestTester {
         var R_inv = u.modinv(R, p)
         var addPipe = scala.util.Random.nextInt(10) + 1      
         var res = BigInt(a) * BigInt(b) * BigInt(R_inv) % BigInt(p)
-        var R_div_2 = (scala.math.pow(2, width-1)).toInt
         var random_width = scala.util.Random.nextInt(20) + 10 // to test if bigger length hardware can support smaller length number
-        println("addPipe", addPipe)
-        println(width, random_width)
-        println("res = ", res)
-        testCircuit(new Montgomery(64, addPipe), Seq(chiseltest.internal.NoThreadingAnnotation, chiseltest.simulator.WriteVcdAnnotation)){dut: Montgomery =>
+        testCircuit(new Montgomery(width, addPipe), Seq(chiseltest.internal.NoThreadingAnnotation, chiseltest.simulator.WriteVcdAnnotation)){dut: Montgomery =>
           dut.clock.setTimeout(0)
           dut.p.poke(p.U)
           dut.pPrime.poke(true.B)
           dut.a.poke(a.U)
           dut.b.poke(b.U)
-          dut.input_width.poke(R_div_2.U)
+          dut.input_width.poke((width-1).U)
           dut.clock.step()
           dut.clock.step()
           // delay two cycles then set valid = true
