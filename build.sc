@@ -16,6 +16,8 @@ object v {
   val upickle = ivy"com.lihaoyi::upickle:latest.integration"
   val osLib = ivy"com.lihaoyi::os-lib:latest.integration"
   val bc = ivy"org.bouncycastle:bcprov-jdk15to18:1.71"  
+  val spire = ivy"org.typelevel::spire:0.17.0"
+  val evilplot = ivy"io.github.cibotech::evilplot:0.8.1"
 }
 
 object arithmetic extends arithmetic
@@ -38,6 +40,8 @@ class arithmetic extends ScalaModule with ScalafmtModule with PublishModule { m 
     v.chiseltest,
     v.upickle,
     v.osLib,
+    v.spire,
+    v.evilplot
   )
 
   object tests extends Tests with Utest {
