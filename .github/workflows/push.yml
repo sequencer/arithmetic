@@ -24,4 +24,4 @@ jobs:
       - name: Check Format
         run: make checkformat
       - name: Test
-        run: make test
+        run: make init && make test

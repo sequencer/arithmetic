@@ -1,5 +1,13 @@
+init:
+	git submodule update --init
+
 compile:
 	mill -i arithmetic.compile
+
+bump:
+	git submodule foreach git stash
+	git submodule update --remote
+	git add dependencies
 
 bsp:
 	mill -i mill.bsp.BSP/install
@@ -14,4 +22,4 @@ checkformat:
 	mill -i __.checkFormat 
 
 test:
-	mill -i __.tests
+	mill -i arithmetic.tests
