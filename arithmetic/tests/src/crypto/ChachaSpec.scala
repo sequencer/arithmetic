@@ -2,10 +2,9 @@ package crypto.chacha
 
 import chisel3._
 import chisel3.experimental.VecLiterals.AddVecLiteralConstructor
-import chisel3.tester.{ChiselUtestTester, testableClock, testableData}
+import chiseltest._
 import org.bouncycastle.crypto.engines.ChaChaEngine
-import org.bouncycastle.crypto.params.{KeyParameter, ParametersWithIV}
-import utest._;
+import utest._
 
 //import java.security.SecureRandom;;
 

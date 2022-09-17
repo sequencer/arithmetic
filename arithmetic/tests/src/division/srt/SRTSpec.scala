@@ -3,9 +3,6 @@ package division.srt
 import utest._
 import chisel3._
 import utils.extend
-
-
-
 object SRTSpec extends TestSuite{
   override def tests: Tests = Tests {
     test("SRT should draw PD") {

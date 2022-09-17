@@ -1,7 +1,7 @@
 package division.srt
 
 import chisel3._
-import chisel3.tester.{ChiselUtestTester, testableClock, testableData}
+import chiseltest._
 import utest._
 
 import scala.util.Random

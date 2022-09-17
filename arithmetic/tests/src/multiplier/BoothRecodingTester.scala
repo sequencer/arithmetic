@@ -1,7 +1,7 @@
 package multiplier
 
 import chisel3._
-import chisel3.tester.{ChiselUtestTester, testableData}
+import chiseltest._
 import chisel3.util.BitPat
 import utest._
 
