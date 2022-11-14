@@ -15,7 +15,7 @@ trait HasPrefixSumWithGraphImp extends PrefixSum {
         level + 1,
         x ++ prefixGraph.level(level).map(node => node -> associativeOp(node.fathers.map(node => x(node)).toSeq)).toMap
       )
-    helper(1, prefixGraph.level(0).zip(summands) toMap)
+    helper(1, prefixGraph.level(0).zip(summands).toMap)
       .filter(dict => prefixGraph.lastLevelNode.contains(dict._1))
       .toSeq
       .sortBy(_._1.bit)
