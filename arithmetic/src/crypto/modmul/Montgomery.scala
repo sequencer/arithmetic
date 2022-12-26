@@ -46,7 +46,7 @@ class Montgomery(pWidth: Int = 4096, addPipe: Int) extends Module {
   val a_i = Reg(Bool())
   state := chisel3.util.experimental.decode
     .decoder(
-      state.asUInt() ## addDoneNext ## valid ## i.head(1) ## addSign ## u ## a_i, {
+      state.asUInt ## addDoneNext ## valid ## i.head(1) ## addSign ## u ## a_i, {
         val Y = "1"
         val N = "0"
         val DC = "?"
@@ -100,15 +100,15 @@ class Montgomery(pWidth: Int = 4096, addPipe: Int) extends Module {
 
   i := Mux1H(
     Map(
-      state.asUInt()(0) -> 1.U,
-      state.asUInt()(4) -> i.rotateLeft(1),
+      state.asUInt(0) -> 1.U,
+      state.asUInt(4) -> i.rotateLeft(1),
       (state.asUInt & "b11101110".U).orR -> i
     )
   )
 
   u := Mux1H(
     Map(
-      state.asUInt()(0) -> (a(0).asUInt & b(0).asUInt & pPrime.asUInt),
+      state.asUInt(0) -> (a(0).asUInt & b(0).asUInt & pPrime.asUInt),
       (state.asUInt & "b10001110".U).orR -> ((add_stable(1) + (((a & (i.rotateLeft(1))).orR) & b(0))) & pPrime.asUInt),
       (state.asUInt & "b01110000".U).orR -> u
     )
@@ -116,7 +116,7 @@ class Montgomery(pWidth: Int = 4096, addPipe: Int) extends Module {
 
   a_i := Mux1H(
     Map(
-      state.asUInt()(0) -> a(0),
+      state.asUInt(0) -> a(0),
       (state.asUInt & "b10001110".U).orR -> (a & (i.rotateLeft(1))).orR,
       (state.asUInt & "b01110000".U).orR -> a_i
     )
@@ -124,9 +124,9 @@ class Montgomery(pWidth: Int = 4096, addPipe: Int) extends Module {
 
   nextT := Mux1H(
     Map(
-      state.asUInt()(0) -> 0.U,
-      state.asUInt()(4) -> (add_stable >> 1),
-      state.asUInt()(5) -> add_stable,
+      state.asUInt(0) -> 0.U,
+      state.asUInt(4) -> (add_stable >> 1),
+      state.asUInt(5) -> add_stable,
       (state.asUInt & "b11001110".U).orR -> nextT
     )
   )
@@ -134,11 +134,11 @@ class Montgomery(pWidth: Int = 4096, addPipe: Int) extends Module {
   adder.a := nextT
   adder.b := Mux1H(
     Map(
-      state.asUInt()(1) -> b,
-      state.asUInt()(2) -> p,
-      state.asUInt()(3) -> b_add_p,
-      state.asUInt()(7) -> 0.U,
-      state.asUInt()(5) -> -p
+      state.asUInt(1) -> b,
+      state.asUInt(2) -> p,
+      state.asUInt(3) -> b_add_p,
+      state.asUInt(7) -> 0.U,
+      state.asUInt(5) -> -p
     )
   )
   val debounceAdd = Mux(addDone, adder.z, 0.U)
@@ -146,5 +146,5 @@ class Montgomery(pWidth: Int = 4096, addPipe: Int) extends Module {
 
   // output
   out := nextT
-  out_valid := state.asUInt()(6)
+  out_valid := state.asUInt(6)
 }

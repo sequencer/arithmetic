@@ -25,8 +25,8 @@ class Barrett(val p: BigInt, val mulPipe: Int, val addPipe: Int) extends ModMul 
     val s7 = Value("b10000000".U)
   }
   val state = RegInit(StateType.s0)
-  val isMul = (state.asUInt() & "b00001110".U).orR()
-  val isAdd = (state.asUInt() & "b01110000".U).orR()
+  val isMul = (state.asUInt & "b00001110".U).orR
+  val isAdd = (state.asUInt & "b01110000".U).orR
   val mulDoneNext = RegInit(false.B)
   mulDoneNext := mulDone
   // var mulDoneNextNext = RegInit(false.B)
@@ -95,8 +95,8 @@ class Barrett(val p: BigInt, val mulPipe: Int, val addPipe: Int) extends ModMul 
     Map(
       // x * y -> z; x * y -> r
       // state 1
-      state.asUInt()(1) -> q,
-      (state.asUInt() & "b00001110".U).orR() -> r,
+      state.asUInt(1) -> q,
+      (state.asUInt & "b00001110".U).orR -> r,
       // z - q3 * p; r - p
       // state 4, 5, 6
       isAdd -> r_stable
@@ -106,27 +106,27 @@ class Barrett(val p: BigInt, val mulPipe: Int, val addPipe: Int) extends ModMul 
   add.valid := isAdd
   add.a := r
   // TODO: CSA.
-  add.b := Mux(state.asUInt()(4), -q, (-p).S((2 * width + 1).W).asUInt())
+  add.b := Mux(state.asUInt(4), -q, (-p).S((2 * width + 1).W).asUInt)
 
   mul.valid := isMul & (~mulDoneNext)
   mul.a := Mux1H(
     Map(
-      state.asUInt()(1) -> input.bits.a,
-      state.asUInt()(2) -> (q >> (width - 1)), // z >> (k-1)
-      state.asUInt()(3) -> (q >> (width + 1)) // q2 >> (k+1)
+      state.asUInt(1) -> input.bits.a,
+      state.asUInt(2) -> (q >> (width - 1)), // z >> (k-1)
+      state.asUInt(3) -> (q >> (width + 1)) // q2 >> (k+1)
     )
   )
   mul.b := Mux1H(
     Map(
-      state.asUInt()(1) -> input.bits.b,
-      state.asUInt()(2) -> m.U,
-      state.asUInt()(3) -> p.U
+      state.asUInt(1) -> input.bits.b,
+      state.asUInt(2) -> m.U,
+      state.asUInt(3) -> p.U
     )
   )
 
-  input.ready := state.asUInt()(0)
+  input.ready := state.asUInt(0)
   z.bits := r
-  z.valid := state.asUInt()(7)
+  z.valid := state.asUInt(7)
 }
 
 // before Wallace Mul implemented, we use DummyMul as mul.

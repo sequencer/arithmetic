@@ -22,7 +22,7 @@ import chisel3._
   * @param compressor a function that takes the index of bit, which returns a [[CSACompressor]]
   * @param width      adder width
   */
-class CarrySaveAdder(compressor: CSACompressor, val width: Int, formal: Boolean = false) extends MultiIOModule {
+class CarrySaveAdder(compressor: CSACompressor, val width: Int, formal: Boolean = false) extends Module {
   val inputSize:            Int = compressor.inputSize
   val outputSize:           Int = compressor.outputSize
   override val desiredName: String = this.getClass.getSimpleName + s"_$width"

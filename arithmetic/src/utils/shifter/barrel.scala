@@ -17,9 +17,9 @@ object barrel {
   def apply[T <: Data](inputs: Vec[T], shiftInput: UInt, shiftType: ShiftType, shiftGranularity: Int = 1): Vec[T] = {
     val elementType: T = chiselTypeOf(inputs.head)
     shiftInput
-      .asBools()
+      .asBools
       .grouped(shiftGranularity)
-      .map(VecInit(_).asUInt())
+      .map(VecInit(_).asUInt)
       .zipWithIndex
       .foldLeft(inputs) {
         case (prev, (shiftBits, layer)) =>
