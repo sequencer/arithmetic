@@ -51,11 +51,15 @@ class SRT4(
   val quotientMinusOne = RegEnable(quotientMinusOneNext, 0.U(n.W), enable)
   val counter = RegEnable(counterNext, 0.U(log2Ceil(n).W), enable)
 
+  val occupiedNext = Wire(Bool())
+  val occupied = RegNext(occupiedNext, false.B)
+  occupiedNext := Mux(input.fire, true.B, Mux(isLastCycle, false.B, occupied))
+
   //  Datapath
   //  according two adders
   isLastCycle := !counter.orR
-  output.valid := isLastCycle
-  input.ready := isLastCycle
+  output.valid := Mux(occupied, isLastCycle, false.B)
+  input.ready := !occupied
   enable := input.fire || !isLastCycle
 
   val remainderNoCorrect: UInt = partialReminderSum + partialReminderCarry
