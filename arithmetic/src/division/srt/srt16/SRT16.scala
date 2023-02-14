@@ -46,7 +46,7 @@ class SRT16(
 
   val occupiedNext = Wire(Bool())
   val occupied = RegNext(occupiedNext, false.B)
-  occupied := Mux(input.fire, true.B, Mux(isLastCycle, false.B, occupied))
+  occupiedNext := Mux(input.fire, true.B, Mux(isLastCycle, false.B, occupied))
 
   //  Datapath
   //  according two adders
