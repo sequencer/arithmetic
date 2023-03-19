@@ -1,5 +1,6 @@
 package division.srt.srt16
 
+import Chisel.Cat
 import division.srt._
 import chisel3._
 import chisel3.util.{log2Ceil, DecoupledIO, Fill, Mux1H, RegEnable, ValidIO}
@@ -18,8 +19,9 @@ class SRT16(
   dTruncateWidth: Int = 4,
   rTruncateWidth: Int = 4)
     extends Module {
-
-  val xLen:    Int = dividendWidth + radixLog2 + 1
+  val fixWidth = 3
+  val divisorWidthFix = dividerWidth + fixWidth
+  val xLen:    Int = dividendWidth + radixLog2 + 1 + fixWidth
   val wLen:    Int = xLen + radixLog2
   val ohWidth: Int = 2 * a + 1
   val rWidth:  Int = 1 + radixLog2 + rTruncateWidth
@@ -27,9 +29,10 @@ class SRT16(
   // IO
   val input = IO(Flipped(DecoupledIO(new SRTInput(dividendWidth, dividerWidth, n))))
   val output = IO(ValidIO(new SRTOutput(dividerWidth, dividendWidth)))
+  val fixValue = IO(Input(UInt(fixWidth.W)))
 
   val partialReminderCarryNext, partialReminderSumNext = Wire(UInt(wLen.W))
-  val dividerNext = Wire(UInt(dividerWidth.W))
+  val dividerNext = Wire(UInt(divisorWidthFix.W))
   val counterNext = Wire(UInt(log2Ceil(n).W))
   val quotientNext, quotientMinusOneNext = Wire(UInt(n.W))
 
@@ -39,7 +42,7 @@ class SRT16(
   // because we need a CSA to minimize the critical path
   val partialReminderCarry = RegEnable(partialReminderCarryNext, 0.U(wLen.W), enable)
   val partialReminderSum = RegEnable(partialReminderSumNext, 0.U(wLen.W), enable)
-  val divider = RegEnable(dividerNext, 0.U(dividerWidth.W), enable)
+  val divider = RegEnable(dividerNext, 0.U(divisorWidthFix.W), enable)
   val quotient = RegEnable(quotientNext, 0.U(n.W), enable)
   val quotientMinusOne = RegEnable(quotientMinusOneNext, 0.U(n.W), enable)
   val counter = RegEnable(counterNext, 0.U(log2Ceil(n).W), enable)
@@ -59,7 +62,8 @@ class SRT16(
   val remainderCorrect: UInt =
     partialReminderSum + partialReminderCarry + (divider << radixLog2)
   val needCorrect: Bool = remainderNoCorrect(wLen - 3).asBool
-  output.bits.reminder := Mux(needCorrect, remainderCorrect, remainderNoCorrect)(wLen - 4, radixLog2)
+  // todo issue here
+  output.bits.reminder := Mux(needCorrect, remainderCorrect, remainderNoCorrect)(wLen - 4, radixLog2 + fixWidth)
   output.bits.quotient := Mux(needCorrect, quotientMinusOne, quotient)
 
   // 5*CSA32  SRT16 <- SRT4 + SRT4*5 /SRT16 -> CSA53+CSA32
@@ -136,10 +140,10 @@ class SRT16(
   val otf0 = OTF(radixLog2, n, ohWidth)(quotient, quotientMinusOne, qdsOH0)
   val otf1 = OTF(radixLog2, n, ohWidth)(otf0(0), otf0(1), qdsOH1)
 
-  dividerNext := Mux(input.fire, input.bits.divider, divider)
+  dividerNext := Mux(input.fire, Cat(input.bits.divider, 0.U(fixWidth.W)), divider)
   counterNext := Mux(input.fire, input.bits.counter, counter - 1.U)
   quotientNext := Mux(input.fire, 0.U, otf1(0))
   quotientMinusOneNext := Mux(input.fire, 0.U, otf1(1))
-  partialReminderSumNext := Mux(input.fire, input.bits.dividend, csa1Out(1) << radixLog2)
+  partialReminderSumNext := Mux(input.fire, Cat(input.bits.dividend, fixValue), csa1Out(1) << radixLog2)
   partialReminderCarryNext := Mux(input.fire, 0.U, csa1Out(0) << radixLog2 + 1)
 }

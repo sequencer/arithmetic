@@ -14,6 +14,11 @@ import spire.math._
   * @param radix is the radix of SRT.
   *              It defined how many rounds can be calculate in one cycle.
   *              @note 5.2
+  * @param a digit set
+  * @param dTruncateWidth
+  * @param xTruncateWidth
+  * @param dMin
+  * @param dMax
   */
 case class SRTTable(
   radix:          Algebraic,
