@@ -1,6 +1,5 @@
 package division.srt.srt8
 
-import Chisel.Cat
 import division.srt._
 import division.srt.SRTTable
 import chisel3._
