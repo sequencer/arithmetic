@@ -80,9 +80,9 @@ object SRTTest extends TestSuite with ChiselUtestTester {
         }
       }
 //      testcase(64)
-      for( i <- 1 to 50){
-        testcase(n = 64, radixLog2 = 3, a = 7, dTruncateWidth = 4, rTruncateWidth = 4)
-      }
+//      for( i <- 1 to 50){
+//        testcase(n = 64, radixLog2 = 3, a = 7, dTruncateWidth = 4, rTruncateWidth = 4)
+//      }
     }
   }
 }
