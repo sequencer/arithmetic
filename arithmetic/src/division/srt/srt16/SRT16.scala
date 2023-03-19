@@ -1,9 +1,8 @@
 package division.srt.srt16
 
-import Chisel.Cat
 import division.srt._
 import chisel3._
-import chisel3.util.{log2Ceil, DecoupledIO, Fill, Mux1H, RegEnable, ValidIO}
+import chisel3.util._
 import utils.leftShift
 
 /** RSRT16 with Two SRT4 Overlapped Stages
