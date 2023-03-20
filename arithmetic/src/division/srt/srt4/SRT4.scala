@@ -34,7 +34,7 @@ class SRT4(
   dTruncateWidth: Int = 4,
   rTruncateWidth: Int = 4)
     extends Module {
-  val fixWidth = 2
+  val fixWidth = 1
   val divisorWidthFix = dividerWidth + fixWidth
 
   /** width for csa */
@@ -43,6 +43,7 @@ class SRT4(
   // IO
   val input = IO(Flipped(DecoupledIO(new SRTInput(dividendWidth, dividerWidth, n))))
   val output = IO(ValidIO(new SRTOutput(dividerWidth, dividendWidth)))
+  val dividendAppend = IO(Input(UInt(1.W)))
 
   //rW[j]
   val partialReminderCarryNext, partialReminderSumNext = Wire(UInt(wLen.W))
@@ -93,6 +94,7 @@ class SRT4(
     case 3 => 6
   }
   // selectedQuotient is in in OneHot encoding
+  // the first 2bits is unused in Truncate y
   val selectedQuotientOH: UInt =
     QDS(rWidth, ohWidth, dTruncateWidth - 1, tables, a)(
       leftShift(partialReminderSum, radixLog2).head(rWidth),
@@ -162,6 +164,6 @@ class SRT4(
   counterNext := Mux(input.fire, input.bits.counter, counter - 1.U)
   quotientNext := Mux(input.fire, 0.U, otf(0))
   quotientMinusOneNext := Mux(input.fire, 0.U, otf(1))
-  partialReminderSumNext := Mux(input.fire, Cat(input.bits.dividend, 1.U(fixWidth.W)), csa(1) << radixLog2)
+  partialReminderSumNext := Mux(input.fire, Cat(input.bits.dividend, dividendAppend), csa(1) << radixLog2)
   partialReminderCarryNext := Mux(input.fire, 0.U, csa(0) << 1 + radixLog2)
 }
