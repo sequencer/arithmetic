@@ -94,7 +94,6 @@ class SRT4(
     case 3 => 6
   }
   // selectedQuotient is in in OneHot encoding
-  // the first 2bits is unused in Truncate y
   val selectedQuotientOH: UInt =
     QDS(rWidth, ohWidth, dTruncateWidth - 1, tables, a)(
       leftShift(partialReminderSum, radixLog2).head(rWidth),
@@ -118,10 +117,8 @@ class SRT4(
       // if q is positive, add one to partialReminderCarry in the least bit
       val qdsSign = selectedQuotientOH(ohWidth - 1, ohWidth / 2 + 1).orR
 
-      /** todo why shift here? partialReminderSum is already rW[J] */
       addition.csa.c32(
         VecInit(
-          // todo: xLen -2 is enough, (xLen - 3, 2)
           leftShift(partialReminderSum, radixLog2).head(wLen - radixLog2),
           leftShift(partialReminderCarry, radixLog2).head(wLen - radixLog2 - 1) ## qdsSign,
           Mux1H(selectedQuotientOH, dividerMap)

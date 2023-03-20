@@ -82,7 +82,11 @@ object SRT16Test extends TestSuite with ChiselUtestTester {
               }
 
               def check = {
-                if ((dut.output.bits.quotient.peek().litValue == quotient)||(dut.output.bits.reminder.peek().litValue >> zeroHeadDivisor == remainder)) {} else {
+                if (
+                  (dut.output.bits.quotient
+                    .peek()
+                    .litValue == quotient) || (dut.output.bits.reminder.peek().litValue >> zeroHeadDivisor == remainder)
+                ) {} else {
                   printvalue
                 }
               }

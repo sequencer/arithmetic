@@ -10,10 +10,9 @@ import utils.{extend, sIntToBitPat}
 /** quotient divisor select
   *
   * @param rWidth y Truncate width
-  * @param ohWidth quotient Width
+  * @param ohWidth quotient width
   * @param partialDividerWidth equals to dTruncatedWidth - 1
   * @param tables QDS table
-  *
   */
 class QDS(rWidth: Int, ohWidth: Int, partialDividerWidth: Int, tables: Seq[Seq[Int]], a: Int) extends Module {
   // IO
@@ -52,10 +51,13 @@ class QDS(rWidth: Int, ohWidth: Int, partialDividerWidth: Int, tables: Seq[Seq[I
 
   val columnSelect = input.partialDivider
   val adderWidth = rWidth + 1
-  /** 3 integer bits, 4 fractional bits*/
+
+  /** 3 integer bits, 4 fractional bits */
   val yTruncate: UInt = input.partialReminderCarry + input.partialReminderSum
+
   /** the selection constant vector */
   val mkVec = selectRom(columnSelect)
+
   /** add [[yTruncate]] with all mk, use decoder to find its location */
   val selectPoints = VecInit(mkVec.map { mk =>
     (extend(yTruncate, adderWidth).asUInt

@@ -77,7 +77,11 @@ object SRT4Test extends TestSuite with ChiselUtestTester {
               }
 
               def check = {
-                if ((dut.output.bits.quotient.peek().litValue == quotient) || (dut.output.bits.reminder.peek().litValue >> zeroHeaddivisor == remainder)) {} else {
+                if (
+                  (dut.output.bits.quotient
+                    .peek()
+                    .litValue == quotient) || (dut.output.bits.reminder.peek().litValue >> zeroHeaddivisor == remainder)
+                ) {} else {
                   printvalue
                 }
               }
@@ -99,8 +103,8 @@ object SRT4Test extends TestSuite with ChiselUtestTester {
 //        }
 //      }
 
-      for(i<-1 to 20){
-        testcase(64,0,0)
+      for (i <- 1 to 20) {
+        testcase(64, 0, 0)
       }
 
     }
