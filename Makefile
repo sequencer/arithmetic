@@ -22,4 +22,4 @@ checkformat:
 	mill -i __.checkFormat 
 
 test:
-	mill -i arithmetic.tests
+	mill -i -j 0 arithmetic.tests

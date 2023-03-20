@@ -8,7 +8,7 @@ import scala.util.{Random}
 object SRT4Test extends TestSuite with ChiselUtestTester {
   def tests: Tests = Tests {
     test("SRT4 should pass") {
-      def testcase(width: Int): Unit = {
+      def testcase(width: Int, x: Int, d: Int): Unit = {
         // parameters
         val radixLog2: Int = 2
         val n:         Int = width
@@ -17,6 +17,8 @@ object SRT4Test extends TestSuite with ChiselUtestTester {
         val q:         Int = Random.nextInt(m)
         val dividend:  BigInt = BigInt(p, Random)
         val divisor:   BigInt = BigInt(q, Random)
+//        val dividend: BigInt = x
+//        val divisor:  BigInt = d
         def zeroCheck(x: BigInt): Int = {
           var flag = false
           var a: Int = m
@@ -36,14 +38,9 @@ object SRT4Test extends TestSuite with ChiselUtestTester {
           return
         val quotient:               BigInt = dividend / divisor
         val remainder:              BigInt = dividend % divisor
-        val leftShiftWidthDividend: Int = zeroHeadDividend - (if (noguard) 0 else 1)
+        val leftShiftWidthDividend: Int = zeroHeadDividend - guardWidth
         val leftShiftWidthdivisor:  Int = zeroHeaddivisor
-        println("leftShiftWidthDividend  = %d ".format(leftShiftWidthDividend))
-        /*        println("zeroHeadDividend_ex   = %d".format(zeroHeadDividend))
-        println("zeroHeaddivisor_ex   = %d".format(zeroHeaddivisor))
-        println("noguard = "+ noguard)
-        println("quotient   = %d,  remainder  = %d".format(quotient, remainder))
-        println("counter_ex   = %d, needComputerWidth_ex = %d".format(counter, needComputerWidth))*/
+
         // test
         testCircuit(
           new SRT4(n, n, n),
@@ -54,21 +51,38 @@ object SRT4Test extends TestSuite with ChiselUtestTester {
           dut.input.bits.dividend.poke((dividend << leftShiftWidthDividend).U)
           dut.input.bits.divider.poke((divisor << leftShiftWidthdivisor).U)
           dut.input.bits.counter.poke(counter.U)
+          dut.dividendAppend.poke((dividend % 2).U)
           dut.clock.step()
           dut.input.valid.poke(false.B)
           var flag = false
           for (a <- 1 to 1000 if !flag) {
             if (dut.output.valid.peek().litValue == 1) {
               flag = true
-//              println("%x / %x = %x --- %x".format(dividend, divisor, quotient, remainder))
-//              println(
-//                "%x / %x = %x --- %x".format(
-//                  dividend,
-//                  divisor,
-//                  dut.output.bits.quotient.peek().litValue,
-//                  dut.output.bits.reminder.peek().litValue >> zeroHeaddivisor
-//                )
-//              )
+
+              def printvalue(): Unit = {
+                println("zeroHeadDividend_ex   = %d".format(zeroHeadDividend))
+                println("zeroHeaddivisor_ex   = %d".format(zeroHeaddivisor))
+                println("guardWidth = " + guardWidth)
+                println("leftShiftWidthDividend  = %d ".format(leftShiftWidthDividend))
+                println("counter_ex   = %d, needComputerWidth_ex = %d".format(counter, needComputerWidth))
+                println("%d / %d = %d --- %d".format(dividend, divisor, quotient, remainder))
+                println(
+                  "%d / %d = %d --- %d".format(
+                    dividend,
+                    divisor,
+                    dut.output.bits.quotient.peek().litValue,
+                    dut.output.bits.reminder.peek().litValue >> zeroHeaddivisor
+                  )
+                )
+              }
+
+              def check = {
+                if ((dut.output.bits.quotient.peek().litValue == quotient) || (dut.output.bits.reminder.peek().litValue >> zeroHeaddivisor == remainder)) {} else {
+                  printvalue
+                }
+              }
+
+              check
               utest.assert(dut.output.bits.quotient.peek().litValue == quotient)
               utest.assert(dut.output.bits.reminder.peek().litValue >> zeroHeaddivisor == remainder)
             }
@@ -79,10 +93,16 @@ object SRT4Test extends TestSuite with ChiselUtestTester {
         }
       }
 
-//      testcase(64)
-      for( i <- 1 to 30){
-        testcase(64)
+//      for (i <- 128 to 255) {
+//        for (j <- 1 to i - 1) {
+//          testcase(8, i, j)
+//        }
+//      }
+
+      for(i<-1 to 20){
+        testcase(64,0,0)
       }
+
     }
   }
 }

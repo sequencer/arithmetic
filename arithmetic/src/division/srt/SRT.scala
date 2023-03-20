@@ -42,20 +42,27 @@ class SRT(
 
   val input = IO(Flipped(DecoupledIO(new SRTInput(dividendWidth, dividerWidth, n))))
   val output = IO(ValidIO(new SRTOutput(dividerWidth, dividendWidth)))
+  val dividendAppend = IO(Input(UInt((radixLog2-1).W)))
+  val appendWidth = IO(Input(UInt(2.W)))
 
 //   select radix
   if (radixLog2 == 2) { // SRT4
     val srt = Module(new SRT4(dividendWidth, dividerWidth, n, radixLog2, a, dTruncateWidth, rTruncateWidth))
     srt.input <> input
     output <> srt.output
+    srt.dividendAppend := dividendAppend
   } else if (radixLog2 == 3) { // SRT8
     val srt = Module(new SRT8(dividendWidth, dividerWidth, n, radixLog2, a, dTruncateWidth, rTruncateWidth))
     srt.input <> input
     output <> srt.output
+    srt.dividendAppend := dividendAppend
+    srt.appendWidth := appendWidth
   } else if (radixLog2 == 4) { //SRT16
     val srt = Module(new SRT16(dividendWidth, dividerWidth, n, radixLog2 >> 1, a, dTruncateWidth, rTruncateWidth))
     srt.input <> input
     output <> srt.output
+    srt.dividendAppend := dividendAppend
+    srt.appendWidth := appendWidth
   }
 
 //  val srt = radixLog2 match {

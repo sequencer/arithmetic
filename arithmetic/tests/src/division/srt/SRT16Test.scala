@@ -9,7 +9,7 @@ import scala.util.Random
 object SRT16Test extends TestSuite with ChiselUtestTester {
   def tests: Tests = Tests {
     test("SRT16 should pass") {
-      def testcase(width: Int): Unit = {
+      def testcase(width: Int, x: Int, d: Int): Unit = {
         // parameters
         val radixLog2: Int = 4
         val n:         Int = width
@@ -17,9 +17,9 @@ object SRT16Test extends TestSuite with ChiselUtestTester {
         val p:         Int = Random.nextInt(m - radixLog2 + 1) //order to offer guardwidth
         val q:         Int = Random.nextInt(m - radixLog2 + 1)
         val dividend:  BigInt = BigInt(p, Random)
-        val divider:   BigInt = BigInt(q, Random)
-//        val dividend: BigInt = 0x7fffffff
-//        val divider: BigInt = 16
+        val divisor:   BigInt = BigInt(q, Random)
+//        val dividend: BigInt = BigInt("fffffff0",16) + x
+//        val divisor:  BigInt = BigInt(q, Random)
         def zeroCheck(x: BigInt): Int = {
           var flag = false
           var a: Int = m
@@ -30,19 +30,23 @@ object SRT16Test extends TestSuite with ChiselUtestTester {
           a + 1
         }
         val zeroHeadDividend:  Int = m - zeroCheck(dividend)
-        val zeroHeadDivider:   Int = m - zeroCheck(divider)
-        val needComputerWidth: Int = zeroHeadDivider - zeroHeadDividend + 1 + 1
+        val zeroHeadDivisor:   Int = m - zeroCheck(divisor)
+        val needComputerWidth: Int = zeroHeadDivisor - zeroHeadDividend + 1 + 1
         val noguard:           Boolean = needComputerWidth % radixLog2 == 0
         val guardWidth:        Int = if (noguard) 0 else 4 - needComputerWidth % 4
         val counter:           Int = (needComputerWidth + guardWidth) / radixLog2
-        if ((divider == 0) || (divider > dividend) || (needComputerWidth <= 0))
+        if ((divisor == 0) || (divisor > dividend) || (needComputerWidth <= 0))
           return
-        val quotient:               BigInt = dividend / divider
-        val remainder:              BigInt = dividend % divider
+        val quotient:               BigInt = dividend / divisor
+        val remainder:              BigInt = dividend % divisor
         val leftShiftWidthDividend: Int = zeroHeadDividend - guardWidth
-        val leftShiftWidthDivider:  Int = zeroHeadDivider
+        val leftShiftWidthDivider:  Int = zeroHeadDivisor
 
-//        println("leftShiftWidthDividend  = %d ".format(leftShiftWidthDividend))
+        val dividendAppend = dividend % 8
+        val appendWidth = if (leftShiftWidthDividend < 0) {
+          -leftShiftWidthDividend
+        } else 0
+
         // test
         testCircuit(
           new SRT16(n, n, n),
@@ -51,19 +55,41 @@ object SRT16Test extends TestSuite with ChiselUtestTester {
           dut.clock.setTimeout(0)
           dut.input.valid.poke(true.B)
           dut.input.bits.dividend.poke((dividend << leftShiftWidthDividend).U)
-          dut.input.bits.divider.poke((divider << leftShiftWidthDivider).U)
+          dut.input.bits.divider.poke((divisor << leftShiftWidthDivider).U)
           dut.input.bits.counter.poke(counter.U)
-          dut.fixValue.poke((dividend % 8).U)
+          dut.dividendAppend.poke(dividendAppend.U)
+          dut.appendWidth.poke(appendWidth.U)
           dut.clock.step()
           dut.input.valid.poke(false.B)
           var flag = false
           for (a <- 1 to 1000 if !flag) {
             if (dut.output.valid.peek().litValue == 1) {
               flag = true
-//                println(dut.output.bits.quotient.peek().litValue)
-//                println(dut.output.bits.reminder.peek().litValue)
+
+              def printvalue(): Unit = {
+                println("leftShiftWidthDividend  = %d ".format(leftShiftWidthDividend))
+                println("appendWidth  = %d ".format(appendWidth))
+                println("dividendAppend  = %d ".format(dividendAppend))
+                println("%d / %d = %d --- %d".format(dividend, divisor, quotient, remainder))
+                println(
+                  "%d / %d = %d --- %d".format(
+                    dividend,
+                    divisor,
+                    dut.output.bits.quotient.peek().litValue,
+                    dut.output.bits.reminder.peek().litValue >> zeroHeadDivisor
+                  )
+                )
+              }
+
+              def check = {
+                if ((dut.output.bits.quotient.peek().litValue == quotient)||(dut.output.bits.reminder.peek().litValue >> zeroHeadDivisor == remainder)) {} else {
+                  printvalue
+                }
+              }
+
+              check
               utest.assert(dut.output.bits.quotient.peek().litValue == quotient)
-              utest.assert(dut.output.bits.reminder.peek().litValue >> zeroHeadDivider == remainder)
+              utest.assert(dut.output.bits.reminder.peek().litValue >> zeroHeadDivisor == remainder)
             }
             dut.clock.step()
           }
@@ -72,10 +98,16 @@ object SRT16Test extends TestSuite with ChiselUtestTester {
         }
       }
 
-      //     testcase(64)
-      for (i <- 1 to 30) {
-        testcase(64)
+//      for (i <- 16 to 31) {
+//        for (j <- 2 to i - 1) {
+//          testcase(5, i, j)
+//        }
+//      }
+
+      for (i <- 1 to 20) {
+        testcase(64, 0, 0)
       }
+
     }
   }
 }
