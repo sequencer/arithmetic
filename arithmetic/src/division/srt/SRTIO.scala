@@ -3,10 +3,10 @@ package division.srt
 import chisel3._
 import chisel3.util.log2Ceil
 // SRTIO
-class SRTInput(dividendWidth: Int, dividerWidth: Int, n: Int) extends Bundle {
+class SRTInput(dividendWidth: Int, dividerWidth: Int, n: Int, radix2: Int) extends Bundle {
 
   /** r*residual[0] */
-  val dividend = UInt(dividendWidth.W) //.***********
+  val dividend = UInt((dividendWidth + radix2 - 1).W) //.***********
   val divider = UInt(dividerWidth.W) //.1**********
   val counter = UInt(log2Ceil(n).W) //the width of quotient.
 }

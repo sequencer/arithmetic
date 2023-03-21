@@ -26,17 +26,8 @@ class SRT16(
   val rWidth:  Int = 1 + radixLog2 + rTruncateWidth
 
   // IO
-  val input = IO(Flipped(DecoupledIO(new SRTInput(dividendWidth, dividerWidth, n))))
+  val input = IO(Flipped(DecoupledIO(new SRTInput(dividendWidth, dividerWidth, n, 4))))
   val output = IO(ValidIO(new SRTOutput(dividerWidth, dividendWidth)))
-  val dividendAppend = IO(Input(UInt(fixWidth.W)))
-  val appendWidth = IO(Input(UInt(2.W)))
-
-  val appendValue = Wire(UInt(3.W))
-  appendValue := Mux(
-    appendWidth === 1.U,
-    Cat(dividendAppend(0), 0.U(2.W)),
-    Mux(appendWidth === 2.U, Cat(dividendAppend(1, 0), 0.U(1.W)), dividendAppend)
-  )
 
   val partialReminderCarryNext, partialReminderSumNext = Wire(UInt(wLen.W))
   val dividerNext = Wire(UInt(divisorWidthFix.W))
@@ -151,6 +142,6 @@ class SRT16(
   counterNext := Mux(input.fire, input.bits.counter, counter - 1.U)
   quotientNext := Mux(input.fire, 0.U, otf1(0))
   quotientMinusOneNext := Mux(input.fire, 0.U, otf1(1))
-  partialReminderSumNext := Mux(input.fire, Cat(input.bits.dividend, appendValue), csa1Out(1) << radixLog2)
+  partialReminderSumNext := Mux(input.fire, input.bits.dividend, csa1Out(1) << radixLog2)
   partialReminderCarryNext := Mux(input.fire, 0.U, csa1Out(0) << radixLog2 + 1)
 }

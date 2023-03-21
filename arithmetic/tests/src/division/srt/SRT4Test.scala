@@ -15,10 +15,9 @@ object SRT4Test extends TestSuite with ChiselUtestTester {
         val m:         Int = n - 1
         val p:         Int = Random.nextInt(m)
         val q:         Int = Random.nextInt(m)
-        val dividend:  BigInt = BigInt(p, Random)
-        val divisor:   BigInt = BigInt(q, Random)
-//        val dividend: BigInt = x
-//        val divisor:  BigInt = d
+//        val dividend: BigInt = BigInt("fffffff0", 16) + x
+        val dividend: BigInt = x
+        val divisor: BigInt = d
         def zeroCheck(x: BigInt): Int = {
           var flag = false
           var a: Int = m
@@ -38,7 +37,7 @@ object SRT4Test extends TestSuite with ChiselUtestTester {
           return
         val quotient:               BigInt = dividend / divisor
         val remainder:              BigInt = dividend % divisor
-        val leftShiftWidthDividend: Int = zeroHeadDividend - guardWidth
+        val leftShiftWidthDividend: Int = zeroHeadDividend - guardWidth + 1
         val leftShiftWidthdivisor:  Int = zeroHeaddivisor
 
         // test
@@ -51,7 +50,6 @@ object SRT4Test extends TestSuite with ChiselUtestTester {
           dut.input.bits.dividend.poke((dividend << leftShiftWidthDividend).U)
           dut.input.bits.divider.poke((divisor << leftShiftWidthdivisor).U)
           dut.input.bits.counter.poke(counter.U)
-          dut.dividendAppend.poke((dividend % 2).U)
           dut.clock.step()
           dut.input.valid.poke(false.B)
           var flag = false
@@ -60,6 +58,7 @@ object SRT4Test extends TestSuite with ChiselUtestTester {
               flag = true
 
               def printvalue(): Unit = {
+                println("SRT4 error!")
                 println("zeroHeadDividend_ex   = %d".format(zeroHeadDividend))
                 println("zeroHeaddivisor_ex   = %d".format(zeroHeaddivisor))
                 println("guardWidth = " + guardWidth)
@@ -85,7 +84,6 @@ object SRT4Test extends TestSuite with ChiselUtestTester {
                   printvalue
                 }
               }
-
               check
               utest.assert(dut.output.bits.quotient.peek().litValue == quotient)
               utest.assert(dut.output.bits.reminder.peek().litValue >> zeroHeaddivisor == remainder)
@@ -97,15 +95,17 @@ object SRT4Test extends TestSuite with ChiselUtestTester {
         }
       }
 
-//      for (i <- 128 to 255) {
-//        for (j <- 1 to i - 1) {
-//          testcase(8, i, j)
+//      for (i <- 0 to 15) {
+//        for (j <- 1 to 16) {
+//          testcase(32, i, j)
 //        }
 //      }
 
-      for (i <- 1 to 20) {
-        testcase(64, 0, 0)
-      }
+            for (i <- 2 to 15) {
+              for (j <- 1 to i-1) {
+                testcase(4, i, j)
+              }
+            }
 
     }
   }

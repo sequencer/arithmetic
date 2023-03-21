@@ -16,10 +16,10 @@ object SRT8Test extends TestSuite with ChiselUtestTester {
         val m:         Int = n - 1
         val p:         Int = Random.nextInt(m - radixLog2 + 1) //order to offer guardwidth
         val q:         Int = Random.nextInt(m - radixLog2 + 1)
-        val dividend:  BigInt = BigInt(p, Random)
-        val divisor:   BigInt = BigInt(q, Random)
-//        val dividend: BigInt = x
-//        val divisor: BigInt = d
+
+//        val dividend: BigInt = BigInt("fffffff0", 16) + x
+        val dividend: BigInt = x
+        val divisor:  BigInt = d
         def zeroCheck(x: BigInt): Int = {
           var flag = false
           var a: Int = m
@@ -39,7 +39,7 @@ object SRT8Test extends TestSuite with ChiselUtestTester {
           return
         val quotient:               BigInt = dividend / divisor
         val remainder:              BigInt = dividend % divisor
-        val leftShiftWidthDividend: Int = zeroHeadDividend - guardWidth
+        val leftShiftWidthDividend: Int = zeroHeadDividend - guardWidth + 2
         val leftShiftWidthDivider:  Int = zeroHeadDivisor
 
         val dividendAppend = dividend % 4
@@ -56,8 +56,6 @@ object SRT8Test extends TestSuite with ChiselUtestTester {
           dut.input.bits.dividend.poke((dividend << leftShiftWidthDividend).U)
           dut.input.bits.divider.poke((divisor << leftShiftWidthDivider).U)
           dut.input.bits.counter.poke(counter.U)
-          dut.dividendAppend.poke(dividendAppend.U)
-          dut.appendWidth.poke(appendWidth.U)
           dut.clock.step()
           dut.input.valid.poke(false.B)
           var flag = false
@@ -65,9 +63,8 @@ object SRT8Test extends TestSuite with ChiselUtestTester {
             if (dut.output.valid.peek().litValue == 1) {
               flag = true
 
-              //printvalue()
-
               def printvalue(): Unit = {
+                println("SRT8 error!")
                 println("leftShiftWidthDividend  = %d ".format(leftShiftWidthDividend))
                 println("%d / %d = %d --- %d".format(dividend, divisor, quotient, remainder))
                 println(
@@ -81,11 +78,14 @@ object SRT8Test extends TestSuite with ChiselUtestTester {
               }
 
               def check = {
-                if ((dut.output.bits.quotient.peek().litValue == quotient) || (dut.output.bits.reminder.peek().litValue >> zeroHeadDivisor == remainder)) {} else {
+                if (
+                  (dut.output.bits.quotient
+                    .peek()
+                    .litValue == quotient) || (dut.output.bits.reminder.peek().litValue >> zeroHeadDivisor == remainder)
+                ) {} else {
                   printvalue
                 }
               }
-
               check
               utest.assert(dut.output.bits.quotient.peek().litValue == quotient)
               utest.assert(dut.output.bits.reminder.peek().litValue >> zeroHeadDivisor == remainder)
@@ -97,14 +97,16 @@ object SRT8Test extends TestSuite with ChiselUtestTester {
         }
       }
 
-//      for (i <- 2 to 255) {
-//        for (j <- 1 to i - 1) {
-//          testcase(8, i, j)
+//      for (i <- 0 to 15) {
+//        for (j <- 1 to 16) {
+//          testcase(32, i, j)
 //        }
 //      }
 
-      for (i <- 1 to 20) {
-        testcase(64, 0, 0)
+      for (i <- 2 to 15) {
+        for (j <- 1 to i - 1) {
+          testcase(4, i, j)
+        }
       }
 
     }

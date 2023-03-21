@@ -33,13 +33,8 @@ class SRT8(
   val wLen: Int = xLen + radixLog2
 
   // IO
-  val input = IO(Flipped(DecoupledIO(new SRTInput(dividendWidth, dividerWidth, n))))
+  val input = IO(Flipped(DecoupledIO(new SRTInput(dividendWidth, dividerWidth, n, 3))))
   val output = IO(ValidIO(new SRTOutput(dividerWidth, dividendWidth)))
-  val dividendAppend = IO(Input(UInt(fixWidth.W)))
-  val appendWidth = IO(Input(UInt(2.W)))
-
-  val appendValue = Wire(UInt(2.W))
-  appendValue := Mux(appendWidth === 1.U, Cat(dividendAppend(0), 0.U(1.W)), dividendAppend)
 
   val partialReminderCarryNext, partialReminderSumNext = Wire(UInt(wLen.W))
   val quotientNext, quotientMinusOneNext = Wire(UInt(n.W))
@@ -132,7 +127,7 @@ class SRT8(
         Mux1H(qLow, dividerLMap)
       )
     )
-    partialReminderSumNext := Mux(input.fire, Cat(input.bits.dividend, appendValue), csa1(1) << radixLog2)
+    partialReminderSumNext := Mux(input.fire, input.bits.dividend, csa1(1) << radixLog2)
     partialReminderCarryNext := Mux(input.fire, 0.U, csa1(0) << 1 + radixLog2)
   } else if (a == 6) {
     val qHigh:    UInt = selectedQuotientOH(7, 5)
@@ -160,7 +155,7 @@ class SRT8(
         Mux1H(qLow, dividerLMap)
       )
     )
-    partialReminderSumNext := Mux(input.fire, Cat(input.bits.dividend, appendValue), csa1(1) << radixLog2)
+    partialReminderSumNext := Mux(input.fire, input.bits.dividend, csa1(1) << radixLog2)
     partialReminderCarryNext := Mux(input.fire, 0.U, csa1(0) << 1 + radixLog2)
   } else if (a == 5) {
     val qHigh:    UInt = selectedQuotientOH(7, 5)
@@ -188,7 +183,7 @@ class SRT8(
         Mux1H(qLow, dividerLMap)
       )
     )
-    partialReminderSumNext := Mux(input.fire, Cat(input.bits.dividend, appendValue), csa1(1) << radixLog2)
+    partialReminderSumNext := Mux(input.fire, input.bits.dividend, csa1(1) << radixLog2)
     partialReminderCarryNext := Mux(input.fire, 0.U, csa1(0) << 1 + radixLog2)
   } else if (a == 4) {
     val qHigh:    UInt = selectedQuotientOH(7, 5)
@@ -216,7 +211,7 @@ class SRT8(
         Mux1H(qLow, dividerLMap)
       )
     )
-    partialReminderSumNext := Mux(input.fire, Cat(input.bits.dividend, appendValue), csa1(1) << radixLog2)
+    partialReminderSumNext := Mux(input.fire, input.bits.dividend, csa1(1) << radixLog2)
     partialReminderCarryNext := Mux(input.fire, 0.U, csa1(0) << 1 + radixLog2)
   }
 
