@@ -32,8 +32,7 @@ class OTFOutput(qWidth: Int) extends Bundle {
 class QDSInput(rWidth: Int, partialDividerWidth: Int) extends Bundle {
   val partialReminderCarry: UInt = UInt(rWidth.W)
   val partialReminderSum:   UInt = UInt(rWidth.W)
-
-  /** truncated divisor with the -1 bit truncated either */
+  /** truncated divisor without the most significant bit  */
   val partialDivider: UInt = UInt(partialDividerWidth.W)
 }
 

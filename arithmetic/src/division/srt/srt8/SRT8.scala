@@ -28,7 +28,6 @@ class SRT8(
     extends Module {
 
   val guardBitWidth = 2
-  val divisorWidthFix = dividerWidth + guardBitWidth
   val xLen: Int = dividendWidth + radixLog2 + 1 + guardBitWidth
   val wLen: Int = xLen + radixLog2
 
@@ -38,7 +37,7 @@ class SRT8(
 
   val partialReminderCarryNext, partialReminderSumNext = Wire(UInt(wLen.W))
   val quotientNext, quotientMinusOneNext = Wire(UInt(n.W))
-  val dividerNext = Wire(UInt(divisorWidthFix.W))
+  val dividerNext = Wire(UInt(dividerWidth.W))
   val counterNext = Wire(UInt(log2Ceil(n).W))
 
   // Control
@@ -50,7 +49,7 @@ class SRT8(
   // because we need a CSA to minimize the critical path
   val partialReminderCarry = RegEnable(partialReminderCarryNext, 0.U(wLen.W), enable)
   val partialReminderSum = RegEnable(partialReminderSumNext, 0.U(wLen.W), enable)
-  val divider = RegEnable(dividerNext, 0.U(divisorWidthFix.W), enable)
+  val divider = RegEnable(dividerNext, 0.U(dividerWidth.W), enable)
   val quotient = RegEnable(quotientNext, 0.U(n.W), enable)
   val quotientMinusOne = RegEnable(quotientMinusOneNext, 0.U(n.W), enable)
   val counter = RegEnable(counterNext, 0.U(log2Ceil(n).W), enable)
@@ -66,9 +65,10 @@ class SRT8(
   input.ready := !occupied
   enable := input.fire || !isLastCycle
 
+  val divisorExtended = Cat(divider, 0.U(guardBitWidth.W))
   val remainderNoCorrect: UInt = partialReminderSum + partialReminderCarry
   val remainderCorrect: UInt =
-    partialReminderSum + partialReminderCarry + (divider << radixLog2)
+    partialReminderSum + partialReminderCarry + (divisorExtended << radixLog2)
   val needCorrect: Bool = remainderNoCorrect(wLen - 4).asBool
   output.bits.reminder := Mux(needCorrect, remainderCorrect, remainderNoCorrect)(wLen - 5, radixLog2 + guardBitWidth)
   output.bits.quotient := Mux(needCorrect, quotientMinusOne, quotient)
@@ -93,11 +93,11 @@ class SRT8(
   val otf = OTF(radixLog2, n, ohWidth, a)(quotient, quotientMinusOne, selectedQuotientOH)
 
   val dividerLMap = VecInit((-2 to 2).map {
-    case -2 => divider << 1 // -2
-    case -1 => divider // -1
+    case -2 => divisorExtended << 1 // -2
+    case -1 => divisorExtended // -1
     case 0  => 0.U //  0
-    case 1  => Fill(1 + radixLog2, 1.U(1.W)) ## ~divider // 1
-    case 2  => Fill(radixLog2, 1.U(1.W)) ## ~(divider << 1) // 2
+    case 1  => Fill(1 + radixLog2, 1.U(1.W)) ## ~divisorExtended // 1
+    case 2  => Fill(radixLog2, 1.U(1.W)) ## ~(divisorExtended << 1) // 2
   })
 
   if (a == 7) {
@@ -107,11 +107,11 @@ class SRT8(
     val qdsSign1: Bool = qLow.head(2).orR
     // csa for SRT8 -> CSA32+CSA32
     val dividerHMap = VecInit((-2 to 2).map {
-      case -2 => divider << 3 // -8
-      case -1 => divider << 2 // -4
+      case -2 => divisorExtended << 3 // -8
+      case -1 => divisorExtended << 2 // -4
       case 0  => 0.U //  0
-      case 1  => Fill(2, 1.U(1.W)) ## ~(divider << 2) // 4
-      case 2  => Fill(1, 1.U(1.W)) ## ~(divider << 3) // 8
+      case 1  => Fill(2, 1.U(1.W)) ## ~(divisorExtended << 2) // 4
+      case 2  => Fill(1, 1.U(1.W)) ## ~(divisorExtended << 3) // 8
     })
     val csa0 = addition.csa.c32(
       VecInit(
@@ -137,9 +137,9 @@ class SRT8(
 
     // csa for SRT8 -> CSA32+CSA32
     val dividerHMap = VecInit((-1 to 1).map {
-      case -1 => divider << 2 // -4
+      case -1 => divisorExtended << 2 // -4
       case 0  => 0.U //  0
-      case 1  => Fill(2, 1.U(1.W)) ## ~(divider << 2) // 4
+      case 1  => Fill(2, 1.U(1.W)) ## ~(divisorExtended << 2) // 4
     })
     val csa0 = addition.csa.c32(
       VecInit(
@@ -165,9 +165,9 @@ class SRT8(
 
     // csa for SRT8 -> CSA32+CSA32
     val dividerHMap = VecInit((-1 to 1).map {
-      case -1 => divider << 2 // -4
+      case -1 => divisorExtended << 2 // -4
       case 0  => 0.U //  0
-      case 1  => Fill(2, 1.U(1.W)) ## ~(divider << 2) // 4
+      case 1  => Fill(2, 1.U(1.W)) ## ~(divisorExtended << 2) // 4
     })
     val csa0 = addition.csa.c32(
       VecInit(
@@ -193,9 +193,9 @@ class SRT8(
 
     // csa for SRT8 -> CSA32+CSA32
     val dividerHMap = VecInit((-1 to 1).map {
-      case -1 => divider << 1 // -2
+      case -1 => divisorExtended << 1 // -2
       case 0  => 0.U //  0
-      case 1  => Fill(radixLog2, 1.U(1.W)) ## ~(divider << 1) // 2
+      case 1  => Fill(radixLog2, 1.U(1.W)) ## ~(divisorExtended << 1) // 2
     })
     val csa0 = addition.csa.c32(
       VecInit(
@@ -215,7 +215,7 @@ class SRT8(
     partialReminderCarryNext := Mux(input.fire, 0.U, csa1(0) << 1 + radixLog2)
   }
 
-  dividerNext := Mux(input.fire, Cat(input.bits.divider, 0.U(guardBitWidth.W)), divider)
+  dividerNext := Mux(input.fire, input.bits.divider, divider)
   counterNext := Mux(input.fire, input.bits.counter, counter - 1.U)
   quotientNext := Mux(input.fire, 0.U, otf(0))
   quotientMinusOneNext := Mux(input.fire, 0.U, otf(1))
