@@ -27,9 +27,9 @@ class SRT8(
   rTruncateWidth: Int = 4)
     extends Module {
 
-  val fixWidth = 2
-  val divisorWidthFix = dividerWidth + fixWidth
-  val xLen: Int = dividendWidth + radixLog2 + 1 + fixWidth
+  val guardBitWidth = 2
+  val divisorWidthFix = dividerWidth + guardBitWidth
+  val xLen: Int = dividendWidth + radixLog2 + 1 + guardBitWidth
   val wLen: Int = xLen + radixLog2
 
   // IO
@@ -70,7 +70,7 @@ class SRT8(
   val remainderCorrect: UInt =
     partialReminderSum + partialReminderCarry + (divider << radixLog2)
   val needCorrect: Bool = remainderNoCorrect(wLen - 4).asBool
-  output.bits.reminder := Mux(needCorrect, remainderCorrect, remainderNoCorrect)(wLen - 5, radixLog2 + fixWidth)
+  output.bits.reminder := Mux(needCorrect, remainderCorrect, remainderNoCorrect)(wLen - 5, radixLog2 + guardBitWidth)
   output.bits.quotient := Mux(needCorrect, quotientMinusOne, quotient)
 
   val rWidth: Int = 1 + radixLog2 + rTruncateWidth
@@ -215,7 +215,7 @@ class SRT8(
     partialReminderCarryNext := Mux(input.fire, 0.U, csa1(0) << 1 + radixLog2)
   }
 
-  dividerNext := Mux(input.fire, Cat(input.bits.divider, 0.U(fixWidth.W)), divider)
+  dividerNext := Mux(input.fire, Cat(input.bits.divider, 0.U(guardBitWidth.W)), divider)
   counterNext := Mux(input.fire, input.bits.counter, counter - 1.U)
   quotientNext := Mux(input.fire, 0.U, otf(0))
   quotientMinusOneNext := Mux(input.fire, 0.U, otf(1))

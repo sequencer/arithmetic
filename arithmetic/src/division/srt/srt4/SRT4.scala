@@ -34,11 +34,11 @@ class SRT4(
   dTruncateWidth: Int = 4,
   rTruncateWidth: Int = 4)
     extends Module {
-  val fixWidth = 1
-  val divisorWidthFix = dividerWidth + fixWidth
+  val guardBitWidth = 1
+  val divisorWidthFix = dividerWidth + guardBitWidth
 
   /** width for csa */
-  val xLen: Int = dividendWidth + radixLog2 + 1 + fixWidth
+  val xLen: Int = dividendWidth + radixLog2 + 1 + guardBitWidth
   val wLen: Int = xLen + radixLog2
   // IO
   val input = IO(Flipped(DecoupledIO(new SRTInput(dividendWidth, dividerWidth, n, 2))))
@@ -80,7 +80,7 @@ class SRT4(
     partialReminderSum + partialReminderCarry + (divider << radixLog2)
   val needCorrect: Bool = remainderNoCorrect(wLen - 3).asBool
 
-  output.bits.reminder := Mux(needCorrect, remainderCorrect, remainderNoCorrect)(wLen - 4, radixLog2 + fixWidth)
+  output.bits.reminder := Mux(needCorrect, remainderCorrect, remainderNoCorrect)(wLen - 4, radixLog2 + guardBitWidth)
   output.bits.quotient := Mux(needCorrect, quotientMinusOne, quotient)
 
   /** 7 bits for truncated y */
@@ -156,7 +156,7 @@ class SRT4(
       )
     }
 
-  dividerNext := Mux(input.fire, Cat(input.bits.divider, 0.U(fixWidth.W)), divider)
+  dividerNext := Mux(input.fire, Cat(input.bits.divider, 0.U(guardBitWidth.W)), divider)
   counterNext := Mux(input.fire, input.bits.counter, counter - 1.U)
   quotientNext := Mux(input.fire, 0.U, otf(0))
   quotientMinusOneNext := Mux(input.fire, 0.U, otf(1))
