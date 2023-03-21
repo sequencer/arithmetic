@@ -20,7 +20,7 @@ import utils.leftShift
 
 /** SRT4
   *
-  * @param n todo: it seems the width for quotient?
+  * @param n the maximum result width
   * @param a digit set
   * @param dTruncateWidth TruncateWidth for divisor
   * @param rTruncateWidth TruncateWidth for residual fractional part
@@ -35,7 +35,6 @@ class SRT4(
   rTruncateWidth: Int = 4)
     extends Module {
   val guardBitWidth = 1
-  val divisorWidthFix = dividerWidth + guardBitWidth
 
   /** width for csa */
   val xLen: Int = dividendWidth + radixLog2 + 1 + guardBitWidth
@@ -47,7 +46,7 @@ class SRT4(
   //rW[j]
   val partialReminderCarryNext, partialReminderSumNext = Wire(UInt(wLen.W))
   val quotientNext, quotientMinusOneNext = Wire(UInt(n.W))
-  val dividerNext = Wire(UInt(divisorWidthFix.W))
+  val dividerNext = Wire(UInt(dividerWidth.W))
   val counterNext = Wire(UInt(log2Ceil(n).W))
 
   // Control
@@ -58,7 +57,7 @@ class SRT4(
   // because we need a CSA to minimize the critical path
   val partialReminderCarry = RegEnable(partialReminderCarryNext, 0.U(wLen.W), enable)
   val partialReminderSum = RegEnable(partialReminderSumNext, 0.U(wLen.W), enable)
-  val divider = RegEnable(dividerNext, 0.U(divisorWidthFix.W), enable)
+  val divider = RegEnable(dividerNext, 0.U(dividerWidth.W), enable)
   val quotient = RegEnable(quotientNext, 0.U(n.W), enable)
   val quotientMinusOne = RegEnable(quotientMinusOneNext, 0.U(n.W), enable)
   val counter = RegEnable(counterNext, 0.U(log2Ceil(n).W), enable)
@@ -74,25 +73,28 @@ class SRT4(
   input.ready := !occupied
   enable := input.fire || !isLastCycle
 
+  /** divisor needs to be extended to be aligned with partialReminder */
+  val divisorExtended = Cat(divider, 0.U(guardBitWidth.W))
   val remainderNoCorrect: UInt = partialReminderSum + partialReminderCarry
-  // todo: why divider shift 2
+
+  /** partialReminderSum is r*W[j], so remainderCorrect = remainderNoCorrect + r*divisor */
   val remainderCorrect: UInt =
-    partialReminderSum + partialReminderCarry + (divider << radixLog2)
+    partialReminderSum + partialReminderCarry + (divisorExtended << radixLog2)
   val needCorrect: Bool = remainderNoCorrect(wLen - 3).asBool
 
   output.bits.reminder := Mux(needCorrect, remainderCorrect, remainderNoCorrect)(wLen - 4, radixLog2 + guardBitWidth)
   output.bits.quotient := Mux(needCorrect, quotientMinusOne, quotient)
 
-  /** 7 bits for truncated y */
+  /** width for truncated y */
   val rWidth: Int = 1 + radixLog2 + rTruncateWidth
   val tables: Seq[Seq[Int]] = SRTTable(1 << radixLog2, a, dTruncateWidth, rTruncateWidth).tablesToQDS
-  // selected quotient width
+  // selected quotient encoding width
   val ohWidth: Int = a match {
-    // OneHot encoding, 5bits for [-2,2]
-    case 2 => 2 * a + 1
+    case 2 => 5
     case 3 => 6
   }
-  // selectedQuotient is in in OneHot encoding
+
+  /** QDS module whose output needs to be decoded */
   val selectedQuotientOH: UInt =
     QDS(rWidth, ohWidth, dTruncateWidth - 1, tables, a)(
       leftShift(partialReminderSum, radixLog2).head(rWidth),
@@ -106,11 +108,11 @@ class SRT4(
     if (a == 2) { // a == 2
       // decode quotient oneHot and calculate -qd
       val dividerMap = VecInit((-2 to 2).map {
-        case -2 => divider << 1
-        case -1 => divider
+        case -2 => divisorExtended << 1
+        case -1 => divisorExtended
         case 0  => 0.U
-        case 1  => Fill(1 + radixLog2, 1.U(1.W)) ## ~divider
-        case 2  => Fill(radixLog2, 1.U(1.W)) ## ~(divider << 1)
+        case 1  => Fill(1 + radixLog2, 1.U(1.W)) ## ~divisorExtended
+        case 2  => Fill(radixLog2, 1.U(1.W)) ## ~(divisorExtended << 1)
       })
       // qds Sing: if qdsOut = "b11000" or "10000" or "01000"
       // if q is positive, add one to partialReminderCarry in the least bit
@@ -131,14 +133,14 @@ class SRT4(
 
       // csa
       val dividerHMap = VecInit((-1 to 1).map {
-        case -1 => divider << 1 // -2
+        case -1 => divisorExtended << 1 // -2
         case 0  => 0.U //  0
-        case 1  => Fill(radixLog2, 1.U(1.W)) ## ~(divider << 1) // 2
+        case 1  => Fill(radixLog2, 1.U(1.W)) ## ~(divisorExtended << 1) // 2
       })
       val dividerLMap = VecInit((-1 to 1).map {
-        case -1 => divider // -1
+        case -1 => divisorExtended // -1
         case 0  => 0.U //  0
-        case 1  => Fill(1 + radixLog2, 1.U(1.W)) ## ~divider // 1
+        case 1  => Fill(1 + radixLog2, 1.U(1.W)) ## ~divisorExtended // 1
       })
       val csa0 = addition.csa.c32(
         VecInit(
@@ -156,7 +158,7 @@ class SRT4(
       )
     }
 
-  dividerNext := Mux(input.fire, Cat(input.bits.divider, 0.U(guardBitWidth.W)), divider)
+  dividerNext := Mux(input.fire, input.bits.divider, divider)
   counterNext := Mux(input.fire, input.bits.counter, counter - 1.U)
   quotientNext := Mux(input.fire, 0.U, otf(0))
   quotientMinusOneNext := Mux(input.fire, 0.U, otf(1))
