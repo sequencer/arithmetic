@@ -41,9 +41,8 @@ class SRT4(
   val xLen: Int = dividendWidth + radixLog2 + 1 + fixWidth
   val wLen: Int = xLen + radixLog2
   // IO
-  val input = IO(Flipped(DecoupledIO(new SRTInput(dividendWidth, dividerWidth, n))))
+  val input = IO(Flipped(DecoupledIO(new SRTInput(dividendWidth, dividerWidth, n, 2))))
   val output = IO(ValidIO(new SRTOutput(dividerWidth, dividendWidth)))
-  val dividendAppend = IO(Input(UInt(1.W)))
 
   //rW[j]
   val partialReminderCarryNext, partialReminderSumNext = Wire(UInt(wLen.W))
@@ -161,6 +160,6 @@ class SRT4(
   counterNext := Mux(input.fire, input.bits.counter, counter - 1.U)
   quotientNext := Mux(input.fire, 0.U, otf(0))
   quotientMinusOneNext := Mux(input.fire, 0.U, otf(1))
-  partialReminderSumNext := Mux(input.fire, Cat(input.bits.dividend, dividendAppend), csa(1) << radixLog2)
+  partialReminderSumNext := Mux(input.fire, input.bits.dividend, csa(1) << radixLog2)
   partialReminderCarryNext := Mux(input.fire, 0.U, csa(0) << 1 + radixLog2)
 }
