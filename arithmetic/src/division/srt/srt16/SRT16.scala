@@ -19,7 +19,6 @@ class SRT16(
   rTruncateWidth: Int = 4)
     extends Module {
   val guardBitWidth = 3
-  val divisorWidthFix = dividerWidth + guardBitWidth
   val xLen:    Int = dividendWidth + radixLog2 + 1 + guardBitWidth
   val wLen:    Int = xLen + radixLog2
   val ohWidth: Int = 2 * a + 1
@@ -61,7 +60,7 @@ class SRT16(
   val remainderCorrect: UInt =
     partialReminderSum + partialReminderCarry + (divisorExtended << radixLog2)
   val needCorrect: Bool = remainderNoCorrect(wLen - 3).asBool
-  // todo issue here
+
   output.bits.reminder := Mux(needCorrect, remainderCorrect, remainderNoCorrect)(wLen - 4, radixLog2 + guardBitWidth)
   output.bits.quotient := Mux(needCorrect, quotientMinusOne, quotient)
 
