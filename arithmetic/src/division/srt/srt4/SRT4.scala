@@ -64,12 +64,12 @@ class SRT4(
 
   val occupiedNext = Wire(Bool())
   val occupied = RegNext(occupiedNext, false.B)
-  occupiedNext := Mux(input.fire, true.B, Mux(isLastCycle, false.B, occupied))
+  occupiedNext := input.fire || (!isLastCycle && occupied)
 
   //  Datapath
   //  according two adders
   isLastCycle := !counter.orR
-  output.valid := Mux(occupied, isLastCycle, false.B)
+  output.valid := occupied && isLastCycle
   input.ready := !occupied
   enable := input.fire || !isLastCycle
 
