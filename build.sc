@@ -16,8 +16,6 @@ object v {
   val chisel3Plugin = ivy"edu.berkeley.cs::chisel3-plugin:3.6-SNAPSHOT"
   val chiseltest = ivy"edu.berkeley.cs::chiseltest:3.6-SNAPSHOT"
   val utest = ivy"com.lihaoyi::utest:latest.integration"
-  val upickle = ivy"com.lihaoyi::upickle:latest.integration"
-  val osLib = ivy"com.lihaoyi::os-lib:latest.integration"
   val bc = ivy"org.bouncycastle:bcprov-jdk15to18:latest.integration"  
   val spire = ivy"org.typelevel::spire:latest.integration"
   val evilplot = ivy"io.github.cibotech::evilplot:latest.integration"
@@ -50,8 +48,6 @@ object arithmetic extends common.ArithmeticModule with ScalafmtModule { m =>
   def chisel3Module = Some(mychisel3)
   def chisel3PluginJar = T { Some(mychisel3.plugin.jar()) }
   def chiseltestModule = Some(mychiseltest)
-  def upickle: T[Dep] = v.upickle
-  def osLib: T[Dep] = v.osLib
   def spire: T[Dep] = v.spire
   def evilplot: T[Dep] = v.evilplot
   def bc: T[Dep] = v.bc
