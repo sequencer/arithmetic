@@ -32,8 +32,6 @@ trait ArithmeticModule extends ScalaModule with PublishModule {
   def chiseltestIvyDep: T[Option[Dep]] = None
 
   // dependencies below is not managed by the Chisel team.
-  def upickle: T[Dep]
-  def osLib: T[Dep]
   def spire: T[Dep]
   def evilplot: T[Dep]
   def bc: T[Dep]  
@@ -55,8 +53,6 @@ trait ArithmeticModule extends ScalaModule with PublishModule {
 
   override def ivyDeps = T { 
     Agg(
-      upickle(),
-      osLib(),
       spire(),
       evilplot()) ++ 
       chisel3IvyDep()
