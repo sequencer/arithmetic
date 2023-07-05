@@ -7,59 +7,32 @@ import $ivy.`de.tototec::de.tobiasroeser.mill.vcs.version::0.1.4`
 import de.tobiasroeser.mill.vcs.version.VcsVersion
 
 trait ArithmeticModule extends ScalaModule with PublishModule {
-  // SNAPSHOT of Chisel is published to the SONATYPE
-  override def repositoriesTask = T.task { super.repositoriesTask() ++ Seq(
-    MavenRepository("https://oss.sonatype.org/content/repositories/snapshots"),
-    MavenRepository("https://oss.sonatype.org/content/repositories/releases")
-  ) }
-
   // override to build from source, see the usage of chipsalliance/playground
-  def chisel3Module: Option[PublishModule] = None
-  
-  // override to build from source, see the usage of chipsalliance/playground
-  def chisel3PluginJar: T[Option[PathRef]] = T {
-    None
-  }
-  
-  // override to build from source, see the usage of chipsalliance/playground
-  def chiseltestModule: Option[PublishModule] = None
+  def chiselModule: Option[PublishModule] = None
+  def chiselPluginJar: T[Option[PathRef]] = T(None)
 
-  // Use SNAPSHOT chisel by default, downstream users should override this for their own project versions.
-  def chisel3IvyDep: T[Option[Dep]] = None
-
-  def chisel3PluginIvyDep: T[Option[Dep]] = None
-
-  def chiseltestIvyDep: T[Option[Dep]] = None
+  // override to use chisel from ivy
+  def chiselIvyDep: T[Option[Dep]] = None
+  def chiselPluginIvyDep: T[Option[Dep]] = None
 
   // dependencies below is not managed by the Chisel team.
   def spire: T[Dep]
   def evilplot: T[Dep]
-  def bc: T[Dep]  
-  def utest: T[Dep]
   
-  override def moduleDeps = Seq() ++ chisel3Module ++ chiseltestModule
-
-  override def scalacPluginClasspath = T {
-    super.scalacPluginClasspath() ++ chisel3PluginJar()
-  }
-
-  override def scalacPluginIvyDeps = T {
-    Agg() ++ chisel3PluginIvyDep()
-  }
-
-  override def scalacOptions = T {
-    super.scalacOptions() ++ chisel3PluginJar().map(path => s"-Xplugin:${path.path}")
-  }
+  override def moduleDeps = Seq() ++ chiselModule
+  override def scalacPluginClasspath = T(super.scalacPluginClasspath() ++ chiselPluginJar())
+  override def scalacPluginIvyDeps = T(Agg() ++ chiselPluginIvyDep())
+  override def scalacOptions = T(super.scalacOptions() ++ chiselPluginJar().map(path => s"-Xplugin:${path.path}"))
 
   override def ivyDeps = T { 
     Agg(
       spire(),
-      evilplot()) ++ 
-      chisel3IvyDep()
+      evilplot()
+    ) ++ 
+      chiselIvyDep()
   }
 
   def publishVersion = de.tobiasroeser.mill.vcs.version.VcsVersion.vcsState().format()
-
   def pomSettings = PomSettings(
     description = artifactName(),
     organization = "me.jiuyang",
