@@ -16,7 +16,7 @@ abstract class ModMul extends Module {
     assert(input.bits.b < p.U, "b should exist in the field.")
   }
   val z = IO(Decoupled(UInt(width.W)))
-  when(z.fire()) {
+  when(z.fire) {
     assert(z.bits < p.U, "z should exist in the field.")
   }
 }

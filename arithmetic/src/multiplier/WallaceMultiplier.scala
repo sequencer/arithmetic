@@ -4,7 +4,6 @@ import addition.prefixadder.PrefixSum
 import addition.prefixadder.common.BrentKungSum
 import chisel3._
 import chisel3.util._
-import chisel3.experimental.FixedPoint
 import utils.extend
 
 class WallaceMultiplierImpl(

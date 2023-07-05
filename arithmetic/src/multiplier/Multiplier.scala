@@ -1,7 +1,6 @@
 package multiplier
 
 import chisel3._
-import chisel3.experimental.FixedPoint
 
 trait Multiplier[T] extends Module {
   val aWidth: Int
