@@ -13,7 +13,7 @@
     flake-utils.lib.eachDefaultSystem
       (system:
         let
-          pkgs = import nixpkgs { inherit system; };
+          pkgs = import nixpkgs { inherit system; overlays = [ overlay ]; };
           deps = with pkgs; [
             cmake
             zlib
@@ -35,6 +35,7 @@
             antlr4
             numactl
             dtc
+            espresso
             circt
 
             yarn
