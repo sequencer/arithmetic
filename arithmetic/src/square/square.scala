@@ -22,9 +22,6 @@ class SquareRoot(
   /** width for partial result and csa */
   val wlen = inputWidth + 2
 
-  /** todo: verify it, switch to csa */
-  val resultZero = input.bits.operand - 1.U
-
   /** W[j] = xx.xxxxxxxx
     *
     * width = 2 + inputwidth
@@ -58,7 +55,7 @@ class SquareRoot(
   //  Datapath
   //  according two adders
   /** todo :  store counter */
-  isLastCycle := counter === 5.U
+  isLastCycle := counter === (outputWidth/2).U
   output.valid := occupied && isLastCycle
   input.ready := !occupied
   enable := input.fire || !isLastCycle
@@ -130,12 +127,14 @@ class SquareRoot(
   )
 
   val remainderFinal = partialResultSumNext + partialResultCarryNext
-  val needCorrect: Bool = remainderFinal(outputWidth+1).asBool
+  val needCorrect: Bool = remainderFinal(outputWidth-1).asBool
+
+  val initSum = Cat("b11".U, input.bits.operand)
 
   /** init S[0] = 1 */
   resultOriginNext := Mux(input.fire, 1.U, otf(0))
   resultMinusOneNext := Mux(input.fire, 0.U, otf(1))
-  partialResultSumNext := Mux(input.fire, "b1110110111".U, csa(1))
+  partialResultSumNext := Mux(input.fire, initSum, csa(1))
   partialResultCarryNext := Mux(input.fire, 0.U, csa(0) << 1)
   counterNext := Mux(input.fire, 0.U, counter + 1.U)
 
