@@ -8,6 +8,9 @@ import utils.leftShift
 
 /** Squre
   *
+  * oprand > 1/2 , =0.1xxxxx, input.oprand = 1xxxx
+  * result = 0.1xxxxx, output.result = 1xxxxx
+  *
   * @param outputWidth decide width for result , true result is .xxxxxx
   */
 class SquareRoot(
@@ -54,7 +57,7 @@ class SquareRoot(
 
   //  Datapath
   //  according two adders
-  /** todo :  store counter */
+  /** todo :  later store counter */
   isLastCycle := counter === (outputWidth/2).U
   output.valid := occupied && isLastCycle
   input.ready := !occupied
@@ -68,7 +71,7 @@ class SquareRoot(
   shiftSum := partialResultSum << 2
   shiftCarry := partialResultCarry << 2
 
-  /** todo parameterize it */
+  /** todo later parameterize it */
   val rtzYWidth = 7
   val rtzSWidth = 4
   val ohWidth = 5
@@ -83,14 +86,14 @@ class SquareRoot(
     */
   val resultOriginRestore = (resultOrigin << (outputWidth.U - (counter << 1).asUInt))(outputWidth, 0)
 
-  /** todo: opt it with p342 */
+  /** todo: later opt it with p342 */
   val resultForQDS = Mux(
     firstIter,
     "b101".U,
     Mux(resultOriginRestore(outputWidth), "b111".U, resultOriginRestore(outputWidth - 2, outputWidth - 4))
   )
 
-  /** todo param it */
+  /** todo later param it */
   val tables: Seq[Seq[Int]] = SRTTable(1 << radixLog2, a, 4, 4).tablesToQDS
 
   /** todo make sure resultOrigin has setup right? */
