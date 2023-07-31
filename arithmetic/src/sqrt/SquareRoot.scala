@@ -8,11 +8,13 @@ import utils.leftShift
 
 /** SquareRoot
   *
+  * all example assumes inputWidth = 8
+  *
   * {{{
   * oprand = 0.1xxxxx > 1/2 , input.bits.oprand  = 1xxxx
   * result = 0.1xxxxx > 1/2 , output.bits.result = 1xxxxx
   *
-  * if float = .1011, input.bits.oprand = 1011
+  * if oprand = .1011, correct input.bits.oprand = 10110000
   * }}}
   *
   * @param radixLog2 SRT radix log2
@@ -54,14 +56,11 @@ class SquareRoot(
   occupiedNext := input.fire || (!isLastCycle && occupied)
   val counter = RegEnable(counterNext, 0.U(log2Ceil(outputWidth).W), enable)
 
-
   /** Data REG */
   val resultOrigin       = RegEnable(resultOriginNext,       0.U((outputWidth).W), enable)
   val resultMinusOne     = RegEnable(resultMinusOneNext,     0.U((outputWidth).W), enable)
   val partialResultCarry = RegEnable(partialResultCarryNext, 0.U(wlen.W),          enable)
   val partialResultSum   = RegEnable(partialResultSumNext,   0.U(wlen.W),          enable)
-
-
 
   /** todo :  later don't fix it ? */
   isLastCycle := counter === (outputWidth/2).U
@@ -83,8 +82,6 @@ class SquareRoot(
   val rtzSWidth = 4
   val ohWidth = 5
 
-  val firstIter = counter === 0.U
-
   /** S[j] = x.xxxxxxxx
     *
     * For constructing resultForQDS
@@ -99,7 +96,7 @@ class SquareRoot(
     * seems resultOriginRestore(outputWidth) can't be 1?
     * */
   val resultForQDS = Mux(
-    firstIter,
+    counter === 0.U,
     "b101".U,
     Mux(resultOriginRestore(outputWidth), "b111".U, resultOriginRestore(outputWidth - 2, outputWidth - 4))
   )
