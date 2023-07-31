@@ -11,10 +11,14 @@ import utils.leftShift
   * {{{
   * oprand = 0.1xxxxx > 1/2 , input.bits.oprand  = 1xxxx
   * result = 0.1xxxxx > 1/2 , output.bits.result = 1xxxxx
+  *
+  * if float = .1011, input.bits.oprand = 1011
   * }}}
   *
-  *
-  * @param outputWidth decide width for result , true result is .xxxxxx, need to be inputwidth + 2
+  * @param radixLog2 SRT radix log2
+  * @param a Redundent system
+  * @param inputWidth   width for input
+  * @param outputWidth  width for result ,need to be inputwidth + 2
   */
 class SquareRoot(
   radixLog2:   Int,
