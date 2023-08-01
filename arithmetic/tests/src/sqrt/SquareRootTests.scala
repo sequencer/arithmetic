@@ -8,7 +8,7 @@ import scala.math._
 
 object SquareRootTest extends TestSuite with ChiselUtestTester {
   def tests: Tests = Tests {
-    test("Square Root for FP32 should pass") {
+    test("Sqrt FP32 should pass") {
       def testcase(): Unit = {
         val oprandFloat:  Float = (0.5 + Random.nextFloat() / 2).toFloat
         val oprandDouble: Double = oprandFloat.toDouble
