@@ -6,9 +6,9 @@ import utest._
 
 import scala.util.Random
 
-object SRT8Test extends TestSuite with ChiselUtestTester {
+object SRT8IntegerTest extends TestSuite with ChiselUtestTester {
   def tests: Tests = Tests {
-    test("SRT8 should pass") {
+    test("SRT8 Integer should pass") {
       def testcase(width: Int, x: Int, d: Int): Unit = {
         // parameters
         val radixLog2: Int = 3
