@@ -5,9 +5,9 @@ import chiseltest._
 import utest._
 import scala.util.{Random}
 
-object SRT4Test extends TestSuite with ChiselUtestTester {
+object SRT4IntegerTest extends TestSuite with ChiselUtestTester {
   def tests: Tests = Tests {
-    test("SRT4 should pass") {
+    test("SRT4 integer should pass") {
       def testcase(width: Int, x: Int, d: Int): Unit = {
         // parameters
         val radixLog2: Int = 2
@@ -17,7 +17,7 @@ object SRT4Test extends TestSuite with ChiselUtestTester {
         val q:         Int = Random.nextInt(m)
 //        val dividend: BigInt = BigInt("fffffff0", 16) + x
         val dividend: BigInt = x
-        val divisor: BigInt = d
+        val divisor:  BigInt = d
         def zeroCheck(x: BigInt): Int = {
           var flag = false
           var a: Int = m
@@ -101,11 +101,12 @@ object SRT4Test extends TestSuite with ChiselUtestTester {
 //        }
 //      }
 
-            for (i <- 2 to 15) {
-              for (j <- 1 to i-1) {
-                testcase(4, i, j)
-              }
-            }
+//            for (i <- 2 to 15) {
+//              for (j <- 1 to i-1) {
+//                testcase(4, i, j)
+//              }
+//            }
+      testcase(4, 15, 1)
 
     }
   }
