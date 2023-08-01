@@ -26,26 +26,24 @@ import utils.leftShift
   * @param rTruncateWidth TruncateWidth for residual fractional part
   */
 class SRT4(
-  dividendWidth:  Int,
-  dividerWidth:   Int,
-  n:              Int, // the longest width
-  radixLog2:      Int = 2,
-  a:              Int = 2,
-  dTruncateWidth: Int = 4,
-  rTruncateWidth: Int = 4)
-    extends Module {
+            dividendWidth:  Int,
+            dividerWidth:   Int,
+            n:              Int, // the longest width
+            radixLog2:      Int = 2,
+            a:              Int = 2,
+            dTruncateWidth: Int = 4,
+            rTruncateWidth: Int = 4)
+  extends Module {
   val guardBitWidth = 1
 
   /** width for csa */
   val xLen: Int = dividendWidth + radixLog2 + 1 + guardBitWidth
-  val wLen: Int = xLen + radixLog2
   // IO
-  val input  = IO(Flipped(DecoupledIO(new SRTInput(dividendWidth, dividerWidth, n, 2))))
+  val input = IO(Flipped(DecoupledIO(new SRTInput(dividendWidth, dividerWidth, n, 2))))
   val output = IO(ValidIO(new SRTOutput(dividerWidth, dividendWidth)))
 
-  // rW[j]
-  // rW[0] = x
-  val partialReminderCarryNext, partialReminderSumNext = Wire(UInt(wLen.W))
+  //rW[j]
+  val partialReminderCarryNext, partialReminderSumNext = Wire(UInt(xLen.W))
   val quotientNext, quotientMinusOneNext = Wire(UInt(n.W))
   val dividerNext = Wire(UInt(dividerWidth.W))
   val counterNext = Wire(UInt(log2Ceil(n).W))
@@ -56,17 +54,19 @@ class SRT4(
 
   // State
   // because we need a CSA to minimize the critical path
-  val partialReminderCarry = RegEnable(partialReminderCarryNext, 0.U(wLen.W),         enable)
-  val partialReminderSum   = RegEnable(partialReminderSumNext,   0.U(wLen.W),         enable)
-  val divider              = RegEnable(dividerNext,              0.U(dividerWidth.W), enable)
-  val quotient             = RegEnable(quotientNext,             0.U(n.W),            enable)
-  val quotientMinusOne     = RegEnable(quotientMinusOneNext,     0.U(n.W),            enable)
-  val counter              = RegEnable(counterNext,              0.U(log2Ceil(n).W),  enable)
+  val partialReminderCarry = RegEnable(partialReminderCarryNext, 0.U(xLen.W), enable)
+  val partialReminderSum = RegEnable(partialReminderSumNext, 0.U(xLen.W), enable)
+  val divider = RegEnable(dividerNext, 0.U(dividerWidth.W), enable)
+  val quotient = RegEnable(quotientNext, 0.U(n.W), enable)
+  val quotientMinusOne = RegEnable(quotientMinusOneNext, 0.U(n.W), enable)
+  val counter = RegEnable(counterNext, 0.U(log2Ceil(n).W), enable)
 
-  /** Contrl logic */
   val occupiedNext = Wire(Bool())
   val occupied = RegNext(occupiedNext, false.B)
   occupiedNext := input.fire || (!isLastCycle && occupied)
+
+  //  Datapath
+  //  according two adders
   isLastCycle := !counter.orR
   output.valid := occupied && isLastCycle
   input.ready := !occupied
@@ -79,9 +79,9 @@ class SRT4(
   /** partialReminderSum is r*W[j], so remainderCorrect = remainderNoCorrect + r*divisor */
   val remainderCorrect: UInt =
     partialReminderSum + partialReminderCarry + (divisorExtended << radixLog2)
-  val needCorrect: Bool = remainderNoCorrect(wLen - 3).asBool
+  val needCorrect: Bool = remainderNoCorrect(xLen - 1).asBool
 
-  output.bits.reminder := Mux(needCorrect, remainderCorrect, remainderNoCorrect)(wLen - 4, radixLog2 + guardBitWidth)
+  output.bits.reminder := Mux(needCorrect, remainderCorrect, remainderNoCorrect)(xLen - 2, radixLog2 + guardBitWidth)
   output.bits.quotient := Mux(needCorrect, quotientMinusOne, quotient)
 
   /** width for truncated y */
@@ -93,18 +93,11 @@ class SRT4(
     case 3 => 6
   }
 
-  /** Quotient-Divisor-Select
-    *
-    * input0 = rtz partialSum
-    * input1 = rtz partialCarry
-    * input2 = rtz divisor
-    *
-    * use dividerNext instead of dividerReg to avoid waiting in  firt Iter
-    * */
+  /** QDS module whose output needs to be decoded */
   val selectedQuotientOH: UInt =
     QDS(rWidth, ohWidth, dTruncateWidth - 1, tables, a)(
-      leftShift(partialReminderSum,   radixLog2).head(rWidth),
-      leftShift(partialReminderCarry, radixLog2).head(rWidth),
+      partialReminderSum.head(rWidth),
+      partialReminderCarry.head(rWidth),
       dividerNext.head(dTruncateWidth)(dTruncateWidth - 2, 0) //.1********* -> 1*** -> ***
     )
   // On-The-Fly conversion
@@ -126,8 +119,8 @@ class SRT4(
 
       addition.csa.c32(
         VecInit(
-          leftShift(partialReminderSum, radixLog2).head(wLen - radixLog2),
-          leftShift(partialReminderCarry, radixLog2).head(wLen - radixLog2 - 1) ## qdsSign,
+          partialReminderSum.head(xLen),
+          partialReminderCarry.head(xLen - 1) ## qdsSign,
           Mux1H(selectedQuotientOH, dividerMap)
         )
       )
@@ -150,24 +143,24 @@ class SRT4(
       })
       val csa0 = addition.csa.c32(
         VecInit(
-          leftShift(partialReminderSum, radixLog2).head(wLen - radixLog2),
-          leftShift(partialReminderCarry, radixLog2).head(wLen - radixLog2 - 1) ## qds0Sign,
+          partialReminderSum.head(xLen),
+          partialReminderCarry.head(xLen - 1) ## qds0Sign,
           Mux1H(qHigh, dividerHMap)
         )
       )
       addition.csa.c32(
         VecInit(
-          csa0(1).head(wLen - radixLog2),
-          leftShift(csa0(0), 1).head(wLen - radixLog2 - 1) ## qds1Sign,
+          csa0(1).head(xLen),
+          leftShift(csa0(0), 1).head(xLen - 1) ## qds1Sign,
           Mux1H(qLow, dividerLMap)
         )
       )
     }
 
-  dividerNext              := Mux(input.fire, input.bits.divider, divider)
-  counterNext              := Mux(input.fire, input.bits.counter, counter - 1.U)
-  quotientNext             := Mux(input.fire, 0.U, otf(0))
-  quotientMinusOneNext     := Mux(input.fire, 0.U, otf(1))
-  partialReminderSumNext   := Mux(input.fire, input.bits.dividend, csa(1) << radixLog2)
+  dividerNext := Mux(input.fire, input.bits.divider, divider)
+  counterNext := Mux(input.fire, input.bits.counter, counter - 1.U)
+  quotientNext := Mux(input.fire, 0.U, otf(0))
+  quotientMinusOneNext := Mux(input.fire, 0.U, otf(1))
+  partialReminderSumNext := Mux(input.fire, input.bits.dividend, csa(1) << radixLog2)
   partialReminderCarryNext := Mux(input.fire, 0.U, csa(0) << 1 + radixLog2)
 }
