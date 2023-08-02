@@ -21,6 +21,8 @@ import division.srt.srt4.OTF
   *
   * outputWidth must <= inputWidth +2 or we can't get exact FormationFinal
   *
+  * @note inputWidth mod 2 ==0
+  *
   * @example if oprand = .10110000, input.bits.oprand shoule be 10110000
   *
   * @param radixLog2 SRT radix log2
@@ -61,7 +63,7 @@ class SquareRoot(
   val counter = RegEnable(counterNext, 0.U(log2Ceil(outputWidth).W), enable)
 
   occupiedNext := input.fire || (!isLastCycle && occupied)
-  isLastCycle  := counter === 14.U
+  isLastCycle  := counter === (outputWidth/2).U
   input.ready  := !occupied
   enable       := input.fire || !isLastCycle
   output.valid := occupied && isLastCycle
