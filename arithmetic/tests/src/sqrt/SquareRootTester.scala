@@ -6,28 +6,26 @@ import utest._
 import scala.util.{Random}
 import scala.math._
 
-object SquareRootTest extends TestSuite with ChiselUtestTester {
+object SquareRootTester extends TestSuite with ChiselUtestTester {
   def tests: Tests = Tests {
     test("Sqrt FP32 should pass") {
       def testcase(): Unit = {
-        val oprandFloat:  Float = (0.5 + Random.nextFloat() / 2).toFloat
+        val oprandFloat:  Float = (0.25 + Random.nextFloat() * 3/4).toFloat
         val oprandDouble: Double = oprandFloat.toDouble
-        val oprandDoubleRawString = java.lang.Double.doubleToLongBits(oprandDouble).toBinaryString
         val oprandFloatRawString = java.lang.Float.floatToIntBits(oprandFloat).toBinaryString
+        val oprandSigString = (Seq.fill(32 - oprandFloatRawString.length)("0").mkString("") + oprandFloatRawString)
+          .substring(9, 32)
 
-        val inputFloatString = {
-          "b1" + (Seq.fill(32 - oprandFloatRawString.length)("0").mkString("") + oprandFloatRawString)
-            .substring(9, 32)
-        }
+        val inputFloatString = if(oprandFloat<0.5)"b01" + oprandSigString + "0"  else "b1" + oprandSigString + "00"
+
         val x = sqrt(oprandDouble)
         val xstring = java.lang.Double.doubleToLongBits(x).toBinaryString
         // 0.xxxxxx, hiden 1 + 23bits
         val resultExpect = "1" + (Seq.fill(64 - xstring.length)("0").mkString("") + xstring).substring(12, 37)
-        //        println(oprandFloat.toString + ".sqrtx = " + x.toString)
 
         // test
         testCircuit(
-          new SquareRoot(2, 2, 24, 26),
+          new SquareRoot(2, 2, 26, 28),
           Seq(chiseltest.internal.NoThreadingAnnotation, chiseltest.simulator.WriteVcdAnnotation)
         ) { dut: SquareRoot =>
           dut.clock.setTimeout(0)
@@ -41,13 +39,12 @@ object SquareRootTest extends TestSuite with ChiselUtestTester {
             if (dut.output.valid.peek().litValue == 1) {
               flag = true
               val resultActual = dut.output.bits.result.peek().litValue.toString(2).substring(0, 26)
-//              println("result_expect26 = " + resultExpect)
-//              println("result_actual26 = " + resultActual)
-//              println("result_expect24 = " + resultExpect.substring(0, 24))
-//              println("result_actual24 = " + resultActual.substring(0, 24))
-              utest.assert(
-                (resultExpect)  == (resultActual)
-              )
+              if(resultExpect != resultActual){
+                println(oprandFloat.toString + ".sqrtx = " + x.toString)
+                println(inputFloatString)
+                utest.assert(resultExpect  == resultActual)
+              }
+
             } else
               dut.clock.step()
           }

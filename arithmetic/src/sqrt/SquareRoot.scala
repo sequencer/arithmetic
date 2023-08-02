@@ -1,20 +1,18 @@
 package sqrt
 
-import chisel3.{util, _}
+import chisel3._
 import chisel3.util._
-import division.srt.SRTTable
-import division.srt.srt4.{OTF, QDS}
-import utils.leftShift
+import division.srt.srt4.OTF
 
 /** SquareRoot
   *
   * all example xxx assumes inputWidth = 8
   *
   * {{{
-  * oprand = 0.1xxxxx > 1/2 , input.bits.oprand  = 1xxxx
+  * oprand = 0.1xxxxx > 1/2  , input.bits.oprand  = 1xxxx
+  * oprand = 0.01xxxxx > 1/4 , input.bits.oprand  = 01xxxx
   * result = 0.1xxxxx > 1/2 , output.bits.result = 1xxxxx
   *
-  * if oprand = .1011, correct input.bits.oprand = 10110000
   * }}}
   *
   * csa width = partialresult width : wlen = inputwidth + 2
@@ -23,6 +21,7 @@ import utils.leftShift
   *
   * outputWidth must <= inputWidth +2 or we can't get exact FormationFinal
   *
+  * @example if oprand = .10110000, input.bits.oprand shoule be 10110000
   *
   * @param radixLog2 SRT radix log2
   * @param a Redundent system
@@ -45,7 +44,7 @@ class SquareRoot(
     *
     * width = 2 + inputwidth
     */
-  val partialResultCarryNext, partialResultSumNext = Wire(UInt(wlen.W))
+  val partialCarryNext, partialSumNext = Wire(UInt(wlen.W))
   /** S[j] = .xxxxxxxx
     *
     * effective bits number depends on counter, 2n+1
@@ -62,24 +61,24 @@ class SquareRoot(
   val counter = RegEnable(counterNext, 0.U(log2Ceil(outputWidth).W), enable)
 
   occupiedNext := input.fire || (!isLastCycle && occupied)
-  isLastCycle  := counter === (outputWidth / 2).U
+  isLastCycle  := counter === 14.U
   input.ready  := !occupied
   enable       := input.fire || !isLastCycle
   output.valid := occupied && isLastCycle
 
   /** Data REG */
-  val resultOrigin       = RegEnable(resultOriginNext,       0.U((outputWidth).W), enable)
-  val resultMinusOne     = RegEnable(resultMinusOneNext,     0.U((outputWidth).W), enable)
-  val partialResultCarry = RegEnable(partialResultCarryNext, 0.U(wlen.W),          enable)
-  val partialResultSum   = RegEnable(partialResultSumNext,   0.U(wlen.W),          enable)
+  val resultOrigin       = RegEnable(resultOriginNext,   0.U((outputWidth).W), enable)
+  val resultMinusOne     = RegEnable(resultMinusOneNext, 0.U((outputWidth).W), enable)
+  val partialCarry       = RegEnable(partialCarryNext,   0.U(wlen.W),          enable)
+  val partialSum         = RegEnable(partialSumNext,     0.U(wlen.W),          enable)
 
   /** rW[j] = xxxx.xxxxxxxx
     *
     * first 7 bits truncated for QDS
     */
   val shiftSum, shiftCarry = Wire(UInt((wlen+2).W))
-  shiftSum   := partialResultSum   << 2
-  shiftCarry := partialResultCarry << 2
+  shiftSum   := partialSum   << 2
+  shiftCarry := partialCarry << 2
 
   /** todo later parameterize it */
   val rtzYWidth = 7
@@ -101,11 +100,8 @@ class SquareRoot(
     Mux(resultOriginRestore(outputWidth), "b111".U, resultOriginRestore(outputWidth - 2, outputWidth - 4))
   )
 
-  /** todo later param it */
-  val tables: Seq[Seq[Int]] = SRTTable(1 << radixLog2, a, 4, 4).tablesToQDS
-
   val selectedQuotientOH: UInt =
-    QDS(rtzYWidth, ohWidth, rtzSWidth - 1, tables, a)(
+    QDS(rtzYWidth, ohWidth, rtzSWidth - 1, a)(
       shiftSum.head(rtzYWidth),
       shiftCarry.head(rtzYWidth),
       resultForQDS //.1********* -> 1*** -> ***
@@ -146,8 +142,8 @@ class SquareRoot(
   )
 
   /** @todo opt SZ logic */
-  val remainderFinal = partialResultSum + partialResultCarry
-  val needCorrect: Bool = remainderFinal(outputWidth-1).asBool
+  val remainderFinal = partialSum + partialCarry
+  val needCorrect: Bool = remainderFinal(wlen - 1).asBool
 
   /** w[0] = oprand - 1.U */
   val initSum = Cat("b11".U, input.bits.operand)
@@ -155,8 +151,8 @@ class SquareRoot(
   /** init S[0] = 1 */
   resultOriginNext       := Mux(input.fire, 1.U, otf(0))
   resultMinusOneNext     := Mux(input.fire, 0.U, otf(1))
-  partialResultSumNext   := Mux(input.fire, initSum, csa(1))
-  partialResultCarryNext := Mux(input.fire, 0.U, csa(0) << 1)
+  partialSumNext         := Mux(input.fire, initSum, csa(1))
+  partialCarryNext       := Mux(input.fire, 0.U, csa(0) << 1)
   counterNext            := Mux(input.fire, 0.U, counter + 1.U)
 
   output.bits.result := Mux(needCorrect, resultMinusOne, resultOrigin)
