@@ -31,7 +31,6 @@ object SquareRootTester extends TestSuite with ChiselUtestTester {
           dut.clock.setTimeout(0)
           dut.input.valid.poke(true.B)
           dut.input.bits.operand.poke(inputFloatString.U)
-          dut.input.bits.counter.poke(5.U)
           dut.clock.step()
           dut.input.valid.poke(false.B)
           var flag = false
