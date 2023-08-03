@@ -12,9 +12,10 @@ object SquareRootTester extends TestSuite with ChiselUtestTester {
       def testcase(): Unit = {
         val oprandFloat:  Float = (0.25 + Random.nextFloat() * 3/4).toFloat
         val oprandDouble: Double = oprandFloat.toDouble
-        val oprandFloatRawString = java.lang.Float.floatToIntBits(oprandFloat).toBinaryString
-        val oprandSigString = (Seq.fill(32 - oprandFloatRawString.length)("0").mkString("") + oprandFloatRawString)
-          .substring(9, 32)
+
+        val oprandString = java.lang.Float.floatToIntBits(oprandFloat).toBinaryString
+        val oprandRawString = Seq.fill(32 - oprandString.length)("0").mkString("") + oprandString
+        val oprandSigString = oprandRawString.substring(9, 32)
 
         val inputFloatString = if(oprandFloat<0.5)"b01" + oprandSigString + "0"  else "b1" + oprandSigString + "00"
 
@@ -25,7 +26,7 @@ object SquareRootTester extends TestSuite with ChiselUtestTester {
 
         // test
         testCircuit(
-          new SquareRoot(2, 2, 26, 28),
+          new SquareRoot(2, 2, 26, 26),
           Seq(chiseltest.internal.NoThreadingAnnotation, chiseltest.simulator.WriteVcdAnnotation)
         ) { dut: SquareRoot =>
           dut.clock.setTimeout(0)
