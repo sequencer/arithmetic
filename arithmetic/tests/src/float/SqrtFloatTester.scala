@@ -14,12 +14,11 @@ object SquareRootTester extends TestSuite with ChiselUtestTester {
         val oprandFloat:  Float = (5.877471754111438e-39).toFloat
         val oprandDouble: Double = oprandFloat.toDouble
 
-        val oprandString = java.lang.Float.floatToIntBits(oprandFloat).toBinaryString
-        val oprandRawString = Seq.fill(32 - oprandString.length)("0").mkString("") + oprandString
-        val oprandSigString = oprandRawString.substring(9, 32)
+        val oprandString = extendTofull(java.lang.Float.floatToIntBits(oprandFloat).toBinaryString,32)
+        val oprandSigString = oprandString.substring(9, 32)
 
         val ExepctFracIn = if(oprandFloat<0.5)"b01" + oprandSigString + "0"  else "b1" + oprandSigString + "00"
-        val circuitInput = "b"+ oprandRawString
+        val circuitInput = "b"+ oprandString
 
 
 
