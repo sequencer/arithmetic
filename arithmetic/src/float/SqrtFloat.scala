@@ -56,7 +56,7 @@ class SqrtFloat(expWidth: Int, sigWidth: Int) extends Module{
   SqrtModule.input.bits.operand := fractIn
   SqrtModule.output.ready := output.ready
 
-  val rbits = SqrtModule.output.bits.result(1,0) ## (!SqrtModule.output.bits.zeroRemainder)
+  val rbits = SqrtModule.output.bits.result(1) ## (!SqrtModule.output.bits.zeroRemainder || SqrtModule.output.bits.result(0))
   val sigforRound = SqrtModule.output.bits.result(24,2)
 
 

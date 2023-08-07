@@ -18,7 +18,7 @@ class RoundingUnit extends Module{
     val infiniteExc = Bool() // overrides 'in' except for 'in.sign'
     val sig = UInt(23.W)
     val exp = UInt(8.W)
-    val rBits = UInt(3.W)
+    val rBits = UInt(2.W)
     val sign = Bool()
     val roundingMode = UInt(5.W)
   }))
@@ -56,7 +56,7 @@ class RoundingUnit extends Module{
   /** normal case */
 
   /** todo later use Mux?*/
-  sigIncr := (roundingMode_near_even && input.rBits(2) && input.rBits(1,0).orR) ||
+  sigIncr := (roundingMode_near_even && input.rBits(1) && input.rBits(0)) ||
     (roundingMode_min &&  input.sign && input.rBits.orR) ||
     (roundingMode_max && !input.sign && input.rBits.orR) ||
     (roundingMode_near_maxMag && input.rBits.orR)
