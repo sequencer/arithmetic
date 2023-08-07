@@ -4,15 +4,39 @@ import chisel3._
 import chisel3.util._
 import sqrt._
 
+/**
+  *
+  * @todo Opt for zero
+  *       input is Subnormal!
+  *
+  * */
 class SqrtFloat(expWidth: Int, sigWidth: Int) extends Module{
   val input = IO(Flipped(DecoupledIO(new FloatSqrtInput(expWidth, sigWidth))))
   val output = IO(DecoupledIO(new FloatSqrtOutput(expWidth, sigWidth)))
   val debug = IO(Output(new Bundle() {
     val fractIn = UInt(26.W)
   }))
+  val rawFloatIn = rawFloatFromFN(expWidth,sigWidth,input.bits.oprand)
+
+  /** Control path */
+  val isNegaZero = rawFloatIn.isZero && rawFloatIn.sign
+  val isPosiInf  = rawFloatIn.isInf  && rawFloatIn.sign
+
+  val fastWorking = RegInit(false.B)
+  val fastCase = Wire(Bool())
+
+  /** negative or NaN*/
+  val invalidExec = (rawFloatIn.sign && !isNegaZero) || rawFloatIn.isNaN
+  /** positive inf */
+  val infinitExec = isPosiInf
+
+  fastCase := invalidExec || infinitExec
+  fastWorking := input.fire && fastCase
+
+
 
   /** Data path */
-  val rawFloatIn = rawFloatFromFN(expWidth,sigWidth,input.bits.oprand)
+
   val adjustedExp = Cat(rawFloatIn.sExp(expWidth-1), rawFloatIn.sExp(expWidth-1, 0))
 
   /** {{{
@@ -28,18 +52,26 @@ class SqrtFloat(expWidth: Int, sigWidth: Int) extends Module{
     Cat(rawFloatIn.sig(sigWidth-1, 0),0.U(2.W)))
 
   val SqrtModule = Module(new SquareRoot(2, 2, 26, 26))
-  SqrtModule.input.valid := input.valid
+  SqrtModule.input.valid := input.valid && !fastCase
   SqrtModule.input.bits.operand := fractIn
   SqrtModule.output.ready := output.ready
 
   val rbits = SqrtModule.output.bits.result(1,0) ## (!SqrtModule.output.bits.zeroRemainder)
-  val sigRound = SqrtModule.output.bits.result(24,2)
+  val sigforRound = SqrtModule.output.bits.result(24,2)
+
 
   input.ready := SqrtModule.input.ready
-  output.bits.result := RoundingUnit(input.bits.oprand(expWidth + sigWidth-1) ,expOut,sigRound,rbits,consts.round_near_even)
+  output.bits.result := RoundingUnit(
+    input.bits.oprand(expWidth + sigWidth-1) ,
+    expOut,
+    sigforRound,
+    rbits,
+    consts.round_near_even,
+    invalidExec,
+    infinitExec)
   output.bits.sig := SqrtModule.output.bits.result
   output.bits.exp := expOut
-  output.valid := SqrtModule.output.valid
+  output.valid := SqrtModule.output.valid || fastWorking
 
   debug.fractIn := fractIn
 

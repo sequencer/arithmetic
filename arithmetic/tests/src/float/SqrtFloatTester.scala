@@ -11,7 +11,7 @@ object SquareRootTester extends TestSuite with ChiselUtestTester {
     test("Sqrt Float FP32 should pass") {
       def testcase(): Unit = {
         def extendTofull(input:String, width:Int) =(Seq.fill(width - input.length)("0").mkString("") + input)
-        val oprandFloat:  Float = (5.877471754111438e-39).toFloat
+        val oprandFloat:  Float = Random.nextInt(1000000)+Random.nextFloat()
         val oprandDouble: Double = oprandFloat.toDouble
 
         val oprandString = extendTofull(java.lang.Float.floatToIntBits(oprandFloat).toBinaryString,32)
