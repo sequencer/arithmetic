@@ -10,6 +10,7 @@ class SquareRootInput(inputWidth: Int, outputWidth: Int) extends Bundle{
 /** 0.1**** = 0.resultOrigin */
 class SquareRootOutput(outputWidth: Int) extends Bundle{
   val result = UInt((outputWidth).W)
+  val zeroRemainder = Bool()
 }
 
 class QDSInput(rWidth: Int, partialDividerWidth: Int) extends Bundle {
