@@ -10,6 +10,7 @@ object SquareRootTester extends TestSuite with ChiselUtestTester {
   def tests: Tests = Tests {
     test("Sqrt Float FP32 should pass") {
       def testcase(): Unit = {
+        def extendTofull(input:String, width:Int) =(Seq.fill(width - input.length)("0").mkString("") + input)
         val oprandFloat:  Float = (5.877471754111438e-39).toFloat
         val oprandDouble: Double = oprandFloat.toDouble
 
@@ -20,11 +21,14 @@ object SquareRootTester extends TestSuite with ChiselUtestTester {
         val ExepctFracIn = if(oprandFloat<0.5)"b01" + oprandSigString + "0"  else "b1" + oprandSigString + "00"
         val circuitInput = "b"+ oprandRawString
 
+
+
         val x = sqrt(oprandDouble)
+        x.toFloat.round
         val xDoublestring = java.lang.Double.doubleToLongBits(x).toBinaryString
         val xFloatstring = java.lang.Float.floatToIntBits(x.toFloat).toBinaryString
-        val xDouble = (Seq.fill(64 - xDoublestring.length)("0").mkString("") + xDoublestring)
-        val xFloat = (Seq.fill(32 - xFloatstring.length)("0").mkString("") + xFloatstring)
+        val xDouble = extendTofull(xDoublestring,64)
+        val xFloat = extendTofull(xFloatstring,32)
         // 0.xxxxxx,   hidden 1+23bits + 2bits for round
         val sigExpect =   "1"+xDouble.substring(12, 37)
         // todo:
@@ -44,32 +48,38 @@ object SquareRootTester extends TestSuite with ChiselUtestTester {
           for (i <- 0 to 1000 if !flag) {
             if (dut.output.valid.peek().litValue == 1) {
               flag = true
-              val resultActual = dut.output.bits.result.peek().litValue.toString(2)
+              val resultActual = extendTofull(dut.output.bits.result.peek().litValue.toString(2),32)
               val sigActual = dut.output.bits.sig.peek().litValue.toString(2)
-              val expActualraw = dut.output.bits.exp.peek().litValue.toString(2)
-              val expActual = (Seq.fill(8 - expActualraw.length)("0").mkString("") + expActualraw)
+              val expActual = extendTofull(dut.output.bits.exp.peek().litValue.toString(2),8)
 
-              if(sigExpect != sigActual ){
+              def printValue() :Unit = {
                 println(oprandFloat.toString + ".sqrtx = " + x.toString)
                 println("input = " + circuitInput)
-                println("expect reult = " + xFloat)
+                println("exp_expect = " + expExpect)
+                println("exp_actual = " + expActual)
+                println("sig_expect = " + sigExpect)
+                println("sig_actual = " + sigActual)
+                println("result_expect = " + xFloat)
+                println("result_actual = " + resultActual)
+              }
+
+
+              if(sigExpect != sigActual ){
+                printValue()
                 utest.assert(sigExpect  == sigActual)
               }
 
               if (expActual != expExpect) {
-                println(oprandFloat.toString + ".sqrtx = " + x.toString)
-                println("input = "+circuitInput)
-                println("expect reult = "+ xFloat)
+                printValue()
                 utest.assert(expActual ==expExpect)
               }
 
-              println(oprandFloat.toString + ".sqrtx = " + x.toString)
-              println("input = " + circuitInput)
-              println("expect reult = " + xFloat)
-              println("exp_expect = " + expExpect)
-              println("exp_actual = " + expActual)
-              println("sig_expect = " + sigExpect)
-              println("sig_actual = " + sigActual)
+              if(resultActual != xFloat) {
+                printValue()
+                utest.assert(resultActual == xFloat)
+              }
+
+
 
 
             } else
@@ -79,7 +89,7 @@ object SquareRootTester extends TestSuite with ChiselUtestTester {
         }
       }
 
-      for (i <- 1 to 1) {
+      for (i <- 1 to 100) {
         testcase()
       }
 
