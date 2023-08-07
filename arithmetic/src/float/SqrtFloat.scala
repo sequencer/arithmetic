@@ -32,8 +32,11 @@ class SqrtFloat(expWidth: Int, sigWidth: Int) extends Module{
   SqrtModule.input.bits.operand := fractIn
   SqrtModule.output.ready := output.ready
 
+  val rbits = SqrtModule.output.bits.result(1,0) ## (!SqrtModule.output.bits.zeroRemainder)
+  val sigRound = SqrtModule.output.bits.result(24,2)
+
   input.ready := SqrtModule.input.ready
-  output.bits.result := Cat(0.U(1.W), expOut, SqrtModule.output.bits.result(24,0))
+  output.bits.result := RoundingUnit(input.bits.oprand(expWidth + sigWidth-1) ,expOut,sigRound,rbits,consts.round_near_even)
   output.bits.sig := SqrtModule.output.bits.result
   output.bits.exp := expOut
   output.valid := SqrtModule.output.valid
@@ -48,7 +51,7 @@ class FloatSqrtInput(expWidth: Int, sigWidth: Int) extends Bundle() {
 
 /** add 2 for rounding*/
 class FloatSqrtOutput(expWidth: Int, sigWidth: Int) extends Bundle() {
-  val result = UInt((expWidth + sigWidth + 2).W)
+  val result = UInt((expWidth + sigWidth).W)
   val sig = UInt((sigWidth+2).W)
   val exp = UInt(expWidth.W)
 
