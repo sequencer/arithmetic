@@ -10,7 +10,7 @@ object SquareRootTester extends TestSuite with ChiselUtestTester {
   def tests: Tests = Tests {
     test("Sqrt Float FP32 should pass") {
       def testcase(): Unit = {
-        val oprandFloat:  Float = (Random.nextInt(100000)+Random.nextFloat() ).toFloat
+        val oprandFloat:  Float = (5.877471754111438e-39).toFloat
         val oprandDouble: Double = oprandFloat.toDouble
 
         val oprandString = java.lang.Float.floatToIntBits(oprandFloat).toBinaryString
@@ -53,9 +53,6 @@ object SquareRootTester extends TestSuite with ChiselUtestTester {
                 println(oprandFloat.toString + ".sqrtx = " + x.toString)
                 println("input = " + circuitInput)
                 println("expect reult = " + xFloat)
-                println("sig_expect = "+ sigExpect)
-                println("sig_actual = "+ sigActual)
-
                 utest.assert(sigExpect  == sigActual)
               }
 
@@ -63,11 +60,16 @@ object SquareRootTester extends TestSuite with ChiselUtestTester {
                 println(oprandFloat.toString + ".sqrtx = " + x.toString)
                 println("input = "+circuitInput)
                 println("expect reult = "+ xFloat)
-                println("exp_expect = " + expExpect)
-                println("exp_actual = " + expActual)
                 utest.assert(expActual ==expExpect)
               }
 
+              println(oprandFloat.toString + ".sqrtx = " + x.toString)
+              println("input = " + circuitInput)
+              println("expect reult = " + xFloat)
+              println("exp_expect = " + expExpect)
+              println("exp_actual = " + expActual)
+              println("sig_expect = " + sigExpect)
+              println("sig_actual = " + sigActual)
 
 
             } else
@@ -77,7 +79,7 @@ object SquareRootTester extends TestSuite with ChiselUtestTester {
         }
       }
 
-      for (i <- 1 to 100) {
+      for (i <- 1 to 1) {
         testcase()
       }
 

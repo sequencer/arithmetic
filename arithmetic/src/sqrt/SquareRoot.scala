@@ -158,4 +158,5 @@ class SquareRoot(
   counterNext            := Mux(input.fire, 0.U, counter + 1.U)
 
   output.bits.result := Mux(needCorrect, resultMinusOne, resultOrigin)
+  output.bits.zeroRemainder := remainderFinal.orR
 }
