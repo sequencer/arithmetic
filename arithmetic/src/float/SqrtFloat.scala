@@ -55,9 +55,8 @@ class SqrtFloat(expWidth: Int, sigWidth: Int) extends Module{
     *      1           0    1.xxxx>>2       01xxxx    rawExp/2 +1 + bias
     *}}}
     */
-  val expOutNext = Wire(UInt(expWidth.W))
-  expOutNext := adjustedExp(expWidth,1)
-  val expOut = RegEnable(expOutNext, 0.U(expWidth.W), input.fire)
+  val expToRound = RegEnable(adjustedExp(expWidth,1), 0.U(expWidth.W), input.fire)
+
   val fractIn = Mux(input.bits.oprand(sigWidth-1), Cat("b0".U(1.W),rawFloatIn.sig(sigWidth-1, 0),0.U(1.W)),
     Cat(rawFloatIn.sig(sigWidth-1, 0),0.U(2.W)))
 
@@ -73,7 +72,7 @@ class SqrtFloat(expWidth: Int, sigWidth: Int) extends Module{
   input.ready := SqrtModule.input.ready
   output.bits.result := RoundingUnit(
     input.bits.oprand(expWidth + sigWidth-1) ,
-    expOut,
+    expToRound,
     sigforRound,
     rbits,
     consts.round_near_even,
