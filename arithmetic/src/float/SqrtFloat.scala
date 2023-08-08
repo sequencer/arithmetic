@@ -13,9 +13,6 @@ import sqrt._
 class SqrtFloat(expWidth: Int, sigWidth: Int) extends Module{
   val input = IO(Flipped(DecoupledIO(new FloatSqrtInput(expWidth, sigWidth))))
   val output = IO(DecoupledIO(new FloatSqrtOutput(expWidth, sigWidth)))
-  val debug = IO(Output(new Bundle() {
-    val fractIn = UInt(26.W)
-  }))
   val rawFloatIn = rawFloatFromFN(expWidth,sigWidth,input.bits.oprand)
 
   /** Control path */
@@ -46,7 +43,7 @@ class SqrtFloat(expWidth: Int, sigWidth: Int) extends Module{
     *}}}
     */
   val expOutNext = Wire(UInt(expWidth.W))
-  expOutNext := adjustedExp(expWidth,1) + 127.U
+  expOutNext := adjustedExp(expWidth,1)
   val expOut = RegEnable(expOutNext, 0.U(expWidth.W), input.fire)
   val fractIn = Mux(input.bits.oprand(sigWidth-1), Cat("b0".U(1.W),rawFloatIn.sig(sigWidth-1, 0),0.U(1.W)),
     Cat(rawFloatIn.sig(sigWidth-1, 0),0.U(2.W)))
@@ -70,10 +67,8 @@ class SqrtFloat(expWidth: Int, sigWidth: Int) extends Module{
     invalidExec,
     infinitExec)
   output.bits.sig := SqrtModule.output.bits.result
-  output.bits.exp := expOut
+  output.bits.exp := output.bits.result(30,23)
   output.valid := SqrtModule.output.valid || fastWorking
-
-  debug.fractIn := fractIn
 
 }
 

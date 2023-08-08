@@ -49,9 +49,10 @@ class RoundingUnit extends Module{
 
 
   val sigPlus = Wire(UInt(23.W))
-  val expPlus = Wire(UInt(8.W))
+  val expBiasPlus = Wire(UInt(8.W))
   val sigIncr = Wire(Bool())
   val expIncr = Wire(Bool())
+  val expBiased = Wire(UInt(8.W))
 
   /** normal case */
 
@@ -65,13 +66,14 @@ class RoundingUnit extends Module{
 
   /** for sig = all 1 and sigIncr*/
   expIncr := input.sig.andR && sigIncr
-  expPlus := input.exp + expIncr
+  expBiased := input.exp + 127.U
+  expBiasPlus := expBiased + expIncr
 
   common_overflow := input.exp.andR && expIncr
   common_inexact := input.rBits.orR
 
   val common_sigOut = Mux(sigIncr, sigPlus, input.sig)
-  val common_expOut = Mux(expIncr, expPlus, input.exp)
+  val common_expOut = Mux(expIncr, expBiasPlus, expBiased)
 
   val common_out = Mux(common_overflow, infiniteOut, input.sign ## common_expOut ## common_sigOut)
 
