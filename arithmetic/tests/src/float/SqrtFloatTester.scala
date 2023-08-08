@@ -6,7 +6,7 @@ import utest._
 import scala.util.{Random}
 import scala.math._
 
-object SquareRootTester extends TestSuite with ChiselUtestTester {
+object SqrtFloatTester extends TestSuite with ChiselUtestTester {
   def tests: Tests = Tests {
     test("Sqrt Float FP32 should pass") {
       def testcase(): Unit = {
@@ -20,17 +20,13 @@ object SquareRootTester extends TestSuite with ChiselUtestTester {
         val ExepctFracIn = if(oprandFloat<0.5)"b01" + oprandSigString + "0"  else "b1" + oprandSigString + "00"
         val circuitInput = "b"+ oprandString
 
-
-
         val x = sqrt(oprandDouble)
-        x.toFloat.round
         val xDoublestring = java.lang.Double.doubleToLongBits(x).toBinaryString
         val xFloatstring = java.lang.Float.floatToIntBits(x.toFloat).toBinaryString
         val xDouble = extendTofull(xDoublestring,64)
         val xFloat = extendTofull(xFloatstring,32)
         // 0.xxxxxx,   hidden 1+23bits + 2bits for round
-        val sigExpect =   "1"+xDouble.substring(12, 37)
-        // todo:
+        val sigExpect =   xFloat.substring(9,32)
         val expExpect =   xFloat.substring(1,9)
 
         // test
@@ -48,7 +44,7 @@ object SquareRootTester extends TestSuite with ChiselUtestTester {
             if (dut.output.valid.peek().litValue == 1) {
               flag = true
               val resultActual = extendTofull(dut.output.bits.result.peek().litValue.toString(2),32)
-              val sigActual = dut.output.bits.sig.peek().litValue.toString(2)
+              val sigActual = extendTofull(dut.output.bits.sig.peek().litValue.toString(2),23)
               val expActual = extendTofull(dut.output.bits.exp.peek().litValue.toString(2),8)
 
               def printValue() :Unit = {
@@ -88,9 +84,9 @@ object SquareRootTester extends TestSuite with ChiselUtestTester {
         }
       }
 
-//      for (i <- 1 to 100) {
-//        testcase()
-//      }
+      for (i <- 1 to 100) {
+        testcase()
+      }
 
     }
   }

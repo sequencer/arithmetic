@@ -11,6 +11,19 @@ import sqrt._
   *
   * */
 class SqrtFloat(expWidth: Int, sigWidth: Int) extends Module{
+  class FloatSqrtInput(expWidth: Int, sigWidth: Int) extends Bundle() {
+    val oprand = UInt((expWidth + sigWidth).W)
+  }
+
+  /** add 2 for rounding */
+  class FloatSqrtOutput(expWidth: Int, sigWidth: Int) extends Bundle() {
+    val result = UInt((expWidth + sigWidth).W)
+    val sig = UInt((sigWidth + 2).W)
+    val exp = UInt(expWidth.W)
+
+    //  val exceptionFlags = UInt(5.W)
+  }
+
   val input = IO(Flipped(DecoupledIO(new FloatSqrtInput(expWidth, sigWidth))))
   val output = IO(DecoupledIO(new FloatSqrtOutput(expWidth, sigWidth)))
   val rawFloatIn = rawFloatFromFN(expWidth,sigWidth,input.bits.oprand)
@@ -66,22 +79,10 @@ class SqrtFloat(expWidth: Int, sigWidth: Int) extends Module{
     consts.round_near_even,
     invalidExec,
     infinitExec)
-  output.bits.sig := SqrtModule.output.bits.result
+  output.bits.sig := output.bits.result(sigWidth-2, 0)
   output.bits.exp := output.bits.result(30,23)
   output.valid := SqrtModule.output.valid || fastWorking
 
 }
 
-class FloatSqrtInput(expWidth: Int, sigWidth: Int) extends Bundle() {
-  val oprand = UInt((expWidth + sigWidth).W)
-}
-
-/** add 2 for rounding*/
-class FloatSqrtOutput(expWidth: Int, sigWidth: Int) extends Bundle() {
-  val result = UInt((expWidth + sigWidth).W)
-  val sig = UInt((sigWidth+2).W)
-  val exp = UInt(expWidth.W)
-
-//  val exceptionFlags = UInt(5.W)
-}
 
