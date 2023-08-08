@@ -6,14 +6,14 @@ import utest._
 
 import scala.util.Random
 
-object SRT16FracTest extends TestSuite with ChiselUtestTester {
+object SRT16FracTester extends TestSuite with ChiselUtestTester {
   def tests: Tests = Tests {
     test("SRT16 Fraction should pass") {
       def testcase(width: Int): Unit = {
         def extendTofull(input:String, width:Int) =(Seq.fill(width - input.length)("0").mkString("") + input)
         val n:         Int = width
 
-        val xFloat = (0.5 + Random.nextFloat() /2).toFloat
+        val xFloat = (0.5 +Random.nextFloat() /2).toFloat
         val dFloat = (0.5 + Random.nextFloat() /2).toFloat
 
         val xFloatString = extendTofull(java.lang.Float.floatToIntBits(xFloat).toBinaryString, 32)
@@ -22,11 +22,25 @@ object SRT16FracTest extends TestSuite with ChiselUtestTester {
         val dInput = "b1"+dFloatString.substring(9, 32)+"00000000"
 
 
+
+
         val counter = 8
 
         val qDouble = xFloat / dFloat
+        val qFloat  = qDouble.toFloat
         val qDoubleString = extendTofull(java.lang.Double.doubleToLongBits(qDouble).toBinaryString,64)
-        val q_Expect = "1"+ qDoubleString.substring(12, 39)
+        val qFloatString  = extendTofull(java.lang.Float.floatToIntBits(qFloat).toBinaryString, 32)
+        val q_SigExpect = qFloatString.substring(9, 32)
+
+        val q_SigExpectInt = Integer.parseInt(q_SigExpect, 2)
+
+        val xExp = Integer.parseInt(xFloatString.substring(1,9),2)
+        val dExp = Integer.parseInt(dFloatString.substring(1,9),2)
+        val expDiff = xExp - dExp
+        val exp_actual = expDiff + 128
+        val q_ExpExpect = Integer.parseInt(qFloatString.substring(1,9),2)
+
+
 
         // test
         testCircuit(
@@ -47,11 +61,17 @@ object SRT16FracTest extends TestSuite with ChiselUtestTester {
 
               val quotient_actual = extendTofull(dut.output.bits.quotient.peek().litValue.toString(2),32)
 
-              val q_Actual = if(quotient_actual(4).toString=="0") {
-                quotient_actual.substring(5,32)
+              val isLess = quotient_actual(4).toString=="0"
+              val q_SigBefore = if(isLess) {
+                quotient_actual.substring(6,32)
               } else {
-                quotient_actual.substring(4,32)
+                quotient_actual.substring(5,32)
               }
+
+              val sigIncr = q_SigBefore(23).toString.toInt
+              val q_SigActualInt = Integer.parseInt(q_SigBefore.substring(0,23), 2) + sigIncr
+
+
 
 
               def printvalue(): Unit = {
@@ -61,15 +81,22 @@ object SRT16FracTest extends TestSuite with ChiselUtestTester {
                 println("dinput = " + dInput)
 
                 println("all q = " + quotient_actual)
+                println("q_except = "+ qFloatString.toString)
                 println("all q size ="+ quotient_actual.length.toString)
 
-                println("q_expect = " + q_Expect)
-                println("q_actual = " + q_Actual)
+                println("isLess= "+ isLess.toString)
+
+                println("q_expect = " + q_SigExpect)
+                println("q_actual = " + q_SigBefore)
+
+                println("q_expectInt = " + q_SigExpectInt)
+                println("q_actualInt = " + q_SigActualInt)
 
               }
-              if(q_Expect != q_Actual){
+              if(q_SigActualInt != q_SigExpectInt){
                 printvalue()
-                utest.assert(q_Expect == q_Actual)
+                utest.assert(q_SigActualInt == q_SigExpectInt)
+
               }
 
 

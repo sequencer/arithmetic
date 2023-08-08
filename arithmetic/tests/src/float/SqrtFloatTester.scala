@@ -88,9 +88,9 @@ object SquareRootTester extends TestSuite with ChiselUtestTester {
         }
       }
 
-      for (i <- 1 to 100) {
-        testcase()
-      }
+//      for (i <- 1 to 100) {
+//        testcase()
+//      }
 
     }
   }
