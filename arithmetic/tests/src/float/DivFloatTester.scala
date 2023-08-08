@@ -34,13 +34,8 @@ object DivFloatTester extends TestSuite with ChiselUtestTester {
         val exp_Expect = qFloatString.substring(1, 9)
 
 
-
         val xExp = Integer.parseInt(xFloatString.substring(1, 9), 2)
         val dExp = Integer.parseInt(dFloatString.substring(1, 9), 2)
-//        val expDiff = xExp - dExp
-
-
-
 
         // test
         testCircuit(
@@ -64,11 +59,6 @@ object DivFloatTester extends TestSuite with ChiselUtestTester {
 
               val expInt_Actual = Integer.parseInt(exp_Actual,2)
               val expInt_Expect = Integer.parseInt(exp_Expect,2)
-
-
-
-
-
 
               def printvalue(): Unit = {
 
