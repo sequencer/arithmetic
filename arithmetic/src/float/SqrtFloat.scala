@@ -25,7 +25,7 @@ class SqrtFloat(expWidth: Int, sigWidth: Int) extends Module{
   }
 
   val input = IO(Flipped(DecoupledIO(new FloatSqrtInput(expWidth, sigWidth))))
-  val output = IO(DecoupledIO(new FloatSqrtOutput(expWidth, sigWidth)))
+  val output = IO(ValidIO(new FloatSqrtOutput(expWidth, sigWidth)))
   val rawFloatIn = rawFloatFromFN(expWidth,sigWidth,input.bits.oprand)
 
   /** Control path */
@@ -45,25 +45,27 @@ class SqrtFloat(expWidth: Int, sigWidth: Int) extends Module{
 
 
 
-  /** Data path */
-
-  val adjustedExp = Cat(rawFloatIn.sExp(expWidth-1), rawFloatIn.sExp(expWidth-1, 0))
-
-  /** {{{
+  /** Data path
+    *
+    * {{{
     * expLSB   rawExpLSB    Sig             SigIn     expOut
     *      0           1    1.xxxx>>2<<1    1xxxx0    rawExp/2 +1 + bias
     *      1           0    1.xxxx>>2       01xxxx    rawExp/2 +1 + bias
-    *}}}
+    * }}}
+    *
     */
-  val expToRound = RegEnable(adjustedExp(expWidth,1), 0.U(expWidth.W), input.fire)
 
-  val fractIn = Mux(input.bits.oprand(sigWidth-1), Cat("b0".U(1.W),rawFloatIn.sig(sigWidth-1, 0),0.U(1.W)),
+  val adjustedExp = Cat(rawFloatIn.sExp(expWidth-1), rawFloatIn.sExp(expWidth-1, 0))
+  val expStore = RegEnable(adjustedExp(expWidth,1), 0.U(expWidth.W), input.fire)
+  val expToRound = expStore
+
+  val sqrtExIsEven = input.bits.oprand(sigWidth - 1)
+  val fractIn = Mux(sqrtExIsEven, Cat("b0".U(1.W),rawFloatIn.sig(sigWidth-1, 0),0.U(1.W)),
     Cat(rawFloatIn.sig(sigWidth-1, 0),0.U(2.W)))
 
   val SqrtModule = Module(new SquareRoot(2, 2, 26, 26))
   SqrtModule.input.valid := input.valid && !fastCase
   SqrtModule.input.bits.operand := fractIn
-  SqrtModule.output.ready := output.ready
 
   val rbits = SqrtModule.output.bits.result(1) ## (!SqrtModule.output.bits.zeroRemainder || SqrtModule.output.bits.result(0))
   val sigforRound = SqrtModule.output.bits.result(24,2)

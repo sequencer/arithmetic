@@ -24,7 +24,7 @@ class DivFloat(expWidth: Int, sigWidth: Int) extends Module{
   val fpWidth = expWidth + sigWidth
   val calWidth = 28
   val input = IO(Flipped(DecoupledIO(new FloatDivInput(8, 24))))
-  val output = IO(DecoupledIO(new FloatDivOutput(8, 24)))
+  val output = IO(ValidIO(new FloatDivOutput(8, 24)))
 
 
   // for div, don't need to calculate rawExp
@@ -36,7 +36,7 @@ class DivFloat(expWidth: Int, sigWidth: Int) extends Module{
   // Data Path
   val dividendIn = Wire(UInt((fpWidth).W))
   val divisorIn = Wire(UInt((fpWidth).W))
-  val expOutNext = Wire(UInt(expWidth.W))
+  val expStoreNext = Wire(UInt(expWidth.W))
   val expToRound = Wire(UInt(expWidth.W))
 
   val sign = rawA_S.sign ^ rawB_S.sign
@@ -57,15 +57,12 @@ class DivFloat(expWidth: Int, sigWidth: Int) extends Module{
   output.valid := divModule.output.valid
 
 
-  val needNormNext = Wire(Bool())
+  val needNormNext = input.bits.divisor(sigWidth-2, 0) > input.bits.dividend(sigWidth-2, 0)
   val needNorm = RegEnable(needNormNext,input.fire)
-  needNormNext := input.bits.divisor(sigWidth-2, 0) > input.bits.dividend(sigWidth-2, 0)
 
-  // todo verify it
-
-  expOutNext := input.bits.dividend(fpWidth-1, sigWidth-1) - input.bits.divisor(fpWidth-1, sigWidth-1)
-  val expOutReg = RegEnable(expOutNext, 0.U(expWidth.W), input.fire)
-  expToRound := expOutReg - needNorm
+  expStoreNext := input.bits.dividend(fpWidth-1, sigWidth-1) - input.bits.divisor(fpWidth-1, sigWidth-1)
+  val expStore = RegEnable(expStoreNext, 0.U(expWidth.W), input.fire)
+  expToRound := expStore - needNorm
 
 
   val sigToRound = Mux(needNorm, divModule.output.bits.quotient(calWidth-3, calWidth-sigWidth-1),
@@ -104,7 +101,6 @@ class FloatDivInput(expWidth: Int, sigWidth: Int) extends Bundle() {
   val divisor  = UInt((expWidth + sigWidth).W)
 }
 
-/** add 2 for rounding */
 class FloatDivOutput(expWidth: Int, sigWidth: Int) extends Bundle() {
   val result = UInt((expWidth + sigWidth).W)
   val sig = UInt((sigWidth-1).W)

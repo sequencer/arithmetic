@@ -5,12 +5,13 @@ import chiseltest._
 import utest._
 
 import scala.util.Random
-
 import division.srt.srt16._
 
-object DivFloatTester extends TestSuite with ChiselUtestTester {
+import scala.math.sqrt
+
+object DivSqrtTester extends TestSuite with ChiselUtestTester {
   def tests: Tests = Tests {
-    test("Div Float should pass") {
+    test("DivSqrt should pass") {
       def testcase(width: Int): Unit = {
         def extendTofull(input:String, width:Int) =(Seq.fill(width - input.length)("0").mkString("") + input)
         val n:         Int = width
@@ -20,24 +21,38 @@ object DivFloatTester extends TestSuite with ChiselUtestTester {
 
         val xFloatString = extendTofull(java.lang.Float.floatToIntBits(xFloat).toBinaryString, 32)
         val dFloatString = extendTofull(java.lang.Float.floatToIntBits(dFloat).toBinaryString, 32)
+
         val xInput = "b"+xFloatString
         val dInput = "b"+dFloatString
+
+        val opsqrt = "false"
+
 
         val qDouble = xFloat / dFloat
         val q = qDouble.toFloat
         val qFloatString = extendTofull(java.lang.Float.floatToIntBits(q).toBinaryString, 32)
-        val sig_Expect = qFloatString.substring(9, 32)
-        val exp_Expect = qFloatString.substring(1, 9)
+
+
+        val t = sqrt(xFloat)
+        val tFloatString = extendTofull(java.lang.Float.floatToIntBits(t.toFloat).toBinaryString, 32)
+        // 0.xxxxxx,   hidden 1+23bits + 2bits for round
+        val sigExpect = tFloatString.substring(9, 32)
+        val expExpect = tFloatString.substring(1, 9)
+
+        val sig_Expect = if(opsqrt == "true") tFloatString.substring(9, 32) else qFloatString.substring(9, 32)
+        val exp_Expect = if(opsqrt == "true") tFloatString.substring(1, 9) else qFloatString.substring(1, 9)
+        val result_Expect = if(opsqrt == "true") tFloatString else qFloatString
 
         // test
         testCircuit(
-          new DivFloat(8,24),
+          new DivSqrt(8,24),
           Seq(chiseltest.internal.NoThreadingAnnotation, chiseltest.simulator.WriteVcdAnnotation)
-        ) { dut: DivFloat =>
+        ) { dut: DivSqrt =>
           dut.clock.setTimeout(0)
           dut.input.valid.poke(true.B)
-          dut.input.bits.dividend.poke((xInput).U)
-          dut.input.bits.divisor.poke((dInput).U)
+          dut.input.bits.a.poke((xInput).U)
+          dut.input.bits.b.poke((dInput).U)
+          dut.input.bits.sqrt.poke(false.B)
           dut.clock.step()
           dut.input.valid.poke(false.B)
           var flag = false
@@ -55,24 +70,20 @@ object DivFloatTester extends TestSuite with ChiselUtestTester {
               def printvalue(): Unit = {
 
                 println(xFloat.toString + "/ " + dFloat.toString + "="+ qDouble.toString)
-                println("expInt_Actual = " + expInt_Actual)
-                println("expInt_Expect = " + expInt_Expect)
+                println("result_Actual = " + result_Actual)
+                println("result_Expect = " + result_Expect)
 
-//                println("all q = " + quotient_actual)
-//                println("all q size ="+ quotient_actual.length.toString)
 
                 println("sig_expect = " + sig_Expect)
                 println("sig_actual = " + sig_Actual)
 
               }
-              if((sig_Expect != sig_Actual)|| (exp_Actual != exp_Expect)||(result_Actual != qFloatString)){
+              if((sig_Expect != sig_Actual)|| (exp_Actual != exp_Expect)||(result_Actual != result_Expect)){
                 printvalue()
                 utest.assert(sig_Expect == sig_Actual)
                 utest.assert(exp_Expect == exp_Actual)
-                utest.assert(result_Actual != qFloatString)
+                utest.assert(result_Actual == result_Expect)
               }
-
-
 
             }
             dut.clock.step()

@@ -37,7 +37,7 @@ class SquareRoot(
   outputWidth: Int)
     extends Module {
   val input = IO(Flipped(DecoupledIO(new SquareRootInput(inputWidth: Int, outputWidth: Int))))
-  val output = IO(DecoupledIO(new SquareRootOutput(outputWidth)))
+  val output = IO(ValidIO(new SquareRootOutput(outputWidth)))
 
   /** width for partial result  */
   val wlen = inputWidth + 2

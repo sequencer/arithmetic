@@ -17,17 +17,13 @@ object SqrtFloatTester extends TestSuite with ChiselUtestTester {
         val oprandString = extendTofull(java.lang.Float.floatToIntBits(oprandFloat).toBinaryString,32)
         val oprandSigString = oprandString.substring(9, 32)
 
-        val ExepctFracIn = if(oprandFloat<0.5)"b01" + oprandSigString + "0"  else "b1" + oprandSigString + "00"
-        val circuitInput = "b"+ oprandString
+        val oprandInput = "b"+ oprandString
 
-        val x = sqrt(oprandDouble)
-        val xDoublestring = java.lang.Double.doubleToLongBits(x).toBinaryString
-        val xFloatstring = java.lang.Float.floatToIntBits(x.toFloat).toBinaryString
-        val xDouble = extendTofull(xDoublestring,64)
-        val xFloat = extendTofull(xFloatstring,32)
+        val t = sqrt(oprandDouble)
+        val tFloatString = extendTofull(java.lang.Float.floatToIntBits(t.toFloat).toBinaryString,32)
         // 0.xxxxxx,   hidden 1+23bits + 2bits for round
-        val sigExpect =   xFloat.substring(9,32)
-        val expExpect =   xFloat.substring(1,9)
+        val sigExpect =   tFloatString.substring(9,32)
+        val expExpect =   tFloatString.substring(1,9)
 
         // test
         testCircuit(
@@ -36,7 +32,7 @@ object SqrtFloatTester extends TestSuite with ChiselUtestTester {
         ) { dut: SqrtFloat =>
           dut.clock.setTimeout(0)
           dut.input.valid.poke(true.B)
-          dut.input.bits.oprand.poke(circuitInput.U)
+          dut.input.bits.oprand.poke(oprandInput.U)
           dut.clock.step()
           dut.input.valid.poke(false.B)
           var flag = false
@@ -48,13 +44,13 @@ object SqrtFloatTester extends TestSuite with ChiselUtestTester {
               val expActual = extendTofull(dut.output.bits.exp.peek().litValue.toString(2),8)
 
               def printValue() :Unit = {
-                println(oprandFloat.toString + ".sqrtx = " + x.toString)
-                println("input = " + circuitInput)
+                println(oprandFloat.toString + ".sqrtx = " + t.toString)
+                println("input = " + oprandInput)
                 println("exp_expect = " + expExpect)
                 println("exp_actual = " + expActual)
                 println("sig_expect = " + sigExpect)
                 println("sig_actual = " + sigActual)
-                println("result_expect = " + xFloat)
+                println("result_expect = " + tFloatString)
                 println("result_actual = " + resultActual)
               }
 
@@ -69,13 +65,10 @@ object SqrtFloatTester extends TestSuite with ChiselUtestTester {
                 utest.assert(expActual ==expExpect)
               }
 
-              if(resultActual != xFloat) {
+              if(resultActual != tFloatString) {
                 printValue()
-                utest.assert(resultActual == xFloat)
+                utest.assert(resultActual == tFloatString)
               }
-
-
-
 
             } else
               dut.clock.step()
