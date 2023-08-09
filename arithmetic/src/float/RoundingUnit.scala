@@ -16,6 +16,9 @@ class RoundingUnit extends Module{
   val input = IO(Input(new Bundle{
     val invalidExc = Bool() // overrides 'infiniteExc' and 'in'
     val infiniteExc = Bool() // overrides 'in' except for 'in.sign'
+    val isInf  = Bool()
+    val isZero = Bool()
+    val isNaN  = Bool()
     val sig = UInt(23.W)
     val exp = UInt(8.W)
     val rBits = UInt(2.W)
@@ -34,17 +37,15 @@ class RoundingUnit extends Module{
   val roundingMode_near_maxMag = (input.roundingMode === consts.round_near_maxMag)
 
 
-  val common_case = !(input.infiniteExc || input.invalidExc)
   val common_overflow = Wire(Bool())
+  val common_underflow = Wire(Bool())
   val common_inexact  = Wire(Bool())
 
 
-  // exception data with Spike
 
-  val invalidOut = "h7FC00000".U
-  /** Inf with sign  */
-  val infiniteOut = Cat(input.sign,"h7F800000".U)
-  val outSele1H = common_case ## input.infiniteExc ## input.invalidExc
+
+
+
 
 
 
@@ -69,7 +70,28 @@ class RoundingUnit extends Module{
   expBiased := input.exp + 127.U
   expBiasPlus := expBiased + expIncr
 
-  common_overflow := input.exp.andR && expIncr
+  // Exceptions
+  val isNaNOut = input.invalidExc || input.isNaN
+  val notNaN_isSpecialInfOut = input.infiniteExc || input.isInf
+  val commonCase = !isNaNOut && !notNaN_isSpecialInfOut && !input.isZero
+
+  val overflow = commonCase && common_overflow
+  val underflow = commonCase && common_underflow
+  val inexact = overflow || (commonCase && common_inexact)
+
+  val isZero = input.isZero && underflow
+
+
+  // exception data with Spike
+  val quietNaN = "h7FC00000".U
+
+  val infiniteOut = Cat(input.sign, "h7F800000".U)
+  val zeroOut = Cat(input.sign, 0.U(31.W))
+  val outSele1H = commonCase ## notNaN_isSpecialInfOut ## isNaNOut ## input.isZero
+
+  //todo
+  common_overflow := false.B
+  common_underflow := false.B
   common_inexact := input.rBits.orR
 
   val common_sigOut = Mux(sigIncr, sigPlus, input.sig)
@@ -78,23 +100,19 @@ class RoundingUnit extends Module{
   val common_out = Mux(common_overflow, infiniteOut, input.sign ## common_expOut ## common_sigOut)
 
   output.data := Mux1H(Seq(
-    outSele1H(0) -> invalidOut,
-    outSele1H(1) -> infiniteOut,
-    outSele1H(2) -> common_out)
+    outSele1H(0) -> zeroOut,
+    outSele1H(1) -> quietNaN,
+    outSele1H(2) -> infiniteOut,
+    outSele1H(3) -> common_out)
   )
 
-  val invalidOpration = input.invalidExc
-  val divideByzero = false.B
-  val overflow = common_case && common_overflow
-  val underflow = false.B
-  val inexact = overflow || (common_case && common_inexact)
 
-  output.exceptionFlags := invalidOpration ## divideByzero ## overflow ## underflow ## inexact
+  output.exceptionFlags := input.invalidExc ## input.infiniteExc ## overflow ## underflow ## inexact
 
 }
 
 object RoundingUnit {
-  def apply(sign: Bool, exp:UInt, sig: UInt, rbits:UInt, rmode: UInt,invalidExc:Bool, infiniteExc:Bool): UInt = {
+  def apply(sign: Bool, exp: UInt, sig: UInt, rbits: UInt, rmode: UInt, invalidExc: Bool, infiniteExc: Bool, isNaN: Bool, isInf: Bool, isZero: Bool): Vec[UInt] = {
 
     val rounder = Module(new RoundingUnit)
     rounder.input.sign := sign
@@ -104,8 +122,12 @@ object RoundingUnit {
     rounder.input.roundingMode := rmode
     rounder.input.invalidExc := invalidExc
     rounder.input.infiniteExc := infiniteExc
-    rounder.output.data
+    rounder.input.isInf := isInf
+    rounder.input.isZero := isZero
+    rounder.input.isNaN := isNaN
+    VecInit(rounder.output.data, rounder.output.exceptionFlags)
   }
 
 }
+
 

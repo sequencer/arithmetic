@@ -82,15 +82,19 @@ class DivFloat(expWidth: Int, sigWidth: Int) extends Module{
 
 
 
-  output.bits.result := RoundingUnit(
+  val roundresult = RoundingUnit(
     signReg,
     expToRound,
     sigToRound,
     rbits,
     consts.round_near_even,
     invalidExec,
-    infinitExec)
+    infinitExec,
+    false.B,
+    false.B,
+    false.B)
 
+  output.bits.result := roundresult(0)
   output.bits.sig := output.bits.result(sigWidth-2, 0)
   output.bits.exp := output.bits.result(fpWidth-1, sigWidth-1)
 
