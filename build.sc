@@ -1,26 +1,37 @@
 import mill._
 import mill.scalalib._
-import mill.scalalib.publish._
 import mill.scalalib.scalafmt._
-import mill.scalalib.TestModule.Utest
-import coursier.maven.MavenRepository
-import $file.dependencies.chisel.build
 import $file.common
 
 object v {
-  val scala = "2.13.11"
+  val scala = "2.13.10"
   val spire = ivy"org.typelevel::spire:0.18.0"
   val evilplot = ivy"io.github.cibotech::evilplot:0.9.0"
+  val chiselCrossVersions = Map(
+    "5.0.0" -> (ivy"org.chipsalliance::chisel:5.0.0", ivy"org.chipsalliance:::chisel-plugin:5.0.0"),
+  )
 }
 
-object mychisel extends dependencies.chisel.build.Chisel(v.scala) {
-  override def millSourcePath = os.pwd / "dependencies" / "chisel"
-}
+object arithmetic extends Cross[Arithmetic](v.chiselCrossVersions.keys.toSeq)
 
-object arithmetic extends common.ArithmeticModule with ScalafmtModule { m =>
-  def scalaVersion = T(v.scala)
-  def chiselModule = Some(mychisel)
-  def chiselPluginJar = T(Some(mychisel.pluginModule.jar()))
-  def spire: T[Dep] = v.spire
-  def evilplot: T[Dep] = v.evilplot
- }
+trait Arithmetic
+  extends common.ArithmeticModule
+    with ScalafmtModule
+    with Cross.Module[String] {
+
+  override def scalaVersion = T(v.scala)
+
+  override def millSourcePath = os.pwd / "arithmetic"
+
+  def spireIvy = v.spire
+
+  def evilplotIvy = v.evilplot
+
+  def chiselModule = None
+
+  def chiselPluginJar = None
+
+  def chiselIvy = Some(v.chiselCrossVersions(crossValue)._1)
+
+  def chiselPluginIvy = Some(v.chiselCrossVersions(crossValue)._2)
+}
