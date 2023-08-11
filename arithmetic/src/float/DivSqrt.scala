@@ -86,7 +86,7 @@ class DivSqrt(expWidth: Int, sigWidth: Int) extends Module{
   divModule.input.bits.dividend := dividendIn
   divModule.input.bits.divider := divisorIn
   divModule.input.bits.counter := 8.U
-  divModule.input.valid := input.valid && !input.bits.sqrt && normalCase_S_sqrt
+  divModule.input.valid := input.valid && !input.bits.sqrt && normalCase_S_div
 
   val sigToRound_div = Mux(needNorm, divModule.output.bits.quotient(calWidth - 3, calWidth - sigWidth - 1),
     divModule.output.bits.quotient(calWidth - 2, calWidth - sigWidth))
@@ -106,7 +106,7 @@ class DivSqrt(expWidth: Int, sigWidth: Int) extends Module{
     input.bits.a(fpWidth-1, sigWidth-1) - input.bits.b(fpWidth-1, sigWidth-1))
   val expStore = RegEnable(expStoreNext, 0.U(expWidth.W), input.fire)
   expToRound := Mux(opSqrtReg, expStore, expStore - needNorm)
-  
+
   val roundresult = RoundingUnit(
     signReg,
     expToRound,
