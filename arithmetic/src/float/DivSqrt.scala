@@ -9,7 +9,7 @@ class DivSqrt(expWidth: Int, sigWidth: Int) extends Module{
   val fpWidth = expWidth + sigWidth
   val calWidth = 28
   val input = IO(Flipped(DecoupledIO(new DivSqrtInput(expWidth, sigWidth))))
-  val output = IO(DecoupledIO(new DivSqrtOutput(expWidth, sigWidth)))
+  val output = IO(ValidIO(new DivSqrtOutput(expWidth, sigWidth)))
 
   val opSqrtReg = RegEnable(input.bits.sqrt, input.fire)
 
@@ -17,7 +17,6 @@ class DivSqrt(expWidth: Int, sigWidth: Int) extends Module{
   val rawB_S = rawFloatFromFN(expWidth, sigWidth, input.bits.b)
 
   /** Exceptions */
-
   val notSigNaNIn_invalidExc_S_div =
     (rawA_S.isZero && rawB_S.isZero) || (rawA_S.isInf && rawB_S.isInf)
   val notSigNaNIn_invalidExc_S_sqrt =
@@ -37,7 +36,6 @@ class DivSqrt(expWidth: Int, sigWidth: Int) extends Module{
   val isInf_S = Mux(input.bits.sqrt, rawA_S.isInf, rawA_S.isInf || rawB_S.isZero)
   val isZero_S = Mux(input.bits.sqrt, rawA_S.isZero, rawA_S.isZero || rawB_S.isInf)
 
-
   val majorExc_Z = RegEnable(majorExc_S,false.B,input.fire)
   val isNaN_Z    = RegEnable(isNaN_S,false.B,input.fire)
   val isInf_Z    = RegEnable(isInf_S,false.B,input.fire)
@@ -46,14 +44,12 @@ class DivSqrt(expWidth: Int, sigWidth: Int) extends Module{
   val invalidExec = majorExc_Z &&  isNaN_Z
   val infinitExec = majorExc_Z && !isNaN_Z
 
-
   val specialCaseA_S = rawA_S.isNaN || rawA_S.isInf || rawA_S.isZero
   val specialCaseB_S = rawB_S.isNaN || rawB_S.isInf || rawB_S.isZero
   val normalCase_S_div = !specialCaseA_S && !specialCaseB_S
   val normalCase_S_sqrt = !specialCaseA_S && !rawA_S.sign
   val normalCase_S = Mux(input.bits.sqrt, normalCase_S_sqrt, normalCase_S_div)
   val specialCase_S = !normalCase_S
-
 
   val fastValid = RegInit(false.B)
   fastValid := specialCase_S && input.fire
@@ -110,10 +106,7 @@ class DivSqrt(expWidth: Int, sigWidth: Int) extends Module{
     input.bits.a(fpWidth-1, sigWidth-1) - input.bits.b(fpWidth-1, sigWidth-1))
   val expStore = RegEnable(expStoreNext, 0.U(expWidth.W), input.fire)
   expToRound := Mux(opSqrtReg, expStore, expStore - needNorm)
-
-
-
-
+  
   val roundresult = RoundingUnit(
     signReg,
     expToRound,
