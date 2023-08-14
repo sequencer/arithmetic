@@ -64,12 +64,12 @@ class DivSqrt(expWidth: Int, sigWidth: Int) extends Module{
 
   // sqrt
   val adjustedExp = Cat(rawA_S.sExp(expWidth - 1), rawA_S.sExp(expWidth - 1, 0))
-  val sqrtExIsEven = input.bits.a(sigWidth - 1)
-  val fractIn = Mux(sqrtExIsEven, Cat("b0".U(1.W), rawA_S.sig(sigWidth - 1, 0), 0.U(1.W)),
+  val sqrtExpIsEven = input.bits.a(sigWidth - 1)
+  val sqrtFractIn = Mux(sqrtExpIsEven, Cat("b0".U(1.W), rawA_S.sig(sigWidth - 1, 0), 0.U(1.W)),
     Cat(rawA_S.sig(sigWidth - 1, 0), 0.U(2.W)))
 
   val SqrtModule = Module(new SquareRoot(2, 2, sigWidth+2, sigWidth+2))
-  SqrtModule.input.bits.operand := fractIn
+  SqrtModule.input.bits.operand := sqrtFractIn
   SqrtModule.input.valid := input.valid && input.bits.sqrt && normalCase_S_sqrt
 
   val rbits_sqrt = SqrtModule.output.bits.result(1) ## (!SqrtModule.output.bits.zeroRemainder || SqrtModule.output.bits.result(0))
@@ -77,14 +77,14 @@ class DivSqrt(expWidth: Int, sigWidth: Int) extends Module{
 
 
   // div
-  val dividendIn = Wire(UInt((fpWidth).W))
-  val divisorIn = Wire(UInt((fpWidth).W))
-  dividendIn := Cat(1.U(1.W), rawA_S.sig(sigWidth - 2, 0), 0.U(expWidth.W))
-  divisorIn := Cat(1.U(1.W), rawB_S.sig(sigWidth - 2, 0), 0.U(expWidth.W))
+  val fractDividendIn = Wire(UInt((fpWidth).W))
+  val fractDivisorIn = Wire(UInt((fpWidth).W))
+  fractDividendIn := Cat(1.U(1.W), rawA_S.sig(sigWidth - 2, 0), 0.U(expWidth.W))
+  fractDivisorIn := Cat(1.U(1.W), rawB_S.sig(sigWidth - 2, 0), 0.U(expWidth.W))
 
   val divModule = Module(new SRT16(fpWidth, fpWidth, fpWidth))
-  divModule.input.bits.dividend := dividendIn
-  divModule.input.bits.divider := divisorIn
+  divModule.input.bits.dividend := fractDividendIn
+  divModule.input.bits.divider := fractDivisorIn
   divModule.input.bits.counter := 8.U
   divModule.input.valid := input.valid && !input.bits.sqrt && normalCase_S_div
 
