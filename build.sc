@@ -7,6 +7,7 @@ object v {
   val scala = "2.13.10"
   val spire = ivy"org.typelevel::spire:0.18.0"
   val evilplot = ivy"io.github.cibotech::evilplot:0.9.0"
+  val oslib =  ivy"com.lihaoyi::os-lib:0.9.1"
   val chiselCrossVersions = Map(
     "5.0.0" -> (ivy"org.chipsalliance::chisel:5.0.0", ivy"org.chipsalliance:::chisel-plugin:5.0.0"),
   )
@@ -26,6 +27,8 @@ trait Arithmetic
   def spireIvy = v.spire
 
   def evilplotIvy = v.evilplot
+
+  def oslibIvy = v.oslib
 
   def chiselModule = None
 

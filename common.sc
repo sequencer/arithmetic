@@ -33,6 +33,8 @@ trait ArithmeticModule
 
   def evilplotIvy: T[Dep]
 
+  def oslibIvy: T[Dep]
+
   override def ivyDeps = T(super.ivyDeps() ++ Seq(spireIvy(), evilplotIvy()))
 }
 
