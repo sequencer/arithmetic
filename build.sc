@@ -11,6 +11,9 @@ object v {
   val chiselCrossVersions = Map(
     "5.0.0" -> (ivy"org.chipsalliance::chisel:5.0.0", ivy"org.chipsalliance:::chisel-plugin:5.0.0"),
   )
+
+  val scalatest = ivy"org.scalatest::scalatest:3.2.0"
+  val scalapar = ivy"org.scala-lang.modules::scala-parallel-collections:1.0.4"
 }
 
 object arithmetic extends Cross[Arithmetic](v.chiselCrossVersions.keys.toSeq)
@@ -43,7 +46,6 @@ trait Arithmetic
 
 trait ArithmeticTest
   extends common.ArithmeticTestModule
-    with ScalafmtModule
     with Cross.Module[String] {
 
   override def scalaVersion = T(v.scala)
@@ -51,6 +53,10 @@ trait ArithmeticTest
   override def millSourcePath = os.pwd / "tests"
 
   def arithmeticModule = arithmetic(crossValue)
+
+  def scalatestIvy = v.scalatest
+
+  def scalaparIvy = v.scalapar
 
   def spireIvy = v.spire
 

@@ -49,7 +49,7 @@ class DivRecFN_io(expWidth: Int, sigWidth: Int) extends Bundle {
 }
 
 class
-    ValExec_DivSqrtRecFN_small_div(expWidth: Int, sigWidth: Int, options: Int) extends Module
+    ValExec_DivSqrtRecFN_small_div(expWidth: Int, sigWidth: Int) extends Module
 {
     val io = IO(new Bundle {
         val input = Flipped(Decoupled(new DivRecFN_io(expWidth, sigWidth)))
@@ -121,7 +121,7 @@ class SqrtRecFN_io(expWidth: Int, sigWidth: Int) extends Bundle {
 }
 
 class
-    ValExec_DivSqrtRecFN_small_sqrt(expWidth: Int, sigWidth: Int, options: Int)
+    ValExec_DivSqrtRecFN_small_sqrt(expWidth: Int, sigWidth: Int)
     extends Module
 {
     val io = IO(new Bundle {
