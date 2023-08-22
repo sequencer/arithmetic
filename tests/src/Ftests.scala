@@ -86,4 +86,6 @@ object Ftests extends App{
     )
     .filter(p => p.ext == "v" || p.ext == "sv")
 
+  os.write(rtlDir / "dut.v", chisel3.getVerilogString(new DivSqrt(8,24)))
+
 }
