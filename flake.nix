@@ -19,6 +19,7 @@
             mill
             circt
             verilator
+            testfloat
           ];
         in
         {
