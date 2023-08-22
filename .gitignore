@@ -1,5 +1,6 @@
 # mill
 out/
+run/
 # sbt
 diplomacy/target/
 diplomacy/macros/target/

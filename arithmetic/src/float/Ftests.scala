@@ -4,6 +4,9 @@ object Ftests extends App{
 
   import chisel3.stage.ChiselGeneratorAnnotation
   import firrtl.AnnotationSeq
+  import firrtl.stage._
+
+  println("this is Ftests")
 
   val resources = os.resource()
   val runDir = os.pwd / "run"
