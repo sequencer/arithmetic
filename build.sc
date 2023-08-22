@@ -15,6 +15,8 @@ object v {
 
 object arithmetic extends Cross[Arithmetic](v.chiselCrossVersions.keys.toSeq)
 
+object arithmetictest extends Cross[ArithmeticTest](v.chiselCrossVersions.keys.toSeq)
+
 trait Arithmetic
   extends common.ArithmeticModule
     with ScalafmtModule
@@ -23,6 +25,32 @@ trait Arithmetic
   override def scalaVersion = T(v.scala)
 
   override def millSourcePath = os.pwd / "arithmetic"
+
+  def spireIvy = v.spire
+
+  def evilplotIvy = v.evilplot
+
+  def oslibIvy = v.oslib
+
+  def chiselModule = None
+
+  def chiselPluginJar = None
+
+  def chiselIvy = Some(v.chiselCrossVersions(crossValue)._1)
+
+  def chiselPluginIvy = Some(v.chiselCrossVersions(crossValue)._2)
+}
+
+trait ArithmeticTest
+  extends common.ArithmeticTestModule
+    with ScalafmtModule
+    with Cross.Module[String] {
+
+  override def scalaVersion = T(v.scala)
+
+  override def millSourcePath = os.pwd / "tests"
+
+  def arithmeticModule = arithmetic(crossValue)
 
   def spireIvy = v.spire
 

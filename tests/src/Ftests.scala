@@ -1,4 +1,6 @@
-package float
+package tests
+
+import float._
 
 object Ftests extends App{
 
