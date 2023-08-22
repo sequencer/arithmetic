@@ -48,7 +48,7 @@ object Ftests extends App{
     new chisel3.stage.phases.Convert
   ).foldLeft(
     Seq(
-      ChiselGeneratorAnnotation(() => new DivSqrt(8,24))
+      ChiselGeneratorAnnotation(() => new ValExec_DivSqrtRecFN_small_div(8,24,0))
     ): AnnotationSeq
   ) { case (annos, stage) => stage.transform(annos) }
     .flatMap {
