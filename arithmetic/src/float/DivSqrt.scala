@@ -60,13 +60,31 @@ class DivSqrt(expWidth: Int, sigWidth: Int) extends Module{
   val needNorm = RegEnable(needNormNext, input.fire)
 
   // sign
-  val signNext = Mux(input.bits.sqrt, false.B, rawA_S.sign ^ rawB_S.sign)
+  val signNext = Mux(input.bits.sqrt, Mux(rawA_S.isZero, rawA_S.sign, false.B), rawA_S.sign ^ rawB_S.sign)
   val signReg = RegEnable(signNext, input.fire)
 
   // sqrt
-  val adjustedExp = Cat(rawA_S.sExp(expWidth - 1), rawA_S.sExp(expWidth - 1, 0))
-  val sqrtExpIsEven = input.bits.a(sigWidth - 1)
-  val sqrtFractIn = Mux(sqrtExpIsEven, Cat("b0".U(1.W), rawA_S.sig(sigWidth - 1, 0), 0.U(1.W)),
+
+  /** construct expForSqrt
+    *
+    * sExp first 2 bits
+    * 00 -> 10 (subnormal)
+    * 01 -> 11 (true exp negative)
+    * 10 -> 00 (true exp positive)
+    *
+    */
+  val expfirst2 = UIntToOH(rawA_S.sExp(expWidth, expWidth-1))
+  val expstart  = Mux1H(
+    Seq(
+      expfirst2(0) -> "b10".U,
+      expfirst2(1) -> "b11".U,
+      expfirst2(2) -> "b00".U,
+      expfirst2(3) -> "b10".U
+    )
+  )
+  val expForSqrt = Cat(expstart, rawA_S.sExp(expWidth - 2, 0))
+  val sqrtExpIsOdd = !rawA_S.sExp(0)
+  val sqrtFractIn = Mux(sqrtExpIsOdd, Cat("b0".U(1.W), rawA_S.sig(sigWidth - 1, 0), 0.U(1.W)),
     Cat(rawA_S.sig(sigWidth - 1, 0), 0.U(2.W)))
 
   val SqrtModule = Module(new SquareRoot(2, 2, sigWidth+2, sigWidth+2))
@@ -103,7 +121,7 @@ class DivSqrt(expWidth: Int, sigWidth: Int) extends Module{
   val expStoreNext = Wire(UInt(expWidth.W))
   val expToRound = Wire(UInt(expWidth.W))
   expStoreNext := Mux(input.bits.sqrt,
-    Cat(rawA_S.sExp(expWidth-1), rawA_S.sExp(expWidth-1, 0))(expWidth,1),
+    expForSqrt >>1,
     input.bits.a(fpWidth-1, sigWidth-1) - input.bits.b(fpWidth-1, sigWidth-1))
   val expStore = RegEnable(expStoreNext, 0.U(expWidth.W), input.fire)
   expToRound := Mux(opSqrtReg, expStore, expStore - needNorm)

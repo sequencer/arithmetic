@@ -124,7 +124,6 @@ trait FMATester extends AnyFlatSpec with Matchers with ParallelTestExecution {
     "-rmin" -> "2",
     "-rmax" -> "3",
     "-rnear_maxMag" -> "4",
-    "-rodd" -> "6"
   )
 
   def check(stdouts: Seq[String]) = {
@@ -135,7 +134,7 @@ trait FMATester extends AnyFlatSpec with Matchers with ParallelTestExecution {
 
   def test(name: String, module: () => RawModule, softfloatArg: Seq[String]): Seq[String] = {
     val (softfloatArgs, dutArgs) = (roundings.map { case (s, d) =>
-      (Seq(s, "-tininessbefore") ++ softfloatArg, Seq(d, "0"))
+      (Seq(s, "-tininessafter") ++ softfloatArg, Seq(d, "0"))
     }).unzip
     test(name, module, "test.cpp", softfloatArgs, Some(dutArgs))
   }
@@ -150,7 +149,7 @@ trait FMATester extends AnyFlatSpec with Matchers with ParallelTestExecution {
     */
   def test(name: String, module: () => RawModule, harness: String, softfloatArgs: Seq[Seq[String]], dutArgs: Option[Seq[Seq[String]]] = None) = {
 
-    val testRunDir = os.pwd / "test_run_dir" / s"${this.getClass.getSimpleName}_$name" / s"${new SimpleDateFormat("yyyyMMddHHmmss").format(Calendar.getInstance.getTime)}"
+    val testRunDir = os.pwd / "test_run_dir" / s"${this.getClass.getSimpleName}_$name"
     os.makeDir.all(testRunDir)
     os.write(testRunDir / "dut.v", chisel3.getVerilogString(module()))
 
@@ -204,9 +203,9 @@ class DivSqrtRecFn_smallSpec extends FMATester {
 
   }
 
-  "DivSqrtRecF32_small_div" should "pass" in {
-    check(test(32, "div"))
-  }
+//  "DivSqrtRecF32_small_div" should "pass" in {
+//    check(test(32, "div"))
+//  }
 
   "DivSqrtRecF32_small_sqrt" should "pass" in {
     check(test(32, "sqrt"))

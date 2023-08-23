@@ -43,12 +43,6 @@ class RoundingUnit extends Module{
 
 
 
-
-
-
-
-
-
   val sigPlus = Wire(UInt(23.W))
   val expBiasPlus = Wire(UInt(8.W))
   val sigIncr = Wire(Bool())
@@ -61,7 +55,7 @@ class RoundingUnit extends Module{
   sigIncr := (roundingMode_near_even && input.rBits(1) && input.rBits(0)) ||
     (roundingMode_min &&  input.sign && input.rBits.orR) ||
     (roundingMode_max && !input.sign && input.rBits.orR) ||
-    (roundingMode_near_maxMag && input.rBits.orR)
+    (roundingMode_near_maxMag && input.rBits(1) && input.rBits(0))
 
   sigPlus := input.sig + sigIncr
 
