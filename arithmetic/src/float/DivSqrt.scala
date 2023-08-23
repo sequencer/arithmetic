@@ -115,8 +115,8 @@ class DivSqrt(expWidth: Int, sigWidth: Int) extends Module{
 
   val sigToRound_div = Mux(needNorm, divModule.output.bits.quotient(calWidth - 3, calWidth - sigWidth - 1),
     divModule.output.bits.quotient(calWidth - 2, calWidth - sigWidth))
-  val rbits_div = Mux(needNorm, divModule.output.bits.quotient(calWidth - sigWidth - 2) ## 1.U(1.W),
-    divModule.output.bits.quotient(calWidth - sigWidth - 1) ## 1.U(1.W))
+  val rbits_div = Mux(needNorm, divModule.output.bits.quotient(calWidth - sigWidth - 2) ## divModule.output.bits.reminder.orR,
+    divModule.output.bits.quotient(calWidth - sigWidth - 1) ## divModule.output.bits.reminder.orR)
 
 
   // collect sig result
@@ -142,6 +142,7 @@ class DivSqrt(expWidth: Int, sigWidth: Int) extends Module{
 
   dontTouch(rawA_S)
   dontTouch(rawB_S)
+  dontTouch(rbits_div)
 
   val roundresult = RoundingUnit(
     signReg,
