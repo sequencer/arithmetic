@@ -20,7 +20,7 @@ class RoundingUnit extends Module{
     val isZero = Bool()
     val isNaN  = Bool()
     val sig = UInt(23.W)
-    val exp = UInt(8.W)
+    val exp = UInt(9.W)
     val rBits = UInt(2.W)
     val sign = Bool()
     val roundingMode = UInt(5.W)
@@ -61,8 +61,8 @@ class RoundingUnit extends Module{
 
   /** for sig = all 1 and sigIncr*/
   expIncr := input.sig.andR && sigIncr
-  expBiased := input.exp + 127.U
-  expBiasPlus := expBiased + expIncr
+  expBiased := (input.exp + 127.U)(7,0)
+  expBiasPlus := (input.exp + 128.U)(7,0)
 
   // Exceptions
   val isNaNOut = input.invalidExc || input.isNaN

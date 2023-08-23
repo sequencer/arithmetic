@@ -74,14 +74,16 @@ class DivSqrt(expWidth: Int, sigWidth: Int) extends Module{
     *
     */
   val expfirst2 = UIntToOH(rawA_S.sExp(expWidth, expWidth-1))
+  /** @todo expfirst2(3) never happens */
   val expstart  = Mux1H(
     Seq(
       expfirst2(0) -> "b10".U,
       expfirst2(1) -> "b11".U,
       expfirst2(2) -> "b00".U,
-      expfirst2(3) -> "b10".U
+      expfirst2(3) -> "b00".U
     )
   )
+  /** exp for sqrt never underlow*/
   val expForSqrt = Cat(expstart, rawA_S.sExp(expWidth - 2, 0))
   val sqrtExpIsOdd = !rawA_S.sExp(0)
   val sqrtFractIn = Mux(sqrtExpIsOdd, Cat("b0".U(1.W), rawA_S.sig(sigWidth - 1, 0), 0.U(1.W)),
@@ -120,8 +122,16 @@ class DivSqrt(expWidth: Int, sigWidth: Int) extends Module{
   // exp logic
   val expStoreNext = Wire(UInt(expWidth.W))
   val expToRound = Wire(UInt(expWidth.W))
+  /**
+    * for sqrt
+    * expForrounding effective is 8bits, MSB is sign
+    * expStoreNext = 0 + 8bits 
+    *
+    *
+    *
+    */
   expStoreNext := Mux(input.bits.sqrt,
-    expForSqrt >>1,
+    expForSqrt >> 1,
     input.bits.a(fpWidth-1, sigWidth-1) - input.bits.b(fpWidth-1, sigWidth-1))
   val expStore = RegEnable(expStoreNext, 0.U(expWidth.W), input.fire)
   expToRound := Mux(opSqrtReg, expStore, expStore - needNorm)
