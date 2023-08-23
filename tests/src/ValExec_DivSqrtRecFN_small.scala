@@ -68,7 +68,7 @@ class
         }
 
         val actual = new Bundle {
-            val out = Output(Bits((expWidth + sigWidth + 1).W))
+            val out = Output(Bits((expWidth + sigWidth).W))
             val exceptionFlags = Output(Bits(5.W))
         }
 
@@ -105,10 +105,9 @@ class
     cq.io.deq.ready := ds.output.valid
 
     io.check := ds.output.valid
-    io.pass :=
-        cq.io.deq.valid &&
-          (io.actual.out===io.expected.recOut) &&
-        (io.actual.exceptionFlags === io.expected.exceptionFlags)
+  val resultcheck = io.actual.out =/= io.expected.out
+  val flagcheck = io.actual.exceptionFlags =/= io.expected.exceptionFlags
+  io.pass := !(cq.io.deq.fire && (resultcheck || flagcheck))
 }
 
 class SqrtRecFN_io(expWidth: Int, sigWidth: Int) extends Bundle {

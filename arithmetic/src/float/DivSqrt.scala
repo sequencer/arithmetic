@@ -4,6 +4,7 @@ import chisel3._
 import chisel3.util._
 import division.srt.srt16._
 import sqrt._
+import chisel3.dontTouch
 
 class DivSqrt(expWidth: Int, sigWidth: Int) extends Module{
   val fpWidth = expWidth + sigWidth
@@ -17,9 +18,12 @@ class DivSqrt(expWidth: Int, sigWidth: Int) extends Module{
   val rawA_S = rawFloatFromFN(expWidth, sigWidth, input.bits.a)
   val rawB_S = rawFloatFromFN(expWidth, sigWidth, input.bits.b)
 
-  /** Exceptions */
+  // Exceptions
+
+  /** inf/inf and 0/0 */
   val notSigNaNIn_invalidExc_S_div =
     (rawA_S.isZero && rawB_S.isZero) || (rawA_S.isInf && rawB_S.isInf)
+  /** negative input */
   val notSigNaNIn_invalidExc_S_sqrt =
     !rawA_S.isNaN && !rawA_S.isZero && rawA_S.sign
   val majorExc_S =
@@ -84,7 +88,7 @@ class DivSqrt(expWidth: Int, sigWidth: Int) extends Module{
     )
   )
   /** exp for sqrt never underlow*/
-  val expForSqrt = Cat(expstart, rawA_S.sExp(expWidth - 2, 0))
+  val expForSqrt = Cat(expstart, rawA_S.sExp(expWidth - 2, 0)) >> 1
   val sqrtExpIsOdd = !rawA_S.sExp(0)
   val sqrtFractIn = Mux(sqrtExpIsOdd, Cat("b0".U(1.W), rawA_S.sig(sigWidth - 1, 0), 0.U(1.W)),
     Cat(rawA_S.sig(sigWidth - 1, 0), 0.U(2.W)))
@@ -120,8 +124,7 @@ class DivSqrt(expWidth: Int, sigWidth: Int) extends Module{
   val rbitsToRound = Mux(opSqrtReg, rbits_sqrt, rbits_div)
 
   // exp logic
-  val expStoreNext = Wire(UInt(expWidth.W))
-  val expToRound = Wire(UInt(expWidth.W))
+  val expStoreNext,expToRound = Wire(UInt((expWidth+2).W))
   /**
     * for sqrt
     * expForrounding effective is 8bits, MSB is sign
@@ -131,10 +134,14 @@ class DivSqrt(expWidth: Int, sigWidth: Int) extends Module{
     *
     */
   expStoreNext := Mux(input.bits.sqrt,
-    expForSqrt >> 1,
-    input.bits.a(fpWidth-1, sigWidth-1) - input.bits.b(fpWidth-1, sigWidth-1))
-  val expStore = RegEnable(expStoreNext, 0.U(expWidth.W), input.fire)
+    Cat(expForSqrt(8),expForSqrt(8,0)),
+    (rawA_S.sExp-rawB_S.sExp).asUInt)
+  val expStore = RegEnable(expStoreNext, 0.U((expWidth+2).W), input.fire)
   expToRound := Mux(opSqrtReg, expStore, expStore - needNorm)
+  dontTouch(expToRound)
+
+  dontTouch(rawA_S)
+  dontTouch(rawB_S)
 
   val roundresult = RoundingUnit(
     signReg,

@@ -151,6 +151,7 @@ trait FMATester extends AnyFlatSpec with Matchers with ParallelTestExecution {
 
     val testRunDir = os.pwd / "test_run_dir" / s"${this.getClass.getSimpleName}_$name"
     os.makeDir.all(testRunDir)
+    os.remove(testRunDir / "dut.v")
     os.write(testRunDir / "dut.v", chisel3.getVerilogString(module()))
 
     /* command Synthesis verilog to C++. */
@@ -203,9 +204,9 @@ class DivSqrtRecFn_smallSpec extends FMATester {
 
   }
 
-//  "DivSqrtRecF32_small_div" should "pass" in {
-//    check(test(32, "div"))
-//  }
+  "DivSqrtRecF32_small_div" should "pass" in {
+    check(test(32, "div"))
+  }
 
   "DivSqrtRecF32_small_sqrt" should "pass" in {
     check(test(32, "sqrt"))
