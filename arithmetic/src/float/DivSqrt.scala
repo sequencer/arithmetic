@@ -134,7 +134,7 @@ class DivSqrt(expWidth: Int, sigWidth: Int) extends Module{
     *
     */
   expStoreNext := Mux(input.bits.sqrt,
-    Cat(expForSqrt(8),expForSqrt(8,0)),
+    Cat(expForSqrt(7),expForSqrt(7),expForSqrt(7,0)),
     (rawA_S.sExp-rawB_S.sExp).asUInt)
   val expStore = RegEnable(expStoreNext, 0.U((expWidth+2).W), input.fire)
   expToRound := Mux(opSqrtReg, expStore, expStore - needNorm)
