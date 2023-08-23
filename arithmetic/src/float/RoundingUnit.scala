@@ -85,16 +85,16 @@ class RoundingUnit extends Module{
 
   val isZero = input.isZero && underflow
 
-//  val overflowSele = UIntToOH(roundingMode_min ## roundingMode_max ## roundingMode_toZero ## (roundingMode_near_even || roundingMode_near_maxMag))
-//
-//  val infiniteOut = Mux1H(
-//    Seq(
-//      overflowSele(0) -> Cat(input.sign, "h7F80000".U(31.W)),
-//      overflowSele(1) -> Cat(input.sign, "h7F7FFFF".U(31.W)),
-//      overflowSele(2) -> Cat(0.U(1.W), "h7F7FFFF".U(31.W)),
-//      overflowSele(3) -> Cat(1.U(1.W), "h7F7FFFF".U(31.W)),
-//    )
-//  )
+  val overflowSele = roundingMode_min ## roundingMode_max ## roundingMode_toZero ## (roundingMode_near_even || roundingMode_near_maxMag)
+
+  val common_infiniteOut = Mux1H(
+    Seq(
+      overflowSele(0) -> Cat(input.sign, "h7F800000".U(31.W)),
+      overflowSele(1) -> Cat(input.sign, "h7F7FFFFF".U(31.W)),
+      overflowSele(2) -> Mux(input.sign,"hFF7FFFFF".U(32.W),"h7F800000".U(32.W)),
+      overflowSele(3) -> Mux(input.sign,"hFF800000".U(32.W),"h7F7FFFFF".U(32.W)),
+    )
+  )
 
 
   // exception data with Spike
@@ -114,11 +114,15 @@ class RoundingUnit extends Module{
   dontTouch(common_expOut)
   dontTouch(common_underflow)
   dontTouch(common_overflow)
+  dontTouch(overflowSele)
+  dontTouch(common_infiniteOut)
 
 
-  val common_out = Mux(common_overflow, infiniteOut,
+  val common_out = Mux(common_overflow, common_infiniteOut,
     Mux(common_subnorm, input.sign ## 0.U(8.W) ## common_subnormSigOut,
       input.sign ## common_expOut ## common_sigOut))
+
+  dontTouch(common_out)
 
   output.data := Mux1H(Seq(
     outSele1H(0) -> zeroOut,
@@ -126,6 +130,7 @@ class RoundingUnit extends Module{
     outSele1H(2) -> infiniteOut,
     outSele1H(3) -> common_out)
   )
+  dontTouch(outSele1H)
 
 
   output.exceptionFlags := input.invalidExc ## input.infiniteExc ## overflow ## underflow ## inexact
