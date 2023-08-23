@@ -102,7 +102,7 @@ class RoundingUnit extends Module{
 
   val infiniteOut = Cat(input.sign, "h7F800000".U)
   val zeroOut = Cat(input.sign, 0.U(31.W))
-  val outSele1H = commonCase ## notNaN_isSpecialInfOut ## isNaNOut ## input.isZero
+  val outSele1H = commonCase ## notNaN_isSpecialInfOut ## isNaNOut ## (input.isZero && !isNaNOut)
 
   /** @todo opt it */
   common_overflow := exp_BiasForSub > 254.S
