@@ -108,7 +108,7 @@ class RoundingUnit extends Module{
 
   // Exceptions
   val isNaNOut = input.invalidExc || input.isNaN
-  val notNaN_isSpecialInfOut = (input.infiniteExc || input.isInf) && (!input.invalidExc)
+  val notNaN_isSpecialInfOut = (input.infiniteExc || input.isInf) && (!input.invalidExc) && (!input.isNaN)
   val notNaN_isZero = input.isZero && !isNaNOut
   val commonCase = !isNaNOut && !notNaN_isSpecialInfOut && !input.isZero
 
