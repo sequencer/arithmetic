@@ -132,7 +132,7 @@ class RoundingUnit extends Module{
   val outSele1H = commonCase ## notNaN_isSpecialInfOut ## isNaNOut ## notNaN_isZero
 
   /** @todo opt it */
-  common_overflow := exp_BiasForSub > 254.S
+  common_overflow := input.exp.asSInt > 127.S
   common_underflow := common_subnorm
   common_inexact := input.rBits.orR
 
