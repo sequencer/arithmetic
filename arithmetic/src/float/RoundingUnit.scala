@@ -64,22 +64,41 @@ class RoundingUnit extends Module{
 
   expBiasedAfterInc := ((input.exp.asSInt + 127.S)(7,0) + expIncr).asUInt
 
-  val exp_BiasForSub = (input.exp.asSInt + 127.S(10.W)) + expIncr.zext.asSInt
-  val subnormDist = -exp_BiasForSub + 1.S
+
+  val sub_sigOut = Wire(UInt(23.W))
+
+  // control logic
+  // set to 126 according to softfloat
+  val exp_BiasForSub = (input.exp.asSInt + 126.S(10.W))
+  val subnormDist = -exp_BiasForSub
   // todo 23 or 24
   val common_totalUnderflow = subnormDist > 24.S
-
   common_subnorm := exp_BiasForSub(9) || exp_BiasForSub === 0.S
-//  val common_subnormSigOut = (Cat(1.U(1.W), sigAfterInc) >> subnormDist.asUInt)(22,0)
-  val rbits = (sigAfterInc << 23 >> subnormDist.asUInt)(22,0).orR
-  val common_subnormSigOut = Mux(common_totalUnderflow, 0.U ,(Cat(1.U(1.W), sigAfterInc) >> subnormDist.asUInt)(22,0) | rbits )
+
+  val sub_sigShift = Wire(UInt(26.W))
+  val sub_sigBefore:UInt = Cat(1.U(1.W), input.sig)
+  sub_sigShift := (sub_sigBefore >> subnormDist.asUInt)(22,0)
+  val sub_Stickybits = (input.sig << 23 >> subnormDist.asUInt)(21,0).orR || input.rBits.orR
+  val sub_GuardBit = (input.sig << 23 >> subnormDist.asUInt)(22)
+  val sub_rbits : UInt= Cat(sub_GuardBit,sub_Stickybits)
+  val sub_sigIncr : Bool= (roundingMode_near_even && sub_rbits.andR) ||
+    (roundingMode_min && input.sign && sub_rbits.orR) ||
+    (roundingMode_max && !input.sign && sub_rbits.orR) ||
+    (roundingMode_near_maxMag && sub_rbits.andR)
+  // val sub_expInc : Bool= sub_sigShift(24, 2).andR && sub_sigIncr
+
+  dontTouch(sub_rbits)
+
+
+  sub_sigOut := sub_sigShift + sub_sigIncr
+
+  val common_subnormSigOut = Mux(common_totalUnderflow, sub_sigIncr ,sub_sigOut )
   dontTouch(exp_BiasForSub)
   dontTouch(subnormDist)
   dontTouch(common_subnorm)
   dontTouch(common_subnormSigOut)
   dontTouch(sigAfterInc)
   dontTouch(common_totalUnderflow)
-  dontTouch(rbits)
 
   // Exceptions
   val isNaNOut = input.invalidExc || input.isNaN
