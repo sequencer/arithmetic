@@ -78,8 +78,8 @@ class RoundingUnit extends Module{
   val sub_sigShift = Wire(UInt(26.W))
   val sub_sigBefore:UInt = Cat(1.U(1.W), input.sig)
   sub_sigShift := (sub_sigBefore >> subnormDist.asUInt)(22,0)
-  val sub_Stickybits = (input.sig << 23 >> subnormDist.asUInt)(21,0).orR || input.rBits.orR
-  val sub_GuardBit = (input.sig << 23 >> subnormDist.asUInt)(22)
+  val sub_Stickybits = (sub_sigBefore << 24 >> subnormDist.asUInt)(22,0).orR || input.rBits.orR
+  val sub_GuardBit = (sub_sigBefore << 24 >> subnormDist.asUInt)(23)
   val sub_rbits : UInt= Cat(sub_GuardBit,sub_Stickybits)
   val sub_sigIncr : Bool= (roundingMode_near_even && sub_rbits.andR) ||
     (roundingMode_min && input.sign && sub_rbits.orR) ||
