@@ -105,7 +105,7 @@ class DivSqrt(expWidth: Int, sigWidth: Int) extends Module{
   val fractDividendIn = Wire(UInt((fpWidth).W))
   val fractDivisorIn = Wire(UInt((fpWidth).W))
   fractDividendIn := Cat(1.U(1.W), rawA_S.sig(sigWidth - 2, 0), 0.U(expWidth.W))
-  fractDivisorIn := Cat(1.U(1.W), rawB_S.sig(sigWidth - 2, 0), 0.U(expWidth.W))
+  fractDivisorIn  := Cat(1.U(1.W), rawB_S.sig(sigWidth - 2, 0), 0.U(expWidth.W))
 
   val divModule = Module(new SRT16(fpWidth, fpWidth, fpWidth))
   divModule.input.bits.dividend := fractDividendIn

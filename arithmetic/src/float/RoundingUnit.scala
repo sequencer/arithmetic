@@ -45,10 +45,9 @@ class RoundingUnit extends Module{
 
 
   val sigAfterInc = Wire(UInt(23.W))
-  val expBiasPlus = Wire(UInt(8.W))
   val sigIncr = Wire(Bool())
   val expIncr = Wire(Bool())
-  val expBiased = Wire(UInt(8.W))
+  val expBiasedAfterInc = Wire(UInt(8.W))
 
   /** normal case */
 
@@ -62,21 +61,24 @@ class RoundingUnit extends Module{
 
   /** for sig = all 1 and sigIncr*/
   expIncr := input.sig.andR && sigIncr
-  expBiased := (input.exp.asSInt + 127.S)(7,0).asUInt
-  expBiasPlus := (input.exp.asSInt + 128.S)(7,0).asUInt
+
+  expBiasedAfterInc := ((input.exp.asSInt + 127.S)(7,0) + expIncr).asUInt
 
   val exp_BiasForSub = (input.exp.asSInt + 127.S) + expIncr.asSInt
   val subnormDist = -exp_BiasForSub + 1.S
   // todo 23 or 24
-  val subnormOverflow = subnormDist > 24.S
+  val common_totalUnderflow = subnormDist > 24.S
 
   common_subnorm := exp_BiasForSub(9) || exp_BiasForSub === 0.S
-  val common_subnormSigOut = (Cat(1.U(1.W), sigAfterInc) >> subnormDist.asUInt)(22,0)
-//val common_subnormSigOut = Mux(subnormOverflow, sigAfterInc.orR ,(Cat(1.U(1.W), sigAfterInc) >> subnormDist.asUInt)(22,0))
+//  val common_subnormSigOut = (Cat(1.U(1.W), sigAfterInc) >> subnormDist.asUInt)(22,0)
+  // rbits = (input.sig << 23 >> subnormDist.asUInt)(22,0).orR
+  val common_subnormSigOut = Mux(common_totalUnderflow, 0.U ,(Cat(1.U(1.W), input.sig) >> subnormDist.asUInt)(22,0) )
   dontTouch(exp_BiasForSub)
   dontTouch(subnormDist)
   dontTouch(common_subnorm)
   dontTouch(common_subnormSigOut)
+  dontTouch(sigAfterInc)
+  dontTouch(common_totalUnderflow)
 
   // Exceptions
   val isNaNOut = input.invalidExc || input.isNaN
@@ -115,7 +117,7 @@ class RoundingUnit extends Module{
   common_inexact := input.rBits.orR
 
   val common_sigOut = sigAfterInc
-  val common_expOut = Mux(expIncr, expBiasPlus, expBiased)
+  val common_expOut = expBiasedAfterInc
   dontTouch(common_expOut)
   dontTouch(common_underflow)
   dontTouch(common_overflow)
