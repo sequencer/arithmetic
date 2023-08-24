@@ -75,7 +75,7 @@ class RoundingUnit extends Module{
   val common_totalUnderflow = subnormDist > 235.S
   common_subnorm := exp_BiasForSub(9)
 
-  val sub_sigShift = Wire(UInt(26.W))
+  val sub_sigShift = Wire(UInt(23.W))
   val sub_sigBefore:UInt = Cat(1.U(1.W), input.sig)
   sub_sigShift := (sub_sigBefore >> subnormDist.asUInt)(22,0)
   val sub_Stickybits = (sub_sigBefore << 24 >> subnormDist.asUInt)(22,0).orR || input.rBits.orR
@@ -92,6 +92,9 @@ class RoundingUnit extends Module{
 
   sub_sigOut := sub_sigShift + sub_sigIncr
 
+  val sub_expInc = Wire(UInt(8.W))
+  sub_expInc := sub_sigShift.andR && sub_sigIncr
+
   val common_subnormSigOut = Mux(common_totalUnderflow, 0.U ,sub_sigOut )
   dontTouch(exp_BiasForSub)
   dontTouch(subnormDist)
@@ -100,6 +103,7 @@ class RoundingUnit extends Module{
   dontTouch(sigAfterInc)
   dontTouch(common_totalUnderflow)
   dontTouch(sub_sigOut)
+  dontTouch(sub_expInc)
 
   // Exceptions
   val isNaNOut = input.invalidExc || input.isNaN
@@ -147,7 +151,7 @@ class RoundingUnit extends Module{
 
 
   val common_out = Mux(common_overflow, common_infiniteOut,
-    Mux(common_subnorm, input.sign ## 0.U(8.W) ## common_subnormSigOut,
+    Mux(common_subnorm, input.sign ## sub_expInc ## common_subnormSigOut,
       input.sign ## common_expOut ## common_sigOut))
 
   dontTouch(common_out)
