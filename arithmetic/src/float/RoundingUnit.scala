@@ -71,9 +71,9 @@ class RoundingUnit extends Module{
   // set to 126 according to softfloat
   val exp_BiasForSub = (input.exp.asSInt + 126.S(10.W))
   val subnormDist = -exp_BiasForSub
-  // todo 23 or 24
+  // todo 23 or 24, why we have this case??
   val common_totalUnderflow = subnormDist > 24.S
-  common_subnorm := exp_BiasForSub(9) || exp_BiasForSub === 0.S
+  common_subnorm := exp_BiasForSub(9) 
 
   val sub_sigShift = Wire(UInt(26.W))
   val sub_sigBefore:UInt = Cat(1.U(1.W), input.sig)
