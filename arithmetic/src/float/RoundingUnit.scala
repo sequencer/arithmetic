@@ -134,7 +134,7 @@ class RoundingUnit extends Module{
   /** @todo opt it */
   common_overflow := input.exp.asSInt > 127.S
   common_underflow := common_subnorm
-  common_inexact := input.rBits.orR
+  common_inexact := input.rBits.orR || (common_underflow && sub_rbits.orR)
 
   val common_sigOut = sigAfterInc
   val common_expOut = expBiasedAfterInc
