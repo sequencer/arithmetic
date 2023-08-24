@@ -67,8 +67,12 @@ class RoundingUnit extends Module{
 
   val exp_BiasForSub = (input.exp.asSInt + 127.S) + expIncr.asSInt
   val subnormDist = -exp_BiasForSub + 1.S
+  // todo 23 or 24
+  val subnormOverflow = subnormDist > 24.S
+
   common_subnorm := exp_BiasForSub(9) || exp_BiasForSub === 0.S
   val common_subnormSigOut = (Cat(1.U(1.W), sigAfterInc) >> subnormDist.asUInt)(22,0)
+//val common_subnormSigOut = Mux(subnormOverflow, sigAfterInc.orR ,(Cat(1.U(1.W), sigAfterInc) >> subnormDist.asUInt)(22,0))
   dontTouch(exp_BiasForSub)
   dontTouch(subnormDist)
   dontTouch(common_subnorm)
@@ -76,7 +80,8 @@ class RoundingUnit extends Module{
 
   // Exceptions
   val isNaNOut = input.invalidExc || input.isNaN
-  val notNaN_isSpecialInfOut = input.infiniteExc || input.isInf
+  val notNaN_isSpecialInfOut = (input.infiniteExc || input.isInf) && (!input.invalidExc)
+  val notNaN_isZero = input.isZero && !isNaNOut
   val commonCase = !isNaNOut && !notNaN_isSpecialInfOut && !input.isZero
 
   val overflow = commonCase && common_overflow
@@ -102,7 +107,7 @@ class RoundingUnit extends Module{
 
   val infiniteOut = Cat(input.sign, "h7F800000".U)
   val zeroOut = Cat(input.sign, 0.U(31.W))
-  val outSele1H = commonCase ## notNaN_isSpecialInfOut ## isNaNOut ## (input.isZero && !isNaNOut)
+  val outSele1H = commonCase ## notNaN_isSpecialInfOut ## isNaNOut ## notNaN_isZero
 
   /** @todo opt it */
   common_overflow := exp_BiasForSub > 254.S
