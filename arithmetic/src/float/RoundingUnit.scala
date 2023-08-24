@@ -64,21 +64,22 @@ class RoundingUnit extends Module{
 
   expBiasedAfterInc := ((input.exp.asSInt + 127.S)(7,0) + expIncr).asUInt
 
-  val exp_BiasForSub = (input.exp.asSInt + 127.S) + expIncr.asSInt
+  val exp_BiasForSub = (input.exp.asSInt + 127.S(10.W)) + expIncr.zext.asSInt
   val subnormDist = -exp_BiasForSub + 1.S
   // todo 23 or 24
   val common_totalUnderflow = subnormDist > 24.S
 
   common_subnorm := exp_BiasForSub(9) || exp_BiasForSub === 0.S
 //  val common_subnormSigOut = (Cat(1.U(1.W), sigAfterInc) >> subnormDist.asUInt)(22,0)
-  // rbits = (input.sig << 23 >> subnormDist.asUInt)(22,0).orR
-  val common_subnormSigOut = Mux(common_totalUnderflow, 0.U ,(Cat(1.U(1.W), input.sig) >> subnormDist.asUInt)(22,0) )
+  val rbits = (sigAfterInc << 23 >> subnormDist.asUInt)(22,0).orR
+  val common_subnormSigOut = Mux(common_totalUnderflow, 0.U ,(Cat(1.U(1.W), sigAfterInc) >> subnormDist.asUInt)(22,0) | rbits )
   dontTouch(exp_BiasForSub)
   dontTouch(subnormDist)
   dontTouch(common_subnorm)
   dontTouch(common_subnormSigOut)
   dontTouch(sigAfterInc)
   dontTouch(common_totalUnderflow)
+  dontTouch(rbits)
 
   // Exceptions
   val isNaNOut = input.invalidExc || input.isNaN
