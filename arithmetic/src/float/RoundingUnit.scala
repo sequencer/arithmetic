@@ -73,7 +73,7 @@ class RoundingUnit extends Module{
   val subnormDist = -exp_BiasForSub
   // todo 23 or 24, why we have this case??
   val common_totalUnderflow = subnormDist > 24.S
-  common_subnorm := exp_BiasForSub(9) 
+  common_subnorm := exp_BiasForSub(9)
 
   val sub_sigShift = Wire(UInt(26.W))
   val sub_sigBefore:UInt = Cat(1.U(1.W), input.sig)
@@ -107,7 +107,7 @@ class RoundingUnit extends Module{
   val commonCase = !isNaNOut && !notNaN_isSpecialInfOut && !input.isZero
 
   val overflow = commonCase && common_overflow
-  val underflow = commonCase && common_underflow
+  val underflow = commonCase && (common_underflow && sub_rbits.orR)
   val inexact = overflow || (commonCase && common_inexact)
 
   val isZero = input.isZero && underflow
