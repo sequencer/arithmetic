@@ -60,7 +60,7 @@ class DivSqrt(expWidth: Int, sigWidth: Int) extends Module{
   fastValid := specialCase_S && input.fire
 
   // needNorm for div
-  val needNormNext = input.bits.b(sigWidth - 2, 0) > input.bits.a(sigWidth - 2, 0)
+  val needNormNext:Bool = (rawA_S.sig + (-rawB_S.sig))(24)
   val needNorm = RegEnable(needNormNext, input.fire)
 
   // sign
