@@ -82,10 +82,11 @@ class RoundingUnit extends Module{
   val sub_Stickybits = Mux(distlagerThan24, 1.U, (sub_sigBefore << 24 >> subnormDist.asUInt)(22,0).orR || input.rBits.orR)
   val sub_GuardBit = (sub_sigBefore << 24 >> subnormDist.asUInt)(23)
   val sub_rbits : UInt= Cat(sub_GuardBit,sub_Stickybits)
-  val sub_sigIncr : Bool= (roundingMode_near_even && sub_rbits.andR) ||
+
+  val sub_sigIncr : Bool= (roundingMode_near_even && (sub_rbits.andR || (sub_sigShift(0) && sub_rbits==="b10".U))) ||
     (roundingMode_min && input.sign && sub_rbits.orR) ||
     (roundingMode_max && !input.sign && sub_rbits.orR) ||
-    (roundingMode_near_maxMag && sub_rbits.andR)
+    (roundingMode_near_maxMag && sub_rbits(1))
   // val sub_expInc : Bool= sub_sigShift(24, 2).andR && sub_sigIncr
 
   dontTouch(sub_rbits)
