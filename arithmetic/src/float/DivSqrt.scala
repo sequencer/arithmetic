@@ -20,12 +20,13 @@ class DivSqrt(expWidth: Int, sigWidth: Int) extends Module{
 
   // Exceptions
 
-  /** inf/inf and 0/0 */
+  /** inf/inf and 0/0  => NaN out */
   val notSigNaNIn_invalidExc_S_div =
     (rawA_S.isZero && rawB_S.isZero) || (rawA_S.isInf && rawB_S.isInf)
-  /** negative input */
+  /** -Inf + -normal => NaN out */
   val notSigNaNIn_invalidExc_S_sqrt =
     !rawA_S.isNaN && !rawA_S.isZero && rawA_S.sign
+  /** isSigNaNRawFloat detect signaling NaN */
   val majorExc_S =
     Mux(input.bits.sqrt,
       isSigNaNRawFloat(rawA_S) || notSigNaNIn_invalidExc_S_sqrt,
@@ -33,6 +34,8 @@ class DivSqrt(expWidth: Int, sigWidth: Int) extends Module{
         notSigNaNIn_invalidExc_S_div ||
         (!rawA_S.isNaN && !rawA_S.isInf && rawB_S.isZero)
     )
+
+  /** all cases result in NaN output*/
   val isNaN_S =
     Mux(input.bits.sqrt,
       rawA_S.isNaN || notSigNaNIn_invalidExc_S_sqrt,
@@ -46,7 +49,10 @@ class DivSqrt(expWidth: Int, sigWidth: Int) extends Module{
   val isInf_Z    = RegEnable(isInf_S,false.B,input.fire)
   val isZero_Z   = RegEnable(isZero_S,false.B,input.fire)
 
+  /** invalid operation flag */
   val invalidExec = majorExc_Z &&  isNaN_Z
+
+  /** DivideByZero flag */
   val infinitExec = majorExc_Z && !isNaN_Z
 
   val specialCaseA_S = rawA_S.isNaN || rawA_S.isInf || rawA_S.isZero
@@ -60,6 +66,7 @@ class DivSqrt(expWidth: Int, sigWidth: Int) extends Module{
   fastValid := specialCase_S && input.fire
 
   // needNorm for div
+  /** when B_sig > A_sig neednorm*/
   val needNormNext:Bool = (rawA_S.sig + (-rawB_S.sig))(24)
   val needNorm = RegEnable(needNormNext, input.fire)
 
@@ -87,7 +94,7 @@ class DivSqrt(expWidth: Int, sigWidth: Int) extends Module{
       expfirst2(3) -> "b00".U
     )
   )
-  /** exp for sqrt never underlow*/
+  /** exp for sqrt never underlow */
   val expForSqrt = Cat(expstart, rawA_S.sExp(expWidth - 2, 0)) >> 1
   val sqrtExpIsOdd = !rawA_S.sExp(0)
   val sqrtFractIn = Mux(sqrtExpIsOdd, Cat("b0".U(1.W), rawA_S.sig(sigWidth - 1, 0), 0.U(1.W)),
@@ -125,13 +132,14 @@ class DivSqrt(expWidth: Int, sigWidth: Int) extends Module{
 
   // exp logic
   val expStoreNext,expToRound = Wire(UInt((expWidth+2).W))
-  /**
+  /** expStore
+    *
     * for sqrt
-    * expForrounding effective is 8bits, MSB is sign
-    * expStoreNext = 0 + 8bits 
+    * expForSqrt(7,0) effective is 8bits, MSB is sign
+    * extends 2 sign bit in MSB
+    * expStoreNext = 10bits
     *
-    *
-    *
+    * todo define it format, important
     */
   expStoreNext := Mux(input.bits.sqrt,
     Cat(expForSqrt(7),expForSqrt(7),expForSqrt(7,0)),

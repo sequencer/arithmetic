@@ -5,11 +5,8 @@ import chisel3.util._
 
 
 /**
-  * input.rbits = 2bits + sticky bit
+  * exp is 10bits SInt, MSB is sign
   *
-  * leave
-  *
-  * output is subnormal
   *
   * */
 class RoundingUnit extends Module{
@@ -42,16 +39,14 @@ class RoundingUnit extends Module{
   val common_inexact  = Wire(Bool())
   val common_subnorm  = Wire(Bool())
 
-
-
   val sigAfterInc = Wire(UInt(23.W))
   val sigIncr = Wire(Bool())
   val expIncr = Wire(Bool())
   val expBiasedAfterInc = Wire(UInt(8.W))
 
-  /** normal case */
+  /** normal case(not subnormal) */
 
-  /** todo later use Mux?*/
+  /** todo opt it with Mux1H? */
   sigIncr := (roundingMode_near_even && input.rBits(1) && input.rBits(0)) ||
     (roundingMode_min &&  input.sign && input.rBits.orR) ||
     (roundingMode_max && !input.sign && input.rBits.orR) ||
@@ -62,42 +57,40 @@ class RoundingUnit extends Module{
   /** for sig = all 1 and sigIncr*/
   expIncr := input.sig.andR && sigIncr
 
+  /** todo: opt it*/
   expBiasedAfterInc := ((input.exp.asSInt + 127.S)(7,0) + expIncr).asUInt
 
-
-  val sub_sigOut = Wire(UInt(23.W))
+  val sub_sigShift = Wire(UInt(23.W))
+  val sub_sigOut,common_subnormSigOut = Wire(UInt(23.W))
+  val sub_expInc = Wire(UInt(8.W))
 
   // control logic
   // set to 126 according to softfloat
+  // todo: merge it with normal case
   val exp_BiasForSub = (input.exp.asSInt + 126.S(10.W))
   val subnormDist = -exp_BiasForSub
-  // todo 23 or 24, why we have this case??
+  // todo why we have this case? IN IEEE754 or definded by Hardfloat?
   val common_totalUnderflow = subnormDist > 235.S
   common_subnorm := exp_BiasForSub(9)
 
-  val sub_sigShift = Wire(UInt(23.W))
   val sub_sigBefore:UInt = Cat(1.U(1.W), input.sig)
   sub_sigShift := (sub_sigBefore >> subnormDist.asUInt)(22,0)
+  // todo opt it, creat method for it, it;s jamm32
   val distlagerThan24 = subnormDist.asUInt > 24.U
   val sub_Stickybits = Mux(distlagerThan24, 1.U, (sub_sigBefore << 24 >> subnormDist.asUInt)(22,0).orR || input.rBits.orR)
   val sub_GuardBit = (sub_sigBefore << 24 >> subnormDist.asUInt)(23)
   val sub_rbits : UInt= Cat(sub_GuardBit,sub_Stickybits)
 
+  // todo merge it with sigIncr
   val sub_sigIncr : Bool= (roundingMode_near_even && (sub_rbits.andR || (sub_sigShift(0) && sub_rbits==="b10".U))) ||
     (roundingMode_min && input.sign && sub_rbits.orR) ||
     (roundingMode_max && !input.sign && sub_rbits.orR) ||
     (roundingMode_near_maxMag && sub_rbits(1))
-  // val sub_expInc : Bool= sub_sigShift(24, 2).andR && sub_sigIncr
-
-  dontTouch(sub_rbits)
-
 
   sub_sigOut := sub_sigShift + sub_sigIncr
-
-  val sub_expInc = Wire(UInt(8.W))
   sub_expInc := sub_sigShift.andR && sub_sigIncr
+  common_subnormSigOut := Mux(common_totalUnderflow, 0.U ,sub_sigOut )
 
-  val common_subnormSigOut = Mux(common_totalUnderflow, 0.U ,sub_sigOut )
   dontTouch(exp_BiasForSub)
   dontTouch(subnormDist)
   dontTouch(common_subnorm)
@@ -106,6 +99,7 @@ class RoundingUnit extends Module{
   dontTouch(common_totalUnderflow)
   dontTouch(sub_sigOut)
   dontTouch(sub_expInc)
+  dontTouch(sub_rbits)
 
   // Exceptions
   val isNaNOut = input.invalidExc || input.isNaN
@@ -125,11 +119,10 @@ class RoundingUnit extends Module{
     Seq(
       overflowSele(0) -> Cat(input.sign, "h7F800000".U(31.W)),
       overflowSele(1) -> Cat(input.sign, "h7F7FFFFF".U(31.W)),
-      overflowSele(2) -> Mux(input.sign,"hFF7FFFFF".U(32.W),"h7F800000".U(32.W)),
-      overflowSele(3) -> Mux(input.sign,"hFF800000".U(32.W),"h7F7FFFFF".U(32.W)),
+      overflowSele(2) -> Mux(input.sign, "hFF7FFFFF".U(32.W), "h7F800000".U(32.W)),
+      overflowSele(3) -> Mux(input.sign, "hFF800000".U(32.W), "h7F7FFFFF".U(32.W)),
     )
   )
-
 
   // exception data with Spike
   val quietNaN = "h7FC00000".U
@@ -138,7 +131,7 @@ class RoundingUnit extends Module{
   val zeroOut = Cat(input.sign, 0.U(31.W))
   val outSele1H = commonCase ## notNaN_isSpecialInfOut ## isNaNOut ## notNaN_isZero
 
-  /** @todo opt it */
+  /** @todo opt it using hardfloat methods */
   common_overflow := input.exp.asSInt > 127.S
   common_underflow := common_subnorm
   common_inexact := input.rBits.orR || (common_underflow && sub_rbits.orR)
