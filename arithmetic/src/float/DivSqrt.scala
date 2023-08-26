@@ -65,10 +65,6 @@ class DivSqrt(expWidth: Int, sigWidth: Int) extends Module{
   val fastValid = RegInit(false.B)
   fastValid := specialCase_S && input.fire
 
-  // needNorm for div
-  /** when B_sig > A_sig neednorm*/
-  val needNormNext:Bool = (rawA_S.sig + (-rawB_S.sig))(24)
-  val needNorm = RegEnable(needNormNext, input.fire)
 
   // sign
   val signNext = Mux(input.bits.sqrt, Mux(rawA_S.isZero, rawA_S.sign, false.B), rawA_S.sign ^ rawB_S.sign)
@@ -120,9 +116,17 @@ class DivSqrt(expWidth: Int, sigWidth: Int) extends Module{
   divModule.input.bits.counter := 8.U
   divModule.input.valid := input.valid && !input.bits.sqrt && normalCase_S_div
 
-  val sigToRound_div = Mux(needNorm, divModule.output.bits.quotient(calWidth - 3, calWidth - sigWidth - 1),
+  // needNorm for div
+  /** when B_sig > A_sig
+    * divout = 0000,01xxx
+    * exp need decrease by 1
+    *
+    * */
+  val needRightShift = !divModule.output.bits.quotient(27)
+
+  val sigToRound_div = Mux(needRightShift, divModule.output.bits.quotient(calWidth - 3, calWidth - sigWidth - 1),
     divModule.output.bits.quotient(calWidth - 2, calWidth - sigWidth))
-  val rbits_div = Mux(needNorm, divModule.output.bits.quotient(calWidth - sigWidth - 2) ## divModule.output.bits.reminder.orR,
+  val rbits_div = Mux(needRightShift, divModule.output.bits.quotient(calWidth - sigWidth - 2) ## divModule.output.bits.reminder.orR,
     divModule.output.bits.quotient(calWidth - sigWidth - 1) ## divModule.output.bits.reminder.orR)
 
 
@@ -133,6 +137,8 @@ class DivSqrt(expWidth: Int, sigWidth: Int) extends Module{
   // exp logic
   val expStoreNext,expToRound = Wire(UInt((expWidth+2).W))
   /** expStore
+    *
+    * output is 10bits SInt
     *
     * for sqrt
     * expForSqrt(7,0) effective is 8bits, MSB is sign
@@ -145,7 +151,7 @@ class DivSqrt(expWidth: Int, sigWidth: Int) extends Module{
     Cat(expForSqrt(7),expForSqrt(7),expForSqrt(7,0)),
     (rawA_S.sExp-rawB_S.sExp).asUInt)
   val expStore = RegEnable(expStoreNext, 0.U((expWidth+2).W), input.fire)
-  expToRound := Mux(opSqrtReg, expStore, expStore - needNorm)
+  expToRound := Mux(opSqrtReg, expStore, expStore - needRightShift)
   dontTouch(expToRound)
 
   dontTouch(rawA_S)
