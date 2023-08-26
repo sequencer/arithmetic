@@ -33,51 +33,40 @@ class RoundingUnit extends Module{
   val roundingMode_max         = (input.roundingMode === consts.round_max)
   val roundingMode_near_maxMag = (input.roundingMode === consts.round_near_maxMag)
 
-
   val common_overflow = Wire(Bool())
   val common_underflow = Wire(Bool())
   val common_inexact  = Wire(Bool())
   val common_subnorm  = Wire(Bool())
 
-  val sigAfterInc = Wire(UInt(23.W))
   val sigIncr = Wire(Bool())
-  val expBiasedAfterInc = Wire(UInt(8.W))
-
+  val expBiased = Wire(UInt(8.W))
   val sig_afterInc = Wire(UInt(27.W))
-
-
   val sub_sigOut, common_subnormSigOut = Wire(UInt(23.W))
   val expInc = Wire(UInt(8.W))
 
-  /** normal case(not subnormal) */
-
-  /** todo opt it with Mux1H? */
-
-  sigAfterInc := sig_afterInc(24,2)
-
   /** todo: opt it*/
-  expBiasedAfterInc := ((input.exp + 127.S)(7,0) + expInc).asUInt
+  expBiased := ((input.exp + 127.S)(7,0) + expInc).asUInt
 
   // control logic
   // set to 126 according to softfloat
   // todo: merge it with normal case
   val exp_BiasForSub = (input.exp + 126.S(10.W))
-  // todo why we have this case? IN IEEE754 or definded by Hardfloat?
   common_subnorm := exp_BiasForSub(9)
   // for non subnormal case, Dist = 0
   val subnormDist = Mux(common_subnorm,-exp_BiasForSub, 0.S(10.W))
+  // todo why we have this case? IN IEEE754 or definded by Hardfloat?
   val common_totalUnderflow = subnormDist > 235.S
 
-  //--------------------------------
+  //-----------------subnormal loggic---------------
 
-  val greaterThan31 = subnormDist(9,5).orR
+  val distGT32 = subnormDist(9,5).orR
   val allMask = ((-1).S(31.W) << 31 >> subnormDist(5,0))
-  val between24And31 = allMask(6,0).orR
+  val distIn24And31 = allMask(6,0).orR
   // subnorm case when Dist>24
-  val greaterThan24 = (greaterThan31 || between24And31) && common_subnorm
-  val roundMask = Mux(!greaterThan24, Reverse(allMask(30,7)) ## 3.U(2.W), 0.U(26.W))
+  val distGT24 = (distGT32 || distIn24And31) && common_subnorm
+  val roundMask = Mux(!distGT24, Reverse(allMask(30,7)) ## 3.U(2.W), 0.U(26.W))
 
-  val shiftedRoundMask = Mux(!greaterThan24, 0.U(1.W) ## roundMask >> 1 , BigInt(-1).S(26.W).asUInt)
+  val shiftedRoundMask = Mux(!distGT24, 0.U(1.W) ## roundMask >> 1 , BigInt(-1).S(26.W).asUInt)
   /** select the first bit need to be  rounded */
   val roundPosMask = ~shiftedRoundMask & roundMask
 
@@ -91,13 +80,8 @@ class RoundingUnit extends Module{
   val lastBitMask = (roundPosMask<<1.U)(25,0)
   val lastBit = (adjustedSig & lastBitMask ).orR
 
-  val equalTo24 = roundPosMask(25) && !roundPosMask(24,0).orR
+  val distEQ24 = roundPosMask(25) && !roundPosMask(24,0).orR
 
-  dontTouch(shiftedRoundMask)
-  dontTouch(roundPosMask)
-  dontTouch(roundMask)
-  dontTouch(greaterThan24)
-  dontTouch(greaterThan31)
 
   val rbits : UInt= Cat(roundPosBit,anyRoundExtra)
 
@@ -106,23 +90,12 @@ class RoundingUnit extends Module{
     (roundingMode_max && !input.sign && rbits.orR) ||
     (roundingMode_near_maxMag && rbits(1))
 
-  sub_sigOut := Mux(greaterThan24 || equalTo24 ,Mux(sigIncr,1.U(26.W), 0.U(26.W)),(sig_afterInc >> subnormDist(4,0))(24,2))
+  sub_sigOut := Mux(distGT24 || distEQ24 ,Mux(sigIncr,1.U(26.W), 0.U(26.W)),(sig_afterInc >> subnormDist(4,0))(24,2))
   expInc := sig_afterInc(26)  && (!common_subnorm || subnormDist===1.S )
   common_subnormSigOut := Mux(common_totalUnderflow, 0.U ,sub_sigOut )
 
   val sigIncrement = Mux(sigIncr,lastBitMask, 0.U(26.W))
   sig_afterInc := adjustedSig +& sigIncrement
-
-  dontTouch(exp_BiasForSub)
-  dontTouch(subnormDist)
-  dontTouch(common_subnorm)
-  dontTouch(common_subnormSigOut)
-  dontTouch(sigAfterInc)
-  dontTouch(common_totalUnderflow)
-  dontTouch(sub_sigOut)
-  dontTouch(expInc)
-  dontTouch(rbits)
-  dontTouch(sigIncrement)
 
   // Exceptions
   val isNaNOut = input.invalidExc || input.isNaN
@@ -159,13 +132,8 @@ class RoundingUnit extends Module{
   common_underflow := common_subnorm
   common_inexact := input.rBits.orR || (common_underflow && rbits.orR)
 
-  val common_sigOut = sigAfterInc
-  val common_expOut = expBiasedAfterInc
-  dontTouch(common_expOut)
-  dontTouch(common_underflow)
-  dontTouch(common_overflow)
-  dontTouch(overflowSele)
-  dontTouch(common_infiniteOut)
+  val common_sigOut = sig_afterInc(24,2)
+  val common_expOut = expBiased
 
 
   val common_out = Mux(common_overflow, common_infiniteOut,
