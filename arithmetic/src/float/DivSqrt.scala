@@ -160,7 +160,7 @@ class DivSqrt(expWidth: Int, sigWidth: Int) extends Module{
 
   val roundresult = RoundingUnit(
     signReg,
-    expToRound,
+    expToRound.asSInt,
     sigToRound,
     rbitsToRound,
     roundingModeReg,

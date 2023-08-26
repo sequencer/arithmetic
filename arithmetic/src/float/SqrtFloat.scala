@@ -74,7 +74,7 @@ class SqrtFloat(expWidth: Int, sigWidth: Int) extends Module{
   input.ready := SqrtModule.input.ready
   val roundresult = RoundingUnit(
     input.bits.oprand(expWidth + sigWidth-1) ,
-    expToRound,
+    expToRound.asSInt,
     sigforRound,
     rbits,
     consts.round_near_even,

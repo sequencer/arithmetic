@@ -17,7 +17,7 @@ class RoundingUnit extends Module{
     val isZero = Bool()
     val isNaN  = Bool()
     val sig = UInt(23.W)
-    val exp = UInt(10.W)
+    val exp = SInt(10.W)
     val rBits = UInt(2.W)
     val sign = Bool()
     val roundingMode = UInt(5.W)
@@ -58,7 +58,7 @@ class RoundingUnit extends Module{
   expIncr := input.sig.andR && sigIncr
 
   /** todo: opt it*/
-  expBiasedAfterInc := ((input.exp.asSInt + 127.S)(7,0) + expIncr).asUInt
+  expBiasedAfterInc := ((input.exp + 127.S)(7,0) + expIncr).asUInt
 
   val sub_sigShift = Wire(UInt(23.W))
   val sub_sigOut,common_subnormSigOut = Wire(UInt(23.W))
@@ -67,7 +67,7 @@ class RoundingUnit extends Module{
   // control logic
   // set to 126 according to softfloat
   // todo: merge it with normal case
-  val exp_BiasForSub = (input.exp.asSInt + 126.S(10.W))
+  val exp_BiasForSub = (input.exp + 126.S(10.W))
   val subnormDist = -exp_BiasForSub
   // todo why we have this case? IN IEEE754 or definded by Hardfloat?
   val common_totalUnderflow = subnormDist > 235.S
@@ -132,7 +132,7 @@ class RoundingUnit extends Module{
   val outSele1H = commonCase ## notNaN_isSpecialInfOut ## isNaNOut ## notNaN_isZero
 
   /** @todo opt it using hardfloat methods */
-  common_overflow := input.exp.asSInt > 127.S
+  common_overflow := input.exp > 127.S
   common_underflow := common_subnorm
   common_inexact := input.rBits.orR || (common_underflow && sub_rbits.orR)
 
@@ -165,7 +165,7 @@ class RoundingUnit extends Module{
 }
 
 object RoundingUnit {
-  def apply(sign: Bool, exp: UInt, sig: UInt, rbits: UInt, rmode: UInt, invalidExc: Bool, infiniteExc: Bool, isNaN: Bool, isInf: Bool, isZero: Bool): Vec[UInt] = {
+  def apply(sign: Bool, exp: SInt, sig: UInt, rbits: UInt, rmode: UInt, invalidExc: Bool, infiniteExc: Bool, isNaN: Bool, isInf: Bool, isZero: Bool): Vec[UInt] = {
 
     val rounder = Module(new RoundingUnit)
     rounder.input.sign := sign
