@@ -41,24 +41,22 @@ class RoundingUnit extends Module{
 
   val sigAfterInc = Wire(UInt(23.W))
   val sigIncr = Wire(Bool())
-  val expIncr = Wire(Bool())
   val expBiasedAfterInc = Wire(UInt(8.W))
+
+  val sig_afterInc = Wire(UInt(27.W))
+
+
+  val sub_sigOut, common_subnormSigOut = Wire(UInt(23.W))
+  val expInc = Wire(UInt(8.W))
 
   /** normal case(not subnormal) */
 
   /** todo opt it with Mux1H? */
 
-  sigAfterInc := input.sig + sigIncr
-
-  /** for sig = all 1 and sigIncr*/
-  expIncr := input.sig.andR && sigIncr
+  sigAfterInc := sig_afterInc(24,2)
 
   /** todo: opt it*/
-  expBiasedAfterInc := ((input.exp + 127.S)(7,0) + expIncr).asUInt
-
-  val sub_sigShift = Wire(UInt(23.W))
-  val sub_sigOut,common_subnormSigOut = Wire(UInt(23.W))
-  val sub_expInc = Wire(UInt(8.W))
+  expBiasedAfterInc := ((input.exp + 127.S)(7,0) + expInc).asUInt
 
   // control logic
   // set to 126 according to softfloat
@@ -90,26 +88,30 @@ class RoundingUnit extends Module{
   /** Any bits is one containing guard bit */
   val anyRound = roundPosBit || anyRoundExtra
 
+  val lastBitMask = (roundPosMask<<1.U)(25,0)
+  val lastBit = (adjustedSig & lastBitMask ).orR
+
+  val equalTo24 = roundPosMask(25) && !roundPosMask(24,0).orR
+
   dontTouch(shiftedRoundMask)
   dontTouch(roundPosMask)
   dontTouch(roundMask)
   dontTouch(greaterThan24)
   dontTouch(greaterThan31)
 
-  val sub_sigBefore:UInt = Cat(1.U(1.W), input.sig)
-  sub_sigShift := (sub_sigBefore >> subnormDist.asUInt)(22,0)
-  // todo opt it, creat method for it, it;s jamm32
   val rbits : UInt= Cat(roundPosBit,anyRoundExtra)
 
-  // todo merge it with sigIncr
-  sigIncr := (roundingMode_near_even && (rbits.andR || (sub_sigShift(0) && rbits==="b10".U))) ||
+  sigIncr := (roundingMode_near_even && (rbits.andR || (lastBit && rbits==="b10".U))) ||
     (roundingMode_min && input.sign && rbits.orR) ||
     (roundingMode_max && !input.sign && rbits.orR) ||
     (roundingMode_near_maxMag && rbits(1))
 
-  sub_sigOut := sub_sigShift + sigIncr
-  sub_expInc := sub_sigShift.andR && sigIncr
+  sub_sigOut := Mux(greaterThan24 || equalTo24 ,Mux(sigIncr,1.U(26.W), 0.U(26.W)),(sig_afterInc >> subnormDist(4,0))(24,2))
+  expInc := sig_afterInc(26)  && (!common_subnorm || subnormDist===1.S )
   common_subnormSigOut := Mux(common_totalUnderflow, 0.U ,sub_sigOut )
+
+  val sigIncrement = Mux(sigIncr,lastBitMask, 0.U(26.W))
+  sig_afterInc := adjustedSig +& sigIncrement
 
   dontTouch(exp_BiasForSub)
   dontTouch(subnormDist)
@@ -118,8 +120,9 @@ class RoundingUnit extends Module{
   dontTouch(sigAfterInc)
   dontTouch(common_totalUnderflow)
   dontTouch(sub_sigOut)
-  dontTouch(sub_expInc)
+  dontTouch(expInc)
   dontTouch(rbits)
+  dontTouch(sigIncrement)
 
   // Exceptions
   val isNaNOut = input.invalidExc || input.isNaN
@@ -166,7 +169,7 @@ class RoundingUnit extends Module{
 
 
   val common_out = Mux(common_overflow, common_infiniteOut,
-    Mux(common_subnorm, input.sign ## sub_expInc ## common_subnormSigOut,
+    Mux(common_subnorm, input.sign ## expInc ## common_subnormSigOut,
       input.sign ## common_expOut ## common_sigOut))
 
   dontTouch(common_out)
