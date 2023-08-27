@@ -4,7 +4,6 @@ import chisel3._
 import chisel3.util._
 import division.srt.srt16._
 import sqrt._
-import chisel3.dontTouch
 
 class DivSqrt(expWidth: Int, sigWidth: Int) extends Module{
   val fpWidth = expWidth + sigWidth
@@ -70,7 +69,7 @@ class DivSqrt(expWidth: Int, sigWidth: Int) extends Module{
   val signNext = Mux(input.bits.sqrt, Mux(rawA_S.isZero, rawA_S.sign, false.B), rawA_S.sign ^ rawB_S.sign)
   val signReg = RegEnable(signNext, input.fire)
 
-  // sqrt
+  // sqrt input
 
   /** construct expForSqrt
     *
@@ -90,7 +89,7 @@ class DivSqrt(expWidth: Int, sigWidth: Int) extends Module{
       expfirst2(3) -> "b00".U
     )
   )
-  /** exp for sqrt never underlow */
+
   val expForSqrt = Cat(expstart, rawA_S.sExp(expWidth - 2, 0)) >> 1
   val sqrtExpIsOdd = !rawA_S.sExp(0)
   val sqrtFractIn = Mux(sqrtExpIsOdd, Cat("b0".U(1.W), rawA_S.sig(sigWidth - 1, 0), 0.U(1.W)),
@@ -104,7 +103,7 @@ class DivSqrt(expWidth: Int, sigWidth: Int) extends Module{
   val sigToRound_sqrt = SqrtModule.output.bits.result(24, 2)
 
 
-  // div
+  // divInput
   val fractDividendIn = Wire(UInt((fpWidth).W))
   val fractDivisorIn = Wire(UInt((fpWidth).W))
   fractDividendIn := Cat(1.U(1.W), rawA_S.sig(sigWidth - 2, 0), 0.U(expWidth.W))
@@ -116,14 +115,15 @@ class DivSqrt(expWidth: Int, sigWidth: Int) extends Module{
   divModule.input.bits.counter := 8.U
   divModule.input.valid := input.valid && !input.bits.sqrt && normalCase_S_div
 
-  // needNorm for div
-  /** when B_sig > A_sig
+
+  /** collect div sig result
+    *
+    * when B_sig > A_sig
     * divout = 0000,01xxx
     * exp need decrease by 1
     *
     * */
   val needRightShift = !divModule.output.bits.quotient(27)
-
   val sigToRound_div = Mux(needRightShift, divModule.output.bits.quotient(calWidth - 3, calWidth - sigWidth - 1),
     divModule.output.bits.quotient(calWidth - 2, calWidth - sigWidth))
   val rbits_div = Mux(needRightShift, divModule.output.bits.quotient(calWidth - sigWidth - 2) ## divModule.output.bits.reminder.orR,
@@ -152,11 +152,6 @@ class DivSqrt(expWidth: Int, sigWidth: Int) extends Module{
     (rawA_S.sExp-rawB_S.sExp).asUInt)
   val expStore = RegEnable(expStoreNext, 0.U((expWidth+2).W), input.fire)
   expToRound := Mux(opSqrtReg, expStore, expStore - needRightShift)
-  dontTouch(expToRound)
-
-  dontTouch(rawA_S)
-  dontTouch(rawB_S)
-  dontTouch(rbits_div)
 
   val roundresult = RoundingUnit(
     signReg,

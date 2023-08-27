@@ -142,7 +142,6 @@ class RoundingUnit extends Module{
     Mux(common_underflow, input.sign ## expInc ## common_subnormSigOut,
       input.sign ## common_expOut ## common_sigOut))
 
-  dontTouch(common_out)
 
   output.data := Mux1H(Seq(
     outSele1H(0) -> zeroOut,
@@ -150,8 +149,6 @@ class RoundingUnit extends Module{
     outSele1H(2) -> infiniteOut,
     outSele1H(3) -> common_out)
   )
-  dontTouch(outSele1H)
-
 
   output.exceptionFlags := input.invalidExc ## input.infiniteExc ## overflow ## underflow ## inexact
 
