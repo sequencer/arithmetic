@@ -36,24 +36,21 @@ class RoundingUnit extends Module{
   val common_overflow = Wire(Bool())
   val common_underflow = Wire(Bool())
   val common_inexact  = Wire(Bool())
-  val common_subnorm  = Wire(Bool())
 
   val sigIncr = Wire(Bool())
-  val expBiased = Wire(UInt(8.W))
+  val expBiasedOut = Wire(UInt(8.W))
   val sig_afterInc = Wire(UInt(27.W))
   val sub_sigOut, common_subnormSigOut = Wire(UInt(23.W))
   val expInc = Wire(UInt(8.W))
 
-  /** todo: opt it*/
-  expBiased := ((input.exp + 127.S)(7,0) + expInc).asUInt
+  expBiasedOut := ((input.exp + 127.S)(7,0) + expInc).asUInt
 
   // control logic
   // set to 126 according to softfloat
   // todo: merge it with normal case
-  val exp_BiasForSub = (input.exp + 126.S(10.W))
-  common_subnorm := exp_BiasForSub(9)
+  val exp_ForSub = (input.exp + 126.S(10.W))
   // for non subnormal case, Dist = 0
-  val subnormDist = Mux(common_subnorm,-exp_BiasForSub, 0.S(10.W))
+  val subnormDist = Mux(common_underflow, -exp_ForSub, 0.S(10.W))
   // todo why we have this case? IN IEEE754 or definded by Hardfloat?
   val common_totalUnderflow = subnormDist > 235.S
 
@@ -63,7 +60,7 @@ class RoundingUnit extends Module{
   val allMask = ((-1).S(31.W) << 31 >> subnormDist(5,0))
   val distIn24And31 = allMask(6,0).orR
   // subnorm case when Dist>24
-  val distGT24 = (distGT32 || distIn24And31) && common_subnorm
+  val distGT24 = (distGT32 || distIn24And31) && common_underflow
   val roundMask = Mux(!distGT24, Reverse(allMask(30,7)) ## 3.U(2.W), 0.U(26.W))
 
   val shiftedRoundMask = Mux(!distGT24, 0.U(1.W) ## roundMask >> 1 , BigInt(-1).S(26.W).asUInt)
@@ -82,16 +79,17 @@ class RoundingUnit extends Module{
 
   val distEQ24 = roundPosMask(25) && !roundPosMask(24,0).orR
 
-
-  val rbits : UInt= Cat(roundPosBit,anyRoundExtra)
+  val rbits : UInt= Cat(roundPosBit, anyRoundExtra)
 
   sigIncr := (roundingMode_near_even && (rbits.andR || (lastBit && rbits==="b10".U))) ||
     (roundingMode_min && input.sign && rbits.orR) ||
     (roundingMode_max && !input.sign && rbits.orR) ||
     (roundingMode_near_maxMag && rbits(1))
 
+  /** sig_afterInc doesn;t cover distEQ24 */
   sub_sigOut := Mux(distGT24 || distEQ24 ,Mux(sigIncr,1.U(26.W), 0.U(26.W)),(sig_afterInc >> subnormDist(4,0))(24,2))
-  expInc := sig_afterInc(26)  && (!common_subnorm || subnormDist===1.S )
+  /** when subnormDist===1.S, there may be expInc*/
+  expInc := sig_afterInc(26)  && (!common_underflow || subnormDist === 1.S )
   common_subnormSigOut := Mux(common_totalUnderflow, 0.U ,sub_sigOut )
 
   val sigIncrement = Mux(sigIncr,lastBitMask, 0.U(26.W))
@@ -127,17 +125,21 @@ class RoundingUnit extends Module{
   val zeroOut = Cat(input.sign, 0.U(31.W))
   val outSele1H = commonCase ## notNaN_isSpecialInfOut ## isNaNOut ## notNaN_isZero
 
-  /** @todo opt it using hardfloat methods */
-  common_overflow := input.exp > 127.S
-  common_underflow := common_subnorm
+  /** @todo opt it using hardfloat methods
+    *
+    * overflow : > 127
+    * */
+
+  common_overflow := input.exp(8,7).orR && !input.exp(9)
+  common_underflow := exp_ForSub(9)
   common_inexact := input.rBits.orR || (common_underflow && rbits.orR)
 
   val common_sigOut = sig_afterInc(24,2)
-  val common_expOut = expBiased
+  val common_expOut = expBiasedOut
 
 
   val common_out = Mux(common_overflow, common_infiniteOut,
-    Mux(common_subnorm, input.sign ## expInc ## common_subnormSigOut,
+    Mux(common_underflow, input.sign ## expInc ## common_subnormSigOut,
       input.sign ## common_expOut ## common_sigOut))
 
   dontTouch(common_out)
