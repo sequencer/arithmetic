@@ -5,6 +5,29 @@ import chisel3.util._
 import division.srt.srt16._
 import sqrt._
 
+/**
+  * DIV
+  * input
+  * {{{
+  * dividend = 0.1f  -> 1f +"00000" right extends to 32
+  * divisor  = 0.1f  -> 1f +"00000" right extends to 32
+  * }}}
+  *
+  * output = 0.01f or 0.1f, LSB 28bits effective
+  * {{{
+  * 0.01f: 28bits=01f f=sig=select(25,3)
+  * 0.1f : 28bits=1f  f=sig=select(26,4)
+  * }}}
+  *
+  * SQRT
+  * {{{
+  * expLSB   rawExpLSB    Sig             SigIn     expOut
+  *      0           1    1.xxxx>>2<<1    1xxxx0    rawExp/2 +1 + bias
+  *      1           0    1.xxxx>>2       01xxxx    rawExp/2 +1 + bias
+  * }}}
+  *
+  *
+  */
 class DivSqrt(expWidth: Int, sigWidth: Int) extends Module{
   val fpWidth = expWidth + sigWidth
   val calWidth = 28
