@@ -5,10 +5,9 @@ import chisel3.util._
 
 
 /**
-  * exp is 10bits SInt, MSB is sign
-  *
-  *
-  * */
+  * exp: 10bits SInt, MSB is sign
+  * sig: 23bits
+  */
 class RoundingUnit extends Module{
   val input = IO(Input(new Bundle{
     val invalidExc = Bool() // overrides 'infiniteExc' and 'in'
@@ -47,29 +46,30 @@ class RoundingUnit extends Module{
 
   // control logic
   // set to 126 according to softfloat
-  // todo: merge it with normal case
   val exp_ForSub = (input.exp + 126.S(10.W))
   // for non subnormal case, Dist = 0
   val subnormDist = Mux(common_underflow, -exp_ForSub, 0.S(10.W))
-  // todo why we have this case? IN IEEE754 or definded by Hardfloat?
+  // todo why we have this case? IN IEEE754 or definded in Hardfloat?
   val common_totalUnderflow = subnormDist > 235.S
 
-  //-----------------subnormal loggic---------------
-
+  /** subnormal logic
+    *
+    * roundMask is 26bits mask selecting all bits will be rounded, considering subnormal case
+    *
+    */
   val distGT32 = subnormDist(9,5).orR
   val allMask = ((-1).S(31.W) << 31 >> subnormDist(5,0))
   val distIn24And31 = allMask(6,0).orR
-  // subnorm case when Dist>24
   val distGT24 = (distGT32 || distIn24And31) && common_underflow
   val roundMask = Mux(!distGT24, Reverse(allMask(30,7)) ## 3.U(2.W), 0.U(26.W))
 
   val shiftedRoundMask = Mux(!distGT24, 0.U(1.W) ## roundMask >> 1 , BigInt(-1).S(26.W).asUInt)
-  /** select the first bit need to be  rounded */
+  /** select the guard bit need to be  rounded */
   val roundPosMask = ~shiftedRoundMask & roundMask
 
   val adjustedSig = Cat(1.U(1.W), input.sig, input.rBits)
   val roundPosBit = (adjustedSig & roundPosMask).orR
-  /** Any bits is one after guard bit */
+  /** Any bits is one after guard bit  => sticky bit */
   val anyRoundExtra = (adjustedSig & shiftedRoundMask).orR
   /** Any bits is one containing guard bit */
   val anyRound = roundPosBit || anyRoundExtra
@@ -88,22 +88,22 @@ class RoundingUnit extends Module{
 
   /** sig_afterInc doesn;t cover distEQ24 */
   sub_sigOut := Mux(distGT24 || distEQ24 ,Mux(sigIncr,1.U(26.W), 0.U(26.W)),(sig_afterInc >> subnormDist(4,0))(24,2))
-  /** when subnormDist===1.S, there may be expInc*/
+  /** when subnormDist===1.S, there may be expInc */
   expInc := sig_afterInc(26)  && (!common_underflow || subnormDist === 1.S )
   common_subnormSigOut := Mux(common_totalUnderflow, 0.U ,sub_sigOut )
 
   val sigIncrement = Mux(sigIncr,lastBitMask, 0.U(26.W))
   sig_afterInc := adjustedSig +& sigIncrement
 
-  // Exceptions
+  /** Exceptions output */
   val isNaNOut = input.invalidExc || input.isNaN
   val notNaN_isSpecialInfOut = (input.infiniteExc || input.isInf) && (!input.invalidExc) && (!input.isNaN)
   val notNaN_isZero = input.isZero && !isNaNOut
   val commonCase = !isNaNOut && !notNaN_isSpecialInfOut && !input.isZero
 
-  val overflow = commonCase && common_overflow
+  val overflow  = commonCase && common_overflow
   val underflow = commonCase && (common_underflow && rbits.orR)
-  val inexact = overflow || (commonCase && common_inexact)
+  val inexact   = overflow || (commonCase && common_inexact)
 
   val isZero = input.isZero && underflow
 
@@ -118,21 +118,20 @@ class RoundingUnit extends Module{
     )
   )
 
-  // exception data with Spike
+  /** qNaN in Spike */
   val quietNaN = "h7FC00000".U
 
   val infiniteOut = Cat(input.sign, "h7F800000".U)
   val zeroOut = Cat(input.sign, 0.U(31.W))
   val outSele1H = commonCase ## notNaN_isSpecialInfOut ## isNaNOut ## notNaN_isZero
 
-  /** @todo opt it using hardfloat methods
+  /** common_overflow = input.exp > 127.S
     *
-    * overflow : > 127
-    * */
-
-  common_overflow := input.exp(8,7).orR && !input.exp(9)
+    * @todo opt it using hardfloat methods?
+    */
+  common_overflow  := input.exp(8,7).orR && !input.exp(9)
   common_underflow := exp_ForSub(9)
-  common_inexact := input.rBits.orR || (common_underflow && rbits.orR)
+  common_inexact   := anyRound
 
   val common_sigOut = sig_afterInc(24,2)
   val common_expOut = expBiasedOut

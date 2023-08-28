@@ -11,8 +11,8 @@ class DivSqrt(expWidth: Int, sigWidth: Int) extends Module{
   val input = IO(Flipped(DecoupledIO(new DivSqrtInput(expWidth, sigWidth))))
   val output = IO(ValidIO(new DivSqrtOutput(expWidth, sigWidth)))
 
-  val opSqrtReg = RegEnable(input.bits.sqrt, input.fire)
-  val roundingModeReg = RegEnable(input.bits.roundingMode, input.fire)
+  val opSqrtReg       = RegEnable(input.bits.sqrt        , false.B, input.fire)
+  val roundingModeReg = RegEnable(input.bits.roundingMode, 0.U    , input.fire)
 
   val rawA_S = rawFloatFromFN(expWidth, sigWidth, input.bits.a)
   val rawB_S = rawFloatFromFN(expWidth, sigWidth, input.bits.b)
@@ -34,19 +34,19 @@ class DivSqrt(expWidth: Int, sigWidth: Int) extends Module{
         (!rawA_S.isNaN && !rawA_S.isInf && rawB_S.isZero)
     )
 
-  /** all cases result in NaN output*/
+  /** all cases result in NaN output */
   val isNaN_S =
     Mux(input.bits.sqrt,
       rawA_S.isNaN || notSigNaNIn_invalidExc_S_sqrt,
       rawA_S.isNaN || rawB_S.isNaN || notSigNaNIn_invalidExc_S_div
     )
-  val isInf_S = Mux(input.bits.sqrt, rawA_S.isInf, rawA_S.isInf || rawB_S.isZero)
+  val isInf_S  = Mux(input.bits.sqrt, rawA_S.isInf, rawA_S.isInf || rawB_S.isZero)
   val isZero_S = Mux(input.bits.sqrt, rawA_S.isZero, rawA_S.isZero || rawB_S.isInf)
 
-  val majorExc_Z = RegEnable(majorExc_S,false.B,input.fire)
-  val isNaN_Z    = RegEnable(isNaN_S,false.B,input.fire)
-  val isInf_Z    = RegEnable(isInf_S,false.B,input.fire)
-  val isZero_Z   = RegEnable(isZero_S,false.B,input.fire)
+  val majorExc_Z = RegEnable(majorExc_S, false.B, input.fire)
+  val isNaN_Z    = RegEnable(isNaN_S   , false.B, input.fire)
+  val isInf_Z    = RegEnable(isInf_S   , false.B, input.fire)
+  val isZero_Z   = RegEnable(isZero_S  , false.B, input.fire)
 
   /** invalid operation flag */
   val invalidExec = majorExc_Z &&  isNaN_Z
@@ -66,17 +66,16 @@ class DivSqrt(expWidth: Int, sigWidth: Int) extends Module{
 
 
   // sign
-  val signNext = Mux(input.bits.sqrt, Mux(rawA_S.isZero, rawA_S.sign, false.B), rawA_S.sign ^ rawB_S.sign)
+  val signNext = Mux(input.bits.sqrt, rawA_S.isZero && rawA_S.sign, rawA_S.sign ^ rawB_S.sign)
   val signReg = RegEnable(signNext, input.fire)
 
-  // sqrt input
-
-  /** construct expForSqrt
+  /** sqrt exp logic
     *
+    * {{{
     * sExp first 2 bits
     * 00 -> 10 (subnormal)
     * 01 -> 11 (true exp negative)
-    * 10 -> 00 (true exp positive)
+    * 10 -> 00 (true exp positive)}}}
     *
     */
   val expfirst2 = UIntToOH(rawA_S.sExp(expWidth, expWidth-1))
@@ -85,21 +84,20 @@ class DivSqrt(expWidth: Int, sigWidth: Int) extends Module{
     Seq(
       expfirst2(0) -> "b10".U,
       expfirst2(1) -> "b11".U,
-      expfirst2(2) -> "b00".U,
-      expfirst2(3) -> "b00".U
+      expfirst2(2) -> "b00".U
     )
   )
 
   val expForSqrt = Cat(expstart, rawA_S.sExp(expWidth - 2, 0)) >> 1
   val sqrtExpIsOdd = !rawA_S.sExp(0)
-  val sqrtFractIn = Mux(sqrtExpIsOdd, Cat("b0".U(1.W), rawA_S.sig(sigWidth - 1, 0), 0.U(1.W)),
+  val sqrtFractIn = Mux(sqrtExpIsOdd, Cat(0.U(1.W), rawA_S.sig(sigWidth - 1, 0), 0.U(1.W)),
     Cat(rawA_S.sig(sigWidth - 1, 0), 0.U(2.W)))
 
   val SqrtModule = Module(new SquareRoot(2, 2, sigWidth+2, sigWidth+2))
   SqrtModule.input.bits.operand := sqrtFractIn
   SqrtModule.input.valid := input.valid && input.bits.sqrt && normalCase_S_sqrt
 
-  val rbits_sqrt = SqrtModule.output.bits.result(1) ## (!SqrtModule.output.bits.zeroRemainder || SqrtModule.output.bits.result(0))
+  val rbits_sqrt      = SqrtModule.output.bits.result(1) ## (!SqrtModule.output.bits.zeroRemainder || SqrtModule.output.bits.result(0))
   val sigToRound_sqrt = SqrtModule.output.bits.result(24, 2)
 
 
@@ -124,28 +122,28 @@ class DivSqrt(expWidth: Int, sigWidth: Int) extends Module{
     *
     * */
   val needRightShift = !divModule.output.bits.quotient(27)
-  val sigToRound_div = Mux(needRightShift, divModule.output.bits.quotient(calWidth - 3, calWidth - sigWidth - 1),
+  val sigToRound_div = Mux(needRightShift,
+    divModule.output.bits.quotient(calWidth - 3, calWidth - sigWidth - 1),
     divModule.output.bits.quotient(calWidth - 2, calWidth - sigWidth))
   val rbits_div = Mux(needRightShift, divModule.output.bits.quotient(calWidth - sigWidth - 2) ## divModule.output.bits.reminder.orR,
     divModule.output.bits.quotient(calWidth - sigWidth - 1) ## divModule.output.bits.reminder.orR)
 
-
   // collect sig result
-  val sigToRound = Mux(opSqrtReg, sigToRound_sqrt, sigToRound_div)
+  val sigToRound   = Mux(opSqrtReg, sigToRound_sqrt, sigToRound_div)
   val rbitsToRound = Mux(opSqrtReg, rbits_sqrt, rbits_div)
 
   // exp logic
   val expStoreNext,expToRound = Wire(UInt((expWidth+2).W))
-  /** expStore
-    *
-    * output is 10bits SInt
+  /** expStore is 10bits SInt
     *
     * for sqrt
     * expForSqrt(7,0) effective is 8bits, MSB is sign
     * extends 2 sign bit in MSB
     * expStoreNext = 10bits
     *
-    * todo define it format, important
+    * for div
+    * rawA_S.sExp - rawB_S.sExp
+    *
     */
   expStoreNext := Mux(input.bits.sqrt,
     Cat(expForSqrt(7),expForSqrt(7),expForSqrt(7,0)),
@@ -168,7 +166,7 @@ class DivSqrt(expWidth: Int, sigWidth: Int) extends Module{
   output.bits.result := roundresult(0)
   output.bits.exceptionFlags := roundresult(1)
 
-  input.ready := divModule.input.ready && SqrtModule.input.ready
+  input.ready  := divModule.input.ready  && SqrtModule.input.ready
   output.valid := divModule.output.valid || SqrtModule.output.valid || fastValid
 }
 
