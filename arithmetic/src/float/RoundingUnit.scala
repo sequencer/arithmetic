@@ -3,10 +3,18 @@ package float
 import chisel3._
 import chisel3.util._
 
-
-/**
+/** RoundingUnit for all cases
+  *
+  * functions
+  * {{{
+  *   add bias to exp
+  *   deal with exceptions and produce flags
+  *   do rounding
+  *   construct FP32 output if result is subnormal
+  * }}}
+  *
   * exp: 10bits SInt, MSB is sign
-  * sig: 23bits
+  * sig: 23bits UInt
   */
 class RoundingUnit extends Module{
   val input = IO(Input(new Bundle{
@@ -54,24 +62,24 @@ class RoundingUnit extends Module{
   /** contains the hidden 1 and rBits */
   val adjustedSig = Cat(1.U(1.W), input.sig, input.rBits)
 
-  /** subnormal logic
-    *
-    * roundMask is 26bits mask selecting all bits will be rounded, considering subnormal case
-    */
+  // rounding logic
   val distGT32 = subnormDist(9,5).orR
   val allMask = ((-1).S(31.W) << 31 >> subnormDist(5,0))
   val distIn24And31 = allMask(6,0).orR
   val distGT24 = (distGT32 || distIn24And31) && common_underflow
-  /** last 2 bits is rbits, always 1s */
+  /** 26bits mask selecting all bits will be rounded, considering subnormal case
+    *
+    * last 2 bits is rbits, always 1s
+    */
   val roundMask = Mux(!distGT24, Reverse(allMask(30,7)) ## 3.U(2.W), 0.U(26.W))
   /** mask for all bits after guard bit */
   val shiftedRoundMask = Mux(!distGT24, 0.U(1.W) ## roundMask >> 1 , BigInt(-1).S(26.W).asUInt)
   /** select the guard bit need to be rounded */
   val roundPosMask = ~shiftedRoundMask & roundMask
   val roundPosBit = (adjustedSig & roundPosMask).orR
-  /** Any bits is one after guard bit  => sticky bit */
+  /** Any bit is one after guard bit => sticky bit */
   val anyRoundExtra = (adjustedSig & shiftedRoundMask).orR
-  /** Any bits is one containing guard bit */
+  /** Any bit is one containing guard bit */
   val anyRound = roundPosBit || anyRoundExtra
 
   /** the last effective bit */
@@ -110,8 +118,6 @@ class RoundingUnit extends Module{
   val underflow = commonCase && (common_underflow && rbits.orR)
   val inexact   = overflow || (commonCase && common_inexact)
 
-  val isZero = input.isZero && underflow
-
   val overflowSele = roundingMode_min ## roundingMode_max ## roundingMode_toZero ## (roundingMode_near_even || roundingMode_near_maxMag)
 
   val common_infiniteOut = Mux1H(
@@ -122,7 +128,6 @@ class RoundingUnit extends Module{
       overflowSele(3) -> Mux(input.sign, "hFF800000".U(32.W), "h7F7FFFFF".U(32.W)),
     )
   )
-
   /** qNaN in Spike */
   val quietNaN = "h7FC00000".U
 
