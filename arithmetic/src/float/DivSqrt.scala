@@ -5,8 +5,7 @@ import chisel3.util._
 import division.srt.srt16._
 import sqrt._
 
-/**
-  * DIV
+/** DIV
   * input
   * {{{
   * dividend = 0.1f  -> 1f +"00000" right extends to 32
@@ -25,8 +24,6 @@ import sqrt._
   *      0           1    1.xxxx>>2<<1    1xxxx0    rawExp/2 +1 + bias
   *      1           0    1.xxxx>>2       01xxxx    rawExp/2 +1 + bias
   * }}}
-  *
-  *
   */
 class DivSqrt(expWidth: Int, sigWidth: Int) extends Module{
   val fpWidth = expWidth + sigWidth
@@ -98,11 +95,11 @@ class DivSqrt(expWidth: Int, sigWidth: Int) extends Module{
     * sExp first 2 bits
     * 00 -> 10 (subnormal)
     * 01 -> 11 (true exp negative)
-    * 10 -> 00 (true exp positive)}}}
-    *
+    * 10 -> 00 (true exp positive)
+    * }}}
     */
   val expfirst2 = UIntToOH(rawA_S.sExp(expWidth, expWidth-1))
-  /** @todo expfirst2(3) never happens */
+  /** expfirst2(3) never happens */
   val expstart  = Mux1H(
     Seq(
       expfirst2(0) -> "b10".U,
@@ -139,11 +136,12 @@ class DivSqrt(expWidth: Int, sigWidth: Int) extends Module{
 
   /** collect div sig result
     *
+    * {{{
     * when B_sig > A_sig
     * divout = 0000,01xxx
     * exp need decrease by 1
-    *
-    * */
+    * }}}
+    */
   val needRightShift = !divModule.output.bits.quotient(27)
   val sigToRound_div = Mux(needRightShift,
     divModule.output.bits.quotient(calWidth - 3, calWidth - sigWidth - 1),
@@ -160,13 +158,14 @@ class DivSqrt(expWidth: Int, sigWidth: Int) extends Module{
   /** expStore is 10bits SInt
     *
     * for sqrt
+    * {{{
     * expForSqrt(7,0) effective is 8bits, MSB is sign
     * extends 2 sign bit in MSB
     * expStoreNext = 10bits
+    * }}}
     *
     * for div
     * rawA_S.sExp - rawB_S.sExp
-    *
     */
   expStoreNext := Mux(input.bits.sqrt,
     Cat(expForSqrt(7),expForSqrt(7),expForSqrt(7,0)),
