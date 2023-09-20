@@ -33,8 +33,6 @@ trait Arithmetic
 
   def evilplotIvy = v.evilplot
 
-  def oslibIvy = v.oslib
-
   def chiselModule = None
 
   def chiselPluginJar = None
