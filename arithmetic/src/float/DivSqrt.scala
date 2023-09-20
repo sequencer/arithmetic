@@ -40,25 +40,25 @@ class DivSqrt(expWidth: Int, sigWidth: Int) extends Module{
   // Exceptions
 
   /** inf/inf and 0/0  => NaN out */
-  val divNotSigNaNInButInvalidExc =
+  val divInvalidExcNotSigNaNIn =
     (rawA.isZero && rawB.isZero) || (rawA.isInf && rawB.isInf)
   /** -Inf + -normal => NaN out */
-  val sqrtNotSigNaNInButInvalidExc =
+  val sqrtInvalidExcNotSigNaNIn =
     !rawA.isNaN && !rawA.isZero && rawA.sign
   /** isSigNaNRawFloat detect signaling NaN */
   val majorExc =
     Mux(input.bits.sqrt,
-      isSigNaNRawFloat(rawA) || sqrtNotSigNaNInButInvalidExc,
+      isSigNaNRawFloat(rawA) || sqrtInvalidExcNotSigNaNIn,
       isSigNaNRawFloat(rawA) || isSigNaNRawFloat(rawB) ||
-        divNotSigNaNInButInvalidExc ||
+        divInvalidExcNotSigNaNIn ||
         (!rawA.isNaN && !rawA.isInf && rawB.isZero)
     )
 
   /** all cases result in NaN output */
   val isNaN =
     Mux(input.bits.sqrt,
-      rawA.isNaN || sqrtNotSigNaNInButInvalidExc,
-      rawA.isNaN || rawB.isNaN || divNotSigNaNInButInvalidExc
+      rawA.isNaN || sqrtInvalidExcNotSigNaNIn,
+      rawA.isNaN || rawB.isNaN || divInvalidExcNotSigNaNIn
     )
   val isInf  = Mux(input.bits.sqrt, rawA.isInf, rawA.isInf || rawB.isZero)
   val isZero = Mux(input.bits.sqrt, rawA.isZero, rawA.isZero || rawB.isInf)
