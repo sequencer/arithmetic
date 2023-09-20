@@ -34,30 +34,30 @@ class RoundingUnit extends Module{
     val exceptionFlags = Output(Bits(5.W))
   }))
 
-  val roundingMode_near_even   = (input.roundingMode === consts.round_near_even)
-  val roundingMode_toZero      = (input.roundingMode === consts.round_minMag)
-  val roundingMode_min         = (input.roundingMode === consts.round_min)
-  val roundingMode_max         = (input.roundingMode === consts.round_max)
-  val roundingMode_near_maxMag = (input.roundingMode === consts.round_near_maxMag)
+  val rmRNE = (input.roundingMode === consts.round_near_even)
+  val rmRTZ = (input.roundingMode === consts.round_minMag)
+  val rmRDN = (input.roundingMode === consts.round_min)
+  val rmRUP = (input.roundingMode === consts.round_max)
+  val rmRMM = (input.roundingMode === consts.round_near_maxMag)
 
-  val common_overflow = Wire(Bool())
-  val common_underflow = Wire(Bool())
-  val common_inexact  = Wire(Bool())
+  val commonOverflow  = Wire(Bool())
+  val commonUnderflow = Wire(Bool())
+  val commonInexact   = Wire(Bool())
 
   val sigIncr = Wire(Bool())
-  val common_expOut = Wire(UInt(8.W))
-  val common_sigOut = Wire(UInt(23.W))
-  val sig_afterInc = Wire(UInt(27.W))
-  val sub_sigOut, common_subnormSigOut = Wire(UInt(23.W))
+  val commonExpOut = Wire(UInt(8.W))
+  val commonSigOut = Wire(UInt(23.W))
+  val sigAfterInc = Wire(UInt(27.W))
+  val subSigOut, commonSubnormSigOut = Wire(UInt(23.W))
   val expInc = Wire(UInt(8.W))
 
   // control logic
   // set to 126 according to softfloat
-  val exp_ForSub = (input.exp + 126.S(10.W))
+  val expSubnorm = (input.exp + 126.S(10.W))
   // for non subnormal case, Dist = 0
-  val subnormDist = Mux(common_underflow, -exp_ForSub, 0.S(10.W))
+  val subnormDist = Mux(commonUnderflow, -expSubnorm, 0.S(10.W))
   // todo why we have this case? IN IEEE754 or definded in Hardfloat?
-  val common_totalUnderflow = subnormDist > 235.S
+  val commonTotalUnderflow = subnormDist > 235.S
 
   /** contains the hidden 1 and rBits */
   val adjustedSig = Cat(1.U(1.W), input.sig, input.rBits)
@@ -66,7 +66,7 @@ class RoundingUnit extends Module{
   val distGT32 = subnormDist(9,5).orR
   val allMask = ((-1).S(31.W) << 31 >> subnormDist(5,0))
   val distIn24And31 = allMask(6,0).orR
-  val distGT24 = (distGT32 || distIn24And31) && common_underflow
+  val distGT24 = (distGT32 || distIn24And31) && commonUnderflow
   /** 26bits mask selecting all bits will be rounded, considering subnormal case
     *
     * last 2 bits is rbits, always 1s
@@ -90,35 +90,35 @@ class RoundingUnit extends Module{
   /** 2 bits for final rounding */
   val rbits : UInt= Cat(roundPosBit, anyRoundExtra)
 
-  sigIncr := (roundingMode_near_even && (rbits.andR || (lastBit && rbits==="b10".U))) ||
-    (roundingMode_min &&  input.sign &&  rbits.orR) ||
-    (roundingMode_max && !input.sign &&  rbits.orR) ||
-    (roundingMode_near_maxMag && rbits(1))
+  sigIncr := (rmRNE && (rbits.andR || (lastBit && rbits==="b10".U))) ||
+    (rmRDN &&  input.sign &&  rbits.orR) ||
+    (rmRUP && !input.sign &&  rbits.orR) ||
+    (rmRMM && rbits(1))
 
   /** sig_afterInc won't cover distEQ24 */
-  sub_sigOut := Mux(
+  subSigOut := Mux(
     distGT24 || distEQ24,
     Mux(sigIncr, 1.U(23.W), 0.U(23.W)),
-    (sig_afterInc >> subnormDist(4,0))(24,2))
+    (sigAfterInc >> subnormDist(4,0))(24,2))
   /** when subnormDist===1.S, there may be expInc */
-  expInc := sig_afterInc(26)  && (!common_underflow || subnormDist === 1.S )
-  common_subnormSigOut := Mux(common_totalUnderflow, 0.U, sub_sigOut )
+  expInc := sigAfterInc(26)  && (!commonUnderflow || subnormDist === 1.S )
+  commonSubnormSigOut := Mux(commonTotalUnderflow, 0.U, subSigOut )
 
   /** conforms to last bit position */
   val sigIncrement = Mux(sigIncr, lastBitMask, 0.U(26.W))
-  sig_afterInc := adjustedSig +& sigIncrement
+  sigAfterInc := adjustedSig +& sigIncrement
 
   /** Exceptions output */
   val isNaNOut = input.invalidExc || input.isNaN
-  val notNaN_isSpecialInfOut = (input.infiniteExc || input.isInf) && (!input.invalidExc) && (!input.isNaN)
-  val notNaN_isZero = input.isZero && !isNaNOut
-  val commonCase = !isNaNOut && !notNaN_isSpecialInfOut && !input.isZero
+  val notNaNIsSpecialInfOut = (input.infiniteExc || input.isInf) && (!input.invalidExc) && (!input.isNaN)
+  val notNaNIsZero = input.isZero && !isNaNOut
+  val commonCase = !isNaNOut && !notNaNIsSpecialInfOut && !input.isZero
 
-  val overflow  = commonCase && common_overflow
-  val underflow = commonCase && (common_underflow && rbits.orR)
-  val inexact   = overflow || (commonCase && common_inexact)
+  val overflow  = commonCase && commonOverflow
+  val underflow = commonCase && (commonUnderflow && rbits.orR)
+  val inexact   = overflow || (commonCase && commonInexact)
 
-  val overflowSele = roundingMode_min ## roundingMode_max ## roundingMode_toZero ## (roundingMode_near_even || roundingMode_near_maxMag)
+  val overflowSele = rmRDN ## rmRUP ## rmRTZ ## (rmRNE || rmRMM)
 
   val common_infiniteOut = Mux1H(
     Seq(
@@ -133,30 +133,30 @@ class RoundingUnit extends Module{
 
   val infiniteOut = Cat(input.sign, "h7F800000".U)
   val zeroOut = Cat(input.sign, 0.U(31.W))
-  val outSele1H = commonCase ## notNaN_isSpecialInfOut ## isNaNOut ## notNaN_isZero
+  val outSele1H = commonCase ## notNaNIsSpecialInfOut ## isNaNOut ## notNaNIsZero
 
   /** common_overflow = input.exp > 127.S
     *
     * @todo opt it using hardfloat methods?
     */
-  common_overflow  := input.exp(8,7).orR && !input.exp(9)
-  common_underflow := exp_ForSub(9)
-  common_inexact   := anyRound
+  commonOverflow  := input.exp(8,7).orR && !input.exp(9)
+  commonUnderflow := expSubnorm(9)
+  commonInexact   := anyRound
 
-  common_sigOut := sig_afterInc(24,2)
-  common_expOut := ((input.exp + 127.S)(7,0) + expInc).asUInt
+  commonSigOut := sigAfterInc(24,2)
+  commonExpOut := ((input.exp + 127.S)(7,0) + expInc).asUInt
 
 
-  val common_out = Mux(common_overflow, common_infiniteOut,
-    Mux(common_underflow, input.sign ## expInc ## common_subnormSigOut,
-      input.sign ## common_expOut ## common_sigOut))
+  val commonOut = Mux(commonOverflow, common_infiniteOut,
+    Mux(commonUnderflow, input.sign ## expInc ## commonSubnormSigOut,
+      input.sign ## commonExpOut ## commonSigOut))
 
 
   output.data := Mux1H(Seq(
     outSele1H(0) -> zeroOut,
     outSele1H(1) -> quietNaN,
     outSele1H(2) -> infiniteOut,
-    outSele1H(3) -> common_out)
+    outSele1H(3) -> commonOut)
   )
 
   output.exceptionFlags := input.invalidExc ## input.infiniteExc ## overflow ## underflow ## inexact

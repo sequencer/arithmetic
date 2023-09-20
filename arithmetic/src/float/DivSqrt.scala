@@ -34,59 +34,58 @@ class DivSqrt(expWidth: Int, sigWidth: Int) extends Module{
   val opSqrtReg       = RegEnable(input.bits.sqrt        , false.B, input.fire)
   val roundingModeReg = RegEnable(input.bits.roundingMode, 0.U    , input.fire)
 
-  val rawA_S = rawFloatFromFN(expWidth, sigWidth, input.bits.a)
-  val rawB_S = rawFloatFromFN(expWidth, sigWidth, input.bits.b)
+  val rawA = rawFloatFromFN(expWidth, sigWidth, input.bits.a)
+  val rawB = rawFloatFromFN(expWidth, sigWidth, input.bits.b)
 
   // Exceptions
 
   /** inf/inf and 0/0  => NaN out */
-  val notSigNaNIn_invalidExc_S_div =
-    (rawA_S.isZero && rawB_S.isZero) || (rawA_S.isInf && rawB_S.isInf)
+  val divNotSigNaNInButInvalidExc =
+    (rawA.isZero && rawB.isZero) || (rawA.isInf && rawB.isInf)
   /** -Inf + -normal => NaN out */
-  val notSigNaNIn_invalidExc_S_sqrt =
-    !rawA_S.isNaN && !rawA_S.isZero && rawA_S.sign
+  val sqrtNotSigNaNInButInvalidExc =
+    !rawA.isNaN && !rawA.isZero && rawA.sign
   /** isSigNaNRawFloat detect signaling NaN */
-  val majorExc_S =
+  val majorExc =
     Mux(input.bits.sqrt,
-      isSigNaNRawFloat(rawA_S) || notSigNaNIn_invalidExc_S_sqrt,
-      isSigNaNRawFloat(rawA_S) || isSigNaNRawFloat(rawB_S) ||
-        notSigNaNIn_invalidExc_S_div ||
-        (!rawA_S.isNaN && !rawA_S.isInf && rawB_S.isZero)
+      isSigNaNRawFloat(rawA) || sqrtNotSigNaNInButInvalidExc,
+      isSigNaNRawFloat(rawA) || isSigNaNRawFloat(rawB) ||
+        divNotSigNaNInButInvalidExc ||
+        (!rawA.isNaN && !rawA.isInf && rawB.isZero)
     )
 
   /** all cases result in NaN output */
-  val isNaN_S =
+  val isNaN =
     Mux(input.bits.sqrt,
-      rawA_S.isNaN || notSigNaNIn_invalidExc_S_sqrt,
-      rawA_S.isNaN || rawB_S.isNaN || notSigNaNIn_invalidExc_S_div
+      rawA.isNaN || sqrtNotSigNaNInButInvalidExc,
+      rawA.isNaN || rawB.isNaN || divNotSigNaNInButInvalidExc
     )
-  val isInf_S  = Mux(input.bits.sqrt, rawA_S.isInf, rawA_S.isInf || rawB_S.isZero)
-  val isZero_S = Mux(input.bits.sqrt, rawA_S.isZero, rawA_S.isZero || rawB_S.isInf)
+  val isInf  = Mux(input.bits.sqrt, rawA.isInf, rawA.isInf || rawB.isZero)
+  val isZero = Mux(input.bits.sqrt, rawA.isZero, rawA.isZero || rawB.isInf)
 
-  val majorExc_Z = RegEnable(majorExc_S, false.B, input.fire)
-  val isNaN_Z    = RegEnable(isNaN_S   , false.B, input.fire)
-  val isInf_Z    = RegEnable(isInf_S   , false.B, input.fire)
-  val isZero_Z   = RegEnable(isZero_S  , false.B, input.fire)
+  val majorExcReg = RegEnable(majorExc, false.B, input.fire)
+  val isNaNReg    = RegEnable(isNaN   , false.B, input.fire)
+  val isInfReg    = RegEnable(isInf   , false.B, input.fire)
+  val isZeroReg   = RegEnable(isZero  , false.B, input.fire)
 
   /** invalid operation flag */
-  val invalidExec = majorExc_Z &&  isNaN_Z
+  val invalidExec = majorExcReg &&  isNaNReg
 
   /** DivideByZero flag */
-  val infinitExec = majorExc_Z && !isNaN_Z
+  val infinitExec = majorExcReg && !isNaNReg
 
-  val specialCaseA_S = rawA_S.isNaN || rawA_S.isInf || rawA_S.isZero
-  val specialCaseB_S = rawB_S.isNaN || rawB_S.isInf || rawB_S.isZero
-  val normalCase_S_div = !specialCaseA_S && !specialCaseB_S
-  val normalCase_S_sqrt = !specialCaseA_S && !rawA_S.sign
-  val normalCase_S = Mux(input.bits.sqrt, normalCase_S_sqrt, normalCase_S_div)
-  val specialCase_S = !normalCase_S
+  val specialCaseA = rawA.isNaN || rawA.isInf || rawA.isZero
+  val specialCaseB = rawB.isNaN || rawB.isInf || rawB.isZero
+  val normalCaseDiv = !specialCaseA && !specialCaseB
+  val normalCaseSqrt = !specialCaseA && !rawA.sign
+  val normalCase = Mux(input.bits.sqrt, normalCaseSqrt, normalCaseDiv)
+  val specialCase = !normalCase
 
   val fastValid = RegInit(false.B)
-  fastValid := specialCase_S && input.fire
-
+  fastValid := specialCase && input.fire
 
   // sign
-  val signNext = Mux(input.bits.sqrt, rawA_S.isZero && rawA_S.sign, rawA_S.sign ^ rawB_S.sign)
+  val signNext = Mux(input.bits.sqrt, rawA.isZero && rawA.sign, rawA.sign ^ rawB.sign)
   val signReg = RegEnable(signNext, input.fire)
 
   /** sqrt exp logic
@@ -98,7 +97,7 @@ class DivSqrt(expWidth: Int, sigWidth: Int) extends Module{
     * 10 -> 00 (true exp positive)
     * }}}
     */
-  val expfirst2 = UIntToOH(rawA_S.sExp(expWidth, expWidth-1))
+  val expfirst2 = UIntToOH(rawA.sExp(expWidth, expWidth-1))
   /** expfirst2(3) never happens */
   val expstart  = Mux1H(
     Seq(
@@ -108,30 +107,30 @@ class DivSqrt(expWidth: Int, sigWidth: Int) extends Module{
     )
   )
 
-  val expForSqrt = Cat(expstart, rawA_S.sExp(expWidth - 2, 0)) >> 1
-  val sqrtExpIsOdd = !rawA_S.sExp(0)
-  val sqrtFractIn = Mux(sqrtExpIsOdd, Cat(0.U(1.W), rawA_S.sig(sigWidth - 1, 0), 0.U(1.W)),
-    Cat(rawA_S.sig(sigWidth - 1, 0), 0.U(2.W)))
+  val expForSqrt = Cat(expstart, rawA.sExp(expWidth - 2, 0)) >> 1
+  val sqrtExpIsOdd = !rawA.sExp(0)
+  val sqrtFractIn = Mux(sqrtExpIsOdd, Cat(0.U(1.W), rawA.sig(sigWidth - 1, 0), 0.U(1.W)),
+    Cat(rawA.sig(sigWidth - 1, 0), 0.U(2.W)))
 
   val SqrtModule = Module(new SquareRoot(2, 2, sigWidth+2, sigWidth+2))
   SqrtModule.input.bits.operand := sqrtFractIn
-  SqrtModule.input.valid := input.valid && input.bits.sqrt && normalCase_S_sqrt
+  SqrtModule.input.valid := input.valid && input.bits.sqrt && normalCaseSqrt
 
-  val rbits_sqrt      = SqrtModule.output.bits.result(1) ## (!SqrtModule.output.bits.zeroRemainder || SqrtModule.output.bits.result(0))
-  val sigToRound_sqrt = SqrtModule.output.bits.result(24, 2)
+  val rbitsSqrt      = SqrtModule.output.bits.result(1) ## (!SqrtModule.output.bits.zeroRemainder || SqrtModule.output.bits.result(0))
+  val sigToRoundSqrt = SqrtModule.output.bits.result(24, 2)
 
 
   // divInput
   val fractDividendIn = Wire(UInt((fpWidth).W))
   val fractDivisorIn = Wire(UInt((fpWidth).W))
-  fractDividendIn := Cat(1.U(1.W), rawA_S.sig(sigWidth - 2, 0), 0.U(expWidth.W))
-  fractDivisorIn  := Cat(1.U(1.W), rawB_S.sig(sigWidth - 2, 0), 0.U(expWidth.W))
+  fractDividendIn := Cat(1.U(1.W), rawA.sig(sigWidth - 2, 0), 0.U(expWidth.W))
+  fractDivisorIn  := Cat(1.U(1.W), rawB.sig(sigWidth - 2, 0), 0.U(expWidth.W))
 
   val divModule = Module(new SRT16(fpWidth, fpWidth, fpWidth))
   divModule.input.bits.dividend := fractDividendIn
   divModule.input.bits.divider := fractDivisorIn
   divModule.input.bits.counter := 8.U
-  divModule.input.valid := input.valid && !input.bits.sqrt && normalCase_S_div
+  divModule.input.valid := input.valid && !input.bits.sqrt && normalCaseDiv
 
 
   /** collect div sig result
@@ -143,15 +142,15 @@ class DivSqrt(expWidth: Int, sigWidth: Int) extends Module{
     * }}}
     */
   val needRightShift = !divModule.output.bits.quotient(27)
-  val sigToRound_div = Mux(needRightShift,
+  val sigToRoundDiv = Mux(needRightShift,
     divModule.output.bits.quotient(calWidth - 3, calWidth - sigWidth - 1),
     divModule.output.bits.quotient(calWidth - 2, calWidth - sigWidth))
-  val rbits_div = Mux(needRightShift, divModule.output.bits.quotient(calWidth - sigWidth - 2) ## divModule.output.bits.reminder.orR,
+  val rbitsDiv = Mux(needRightShift, divModule.output.bits.quotient(calWidth - sigWidth - 2) ## divModule.output.bits.reminder.orR,
     divModule.output.bits.quotient(calWidth - sigWidth - 1) ## divModule.output.bits.reminder.orR)
 
   // collect sig result
-  val sigToRound   = Mux(opSqrtReg, sigToRound_sqrt, sigToRound_div)
-  val rbitsToRound = Mux(opSqrtReg, rbits_sqrt, rbits_div)
+  val sigToRound   = Mux(opSqrtReg, sigToRoundSqrt, sigToRoundDiv)
+  val rbitsToRound = Mux(opSqrtReg, rbitsSqrt, rbitsDiv)
 
   // exp logic
   val expStoreNext,expToRound = Wire(UInt((expWidth+2).W))
@@ -169,7 +168,7 @@ class DivSqrt(expWidth: Int, sigWidth: Int) extends Module{
     */
   expStoreNext := Mux(input.bits.sqrt,
     Cat(expForSqrt(7),expForSqrt(7),expForSqrt(7,0)),
-    (rawA_S.sExp-rawB_S.sExp).asUInt)
+    (rawA.sExp-rawB.sExp).asUInt)
   val expStore = RegEnable(expStoreNext, 0.U((expWidth+2).W), input.fire)
   expToRound := Mux(opSqrtReg, expStore, expStore - needRightShift)
 
@@ -181,9 +180,9 @@ class DivSqrt(expWidth: Int, sigWidth: Int) extends Module{
     roundingModeReg,
     invalidExec,
     infinitExec,
-    isNaN_Z,
-    isInf_Z,
-    isZero_Z)
+    isNaNReg,
+    isInfReg,
+    isZeroReg)
 
   output.bits.result := roundresult(0)
   output.bits.exceptionFlags := roundresult(1)
