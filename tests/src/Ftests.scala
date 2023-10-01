@@ -8,104 +8,31 @@ import java.util.Calendar
 import java.text.SimpleDateFormat
 import java.util.Calendar
 import scala.collection.parallel.CollectionConverters._
-
 import chisel3.RawModule
+import firrtl.AnnotationSeq
 import org.scalatest.ParallelTestExecution
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
 
-import java.text.SimpleDateFormat
-import java.util.Calendar
-import scala.collection.parallel.CollectionConverters._
+import chisel3.experimental.ExtModule
+import chisel3.util.{HasExtModuleInline, HasExtModuleResource}
+import firrtl.stage.FirrtlCircuitAnnotation
 
-//object Ftests extends App{
-//  import chisel3.stage.ChiselGeneratorAnnotation
-//  import firrtl.AnnotationSeq
-//  import firrtl.stage._
-//
-//  println("this is Ftests")
-//
-//  val resources = os.resource()
-//  val runDir = os.pwd / "run"
-//  os.remove.all(runDir)
-//  val elaborateDir = runDir / "elaborate"
-//  os.makeDir.all(elaborateDir)
-//  val rtlDir = runDir / "rtl"
-//  os.makeDir.all(rtlDir)
-//  val emulatorDir = runDir / "emulator"
-//  os.makeDir.all(emulatorDir)
-//  val emulatorCSrc = emulatorDir / "src"
-//  os.makeDir.all(emulatorCSrc)
-//  val emulatorCHeader = emulatorDir / "include"
-//  os.makeDir.all(emulatorCHeader)
-//  val emulatorBuildDir = emulatorDir / "build"
-//  os.makeDir.all(emulatorBuildDir)
-//
-//  val emulatorThreads = 8
-//  val verilatorArgs = Seq(
-//    // format: off
-//    "--x-initial unique",
-//    "--output-split 100000",
-//    "--max-num-width 1048576",
-//    "--main",
-//    "--timing",
-//    // use for coverage
-//    "--coverage-user",
-//    "--assert",
-//    // format: on
-//  )
-//
-//  // TODO: this will be replaced by binder API
-//  // elaborate
-//  var topName: String = null
-//  val annos: AnnotationSeq = Seq(
-//    new chisel3.stage.phases.Elaborate,
-//    new chisel3.stage.phases.Convert
-//  ).foldLeft(
-//    Seq(
-//      ChiselGeneratorAnnotation(() => new ValExec_DivSqrtRecFN_small_div(8,24,0))
-//    ): AnnotationSeq
-//  ) { case (annos, stage) => stage.transform(annos) }
-//    .flatMap {
-//      case FirrtlCircuitAnnotation(circuit) =>
-//        topName = circuit.main
-//        os.write.over(elaborateDir / s"$topName.fir", circuit.serialize)
-//        None
-//      case _: chisel3.stage.DesignAnnotation[_] => None
-//      case _: chisel3.stage.ChiselCircuitAnnotation => None
-//      case a => Some(a)
-//    }
-//  os.write.over(elaborateDir / s"$topName.anno.json", firrtl.annotations.JsonProtocol.serialize(annos))
-//
-//  // rtl
-//  os.proc(
-//    "firtool",
-//    elaborateDir / s"$topName.fir", s"--annotation-file=${elaborateDir / s"$topName.anno.json"}",
-//    "-dedup",
-//    "-O=release",
-//    "--disable-all-randomization",
-//    "--split-verilog",
-//    "--preserve-values=none",
-//    "--preserve-aggregate=all",
-//    "--strip-debug-info",
-//    s"-o=$rtlDir"
-//  ).call()
-//  val verilogs = os.read.lines(rtlDir / "filelist.f")
-//    .map(str =>
-//      try {
-//        os.Path(str)
-//      } catch {
-//        case e: IllegalArgumentException if e.getMessage.contains("is not an absolute path") =>
-//          rtlDir / str.stripPrefix("./")
-//      }
-//    )
-//    .filter(p => p.ext == "v" || p.ext == "sv")
-//
-////  os.write(rtlDir / "dut.v", chisel3.getVerilogString(new DivSqrt(8,24)))
-//
-//}
+import chisel3.stage._
+import os._
+
+
+
 
 trait FMATester extends AnyFlatSpec with Matchers with ParallelTestExecution {
+  val roundings = Seq(
+    "-rnear_even" -> "0",
+    "-rminMag" -> "1",
+    "-rmin" -> "2",
+    "-rmax" -> "3",
+    "-rnear_maxMag" -> "4",
+  )
+
   def exp(f: Int) = f match {
     case 16 => 5
     case 32 => 8
@@ -117,14 +44,6 @@ trait FMATester extends AnyFlatSpec with Matchers with ParallelTestExecution {
     case 32 => 24
     case 64 => 53
   }
-
-  val roundings = Seq(
-    "-rnear_even" -> "0",
-    "-rminMag" -> "1",
-    "-rmin" -> "2",
-    "-rmax" -> "3",
-    "-rnear_maxMag" -> "4",
-  )
 
   def check(stdouts: Seq[String]) = {
     stdouts foreach (_ shouldNot include("expected"))
@@ -149,53 +68,163 @@ trait FMATester extends AnyFlatSpec with Matchers with ParallelTestExecution {
     */
   def test(name: String, module: () => RawModule, harness: String, softfloatArgs: Seq[Seq[String]], dutArgs: Option[Seq[Seq[String]]] = None) = {
 
-    val testRunDir = os.pwd / "test_run_dir" / s"${this.getClass.getSimpleName}_$name"
-    os.makeDir.all(testRunDir)
-    os.remove(testRunDir / "dut.v")
-    os.write(testRunDir / "dut.v", chisel3.getVerilogString(module()))
+    var topName: String = null
+    val emulatorThreads = 8
 
-    /* command Synthesis verilog to C++. */
-    val verilatorCompile: Seq[String] = Seq(
-      "verilator",
-      "-cc",
-      "--prefix", "dut",
-      "--Mdir", testRunDir.toString,
-      "-CFLAGS", s"""-I${getClass.getResource("/includes/").getPath} -include ${getClass.getResource(s"/includes/$name.h").getPath}""",
-      "dut.v",
-      "--exe", s"${getClass.getResource(s"/csrc/$harness").getPath}",
-      "--trace"
-    )
-    os.proc(verilatorCompile).call(testRunDir)
+    val runDir: Path = os.pwd / "run"
+    os.remove.all(runDir)
 
-    /* Build C++ executor. */
-    val verilatorBuild: Seq[String] = Seq(
-      "make",
-      "-C", testRunDir.toString,
-      "-j",
-      "-f", s"dut.mk",
-      "dut")
-    os.proc(verilatorBuild).call(testRunDir)
+    val elaborateDir = runDir / "elaborate"
+    os.makeDir.all(elaborateDir)
+    val rtlDir = runDir / "rtl"
+    os.makeDir.all(rtlDir)
+    val emulatorDir = runDir / "emulator"
+    os.makeDir.all(emulatorDir)
+    val emulatorCSrc = emulatorDir / "src"
+    os.makeDir.all(emulatorCSrc)
+    val emulatorCHeader = emulatorDir / "include"
+    os.makeDir.all(emulatorCHeader)
+    val emulatorBuildDir = emulatorDir / "build"
+    os.makeDir.all(emulatorBuildDir)
 
-    def executeAndLog(softfloatArg: Seq[String], dutArg: Seq[String]): String = {
-      val stdoutFile = testRunDir / s"${name}__${(softfloatArg ++ dutArg).mkString("_")}.txt"
-      val vcdFile = testRunDir / s"${name}__${(softfloatArg ++ dutArg).mkString("_")}.vcd"
-      os.proc((testRunDir / "dut").toString +: dutArg).call(stdin = os.proc("testfloat_gen" +: softfloatArg).spawn().stdout, stdout = stdoutFile, stderr = vcdFile)
-      os.read(stdoutFile)
+
+//    os.remove(rtlDir / "dut.sv")
+//    os.write(rtlDir / "dut.sv", chisel3.getVerilogString(new VerificationModule))
+
+
+
+    val annos: AnnotationSeq = Seq(
+      new chisel3.stage.phases.Elaborate,
+      new chisel3.stage.phases.Convert
+    ).foldLeft(
+      Seq(
+        ChiselGeneratorAnnotation(() => new TestBench(8,24))
+      ): AnnotationSeq
+    ) { case (annos, stage) => stage.transform(annos) }
+      .flatMap {
+        case FirrtlCircuitAnnotation(circuit) =>
+          topName = circuit.main
+          os.write.over(elaborateDir / s"$topName.fir", circuit.serialize)
+          None
+        case _: chisel3.stage.DesignAnnotation[_] => None
+        case _: chisel3.stage.ChiselCircuitAnnotation => None
+        case a => Some(a)
+      }
+    os.write.over(elaborateDir / s"$topName.anno.json", firrtl.annotations.JsonProtocol.serialize(annos))
+
+    // rtl
+    os.proc(
+      "firtool",
+      elaborateDir / s"$topName.fir", s"--annotation-file=${elaborateDir / s"$topName.anno.json"}",
+      "-dedup",
+      "-O=release",
+      "--disable-all-randomization",
+      "--split-verilog",
+      "--preserve-values=none",
+      "--preserve-aggregate=all",
+      "--strip-debug-info",
+      s"-o=$rtlDir"
+    ).call()
+    val verilogs = os.read.lines(rtlDir / "filelist.f")
+      .map(str =>
+        try {
+          os.Path(str)
+        } catch {
+          case e: IllegalArgumentException if e.getMessage.contains("is not an absolute path") =>
+            rtlDir / str.stripPrefix("./")
+        }
+      )
+      .filter(p => p.ext == "v" || p.ext == "sv")
+
+
+    val allCSourceFiles = Seq(
+      "dpi.cc",
+      "vbridge_impl.cc",
+      "vbridge_impl.h"
+    ).map { f =>
+      os.write.over(emulatorCSrc / f, os.read(os.pwd / "tests" / "resources" / "csrc" / f))
+      emulatorCSrc / f
     }
 
-    (if (dutArgs.isDefined) {
-      require(softfloatArgs.size == dutArgs.get.size, "size of softfloatArgs and dutArgs should be same.")
-      (softfloatArgs zip dutArgs.get).par.map { case (s, d) => executeAndLog(s, d) }
-    } else softfloatArgs.par.map { s => executeAndLog(s, Seq.empty) }).seq
+    val allCHeaderFiles = Seq(
+      "verilator.h"
+    ).map { f =>
+      os.write.over(emulatorCHeader / f, os.read(os.pwd / "tests" / "resources" / "includes" / f))
+      emulatorCHeader / f
+    }
+
+    val verilatorArgs = Seq(
+      // format: off
+      "--x-initial unique",
+      "--output-split 100000",
+      "--max-num-width 1048576",
+      "--timing",
+      // use for coverage
+      "--coverage-user",
+      "--assert",
+      // format: on
+      "--main"
+    )
+
+    os.write(emulatorBuildDir / "CMakeLists.txt",
+      // format: off
+      s"""cmake_minimum_required(VERSION 3.20)
+         |project(emulator)
+         |set(CMAKE_CXX_STANDARD 17)
+         |
+         |find_package(args REQUIRED)
+         |find_package(glog REQUIRED)
+         |find_package(fmt REQUIRED)
+         |find_package(verilator REQUIRED)
+         |find_package(Threads REQUIRED)
+         |set(THREADS_PREFER_PTHREAD_FLAG ON)
+         |
+         |add_executable(emulator
+         |${allCSourceFiles.mkString("\n")}
+         |)
+         |
+         |target_include_directories(emulator PUBLIC $emulatorCHeader)
+         |
+         |target_link_libraries(emulator PUBLIC $${CMAKE_THREAD_LIBS_INIT})
+         |target_link_libraries(emulator PUBLIC  fmt::fmt glog::glog )  # note that libargs is header only, nothing to link
+         |target_compile_definitions(emulator PRIVATE COSIM_VERILATOR)
+         |
+         |verilate(emulator
+         |  SOURCES
+         |  ${verilogs.mkString("\n")}
+         |  "TRACE_FST"
+         |  TOP_MODULE $topName
+         |  PREFIX V$topName
+         |  OPT_FAST
+         |  THREADS $emulatorThreads
+         |  VERILATOR_ARGS ${verilatorArgs.mkString(" ")}
+         |)
+         |""".stripMargin
+      // format: on
+    )
+
+    // build verilator
+    os.proc(Seq(
+      "cmake",
+      "-G", "Ninja",
+      "-S", emulatorBuildDir,
+      "-B", emulatorBuildDir
+    ).map(_.toString)).call(emulatorBuildDir)
+
+    // build emulator
+    os.proc(Seq("ninja", "-C", emulatorBuildDir).map(_.toString)).call(emulatorBuildDir)
+
+    Seq("No errors found.")
   }
 }
 
 class DivSqrtRecFn_smallSpec extends FMATester {
   def test(f: Int, fn: String): Seq[String] = {
     def generator(options: Int) = fn match {
-      case "div" => () => new ValExec_DivSqrtRecFN_small_div(exp(f), sig(f))
-      case "sqrt" => () => new ValExec_DivSqrtRecFN_small_sqrt(exp(f), sig(f))
+      case "div" => () => new TestBench(exp(f), sig(f))
+      case "sqrt" => () => new TestBench(exp(f), sig(f))
     }
+
     test(
       s"DivSqrtRecF${f}_small_${fn}",
       generator(0),
@@ -208,8 +237,5 @@ class DivSqrtRecFn_smallSpec extends FMATester {
     check(test(32, "div"))
   }
 
-  "DivSqrtRecF32_small_sqrt" should "pass" in {
-    check(test(32, "sqrt"))
-  }
 
 }

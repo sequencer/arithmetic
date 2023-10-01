@@ -20,6 +20,11 @@
             circt
             verilator
             testfloat
+            cmake
+            libargs
+            glog
+            fmt
+            zlib
           ];
         in
         {
