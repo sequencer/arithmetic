@@ -36,6 +36,10 @@ void VBridgeImpl::dpiInitCosim() {
   dpiDumpWave();
 }
 
+void VBridgeImpl::dpiBasePoke(svBitVecVal *a) {
+  uint32_t v = 0x1000;
+  *a = v;
+}
 
 
 

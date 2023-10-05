@@ -17,7 +17,9 @@ class VerificationModule extends RawModule {
   val pokeDUT = IO(Valid(new DUTInput(8,24)))
   val pokeReference  = IO(Output(new Reference(8,24)))
 
-  pokeDUT.bits.a := 0.U
+  val ready = IO(Input(Bool()))
+
+
   pokeDUT.bits.b := 0.U
   pokeDUT.bits.op := 0.U
   pokeDUT.bits.roundingMode := 0.U
@@ -73,6 +75,46 @@ class VerificationModule extends RawModule {
   })
   clock := verbatim.clock
   reset := verbatim.reset
+
+  val dpiBasePoke = Module(new ExtModule with HasExtModuleInline {
+    override val desiredName = "dpiBasePoke"
+    val a = IO(Output(UInt(32.W)))
+    val clock = IO(Input(Clock()))
+    setInline(
+      s"$desiredName.sv",
+      s"""module $desiredName(
+         |  input clock,
+         |  output [31:0] a
+         |);
+         |  import "DPI-C" function void $desiredName(output bit[31:0] a);
+         |
+         |  always @ (posedge clock) $desiredName(a);
+         |endmodule
+         |""".stripMargin
+    )
+  })
+  dpiBasePoke.clock := verbatim.clock
+  pokeDUT.bits.a := dpiBasePoke.a
+
+  val dpiBasePeek = Module(new ExtModule with HasExtModuleInline {
+    override val desiredName = "dpiBasePeek"
+    val ready = IO(Input(Bool()))
+    val clock = IO(Input(Clock()))
+    setInline(
+      s"$desiredName.sv",
+      s"""module $desiredName(
+         |  input clock,
+         |  input ready
+         |);
+         |  import "DPI-C" function void $desiredName(input bit ready);
+         |
+         |  always @ (posedge clock) $desiredName(ready);
+         |endmodule
+         |""".stripMargin
+    )
+  })
+  dpiBasePeek.clock := verbatim.clock
+  dpiBasePeek.ready := ready
 
 
 }

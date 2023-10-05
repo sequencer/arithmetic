@@ -38,9 +38,12 @@ void dpiInitCosim() {
 
 }
 
-[[maybe_unused]] void dpiBasePoke(svBitVecVal *resetVector) {
-  uint32_t v = 0x1000;
-  *resetVector = v;
+[[maybe_unused]] void dpiBasePoke(svBitVecVal *a) {
+  vbridge_impl_instance.dpiBasePoke(a);
+}
+
+[[maybe_unused]] void dpiBasePeek(svBit ready) {
+  LOG(INFO) << fmt::format("ready = {}", ready);
 }
 
 

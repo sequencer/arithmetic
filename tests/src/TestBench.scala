@@ -25,6 +25,8 @@ class TestBench(expWidth: Int, sigWidth: Int) extends RawModule {
   dut.io.expected.out := verificationModule.pokeReference.out
   dut.io.expected.exceptionFlags := verificationModule.pokeReference.exceptionFlags
 
+  verificationModule.ready := dut.io.input.ready
+
 
 
 }

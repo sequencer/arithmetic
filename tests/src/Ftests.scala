@@ -142,15 +142,13 @@ trait FMATester extends AnyFlatSpec with Matchers with ParallelTestExecution {
       "vbridge_impl.cc",
       "vbridge_impl.h"
     ).map { f =>
-      os.write.over(emulatorCSrc / f, os.read(os.pwd / "tests" / "resources" / "csrc" / f))
-      emulatorCSrc / f
+      os.pwd / "tests" / "resources" / "csrc" / f
     }
 
     val allCHeaderFiles = Seq(
       "verilator.h"
     ).map { f =>
-      os.write.over(emulatorCHeader / f, os.read(os.pwd / "tests" / "resources" / "includes" / f))
-      emulatorCHeader / f
+      os.pwd / "tests" / "resources" / "includes" / f
     }
 
     val verilatorArgs = Seq(
@@ -213,6 +211,10 @@ trait FMATester extends AnyFlatSpec with Matchers with ParallelTestExecution {
 
     // build emulator
     os.proc(Seq("ninja", "-C", emulatorBuildDir).map(_.toString)).call(emulatorBuildDir)
+
+    // run
+    os.proc(Seq("./emulator").map(_.toString)).call(emulatorBuildDir)
+
 
     Seq("No errors found.")
   }

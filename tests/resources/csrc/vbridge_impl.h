@@ -25,6 +25,8 @@ public:
 
     uint64_t getCycle() { return ctx->time(); }
 
+    static void dpiBasePoke(uint32_t *a);
+
 
 
 
