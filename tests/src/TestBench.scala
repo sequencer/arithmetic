@@ -16,18 +16,16 @@ class TestBench(expWidth: Int, sigWidth: Int) extends RawModule {
   clock := verificationModule.clock
   reset := verificationModule.reset
 
-  dut.input.bits.a             := verificationModule.toDUT.bits.a
-  dut.input.bits.b             := verificationModule.toDUT.bits.b
-  dut.input.bits.op            := verificationModule.toDUT.bits.op
-  dut.input.bits.roundingMode  := verificationModule.toDUT.bits.roundingMode
-  dut.input.bits.refOut        := verificationModule.toDUT.bits.refOut
-  dut.input.bits.refFlags      := verificationModule.toDUT.bits.refFlags
-  dut.input.valid              := verificationModule.toDUT.valid
-  verificationModule.toDUT.ready  := dut.input.ready
-  verificationModule.check := dut.check
-  verificationModule.pass  := dut.pass
-  verificationModule.result := dut.actual.out
-  verificationModule.fflags := dut.actual.exceptionFlags
+//  dut.input.bits.a             := verificationModule.dutPoke.bits.a
+//  dut.input.bits.b             := verificationModule.dutPoke.bits.b
+//  dut.input.bits.op            := verificationModule.dutPoke.bits.op
+//  dut.input.bits.roundingMode  := verificationModule.dutPoke.bits.roundingMode
+//  dut.input.valid              := verificationModule.dutPoke.valid
+//  verificationModule.dutPoke.ready  := dut.input.ready
+
+  verificationModule.dutPoke <> dut.input
+
+  verificationModule.dutPeek := dut.output
 
 }
 

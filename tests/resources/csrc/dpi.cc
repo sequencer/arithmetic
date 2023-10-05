@@ -52,11 +52,17 @@ void dpiInitCosim() {
                  svBitVecVal *a,
                  svBitVecVal *b,
                  svBitVecVal *op,
-                 svBitVecVal *rm,
-                 svBitVecVal *refOut,
-                 svBitVecVal *refFlags) {
-  vbridge_impl_instance.dpiPeekPoke(DutInterface{valid, a, b, op, rm, refOut, refFlags});
+                 svBitVecVal *rm) {
+  vbridge_impl_instance.dpiPeekPoke(DutInterface{valid, a, b, op, rm});
 
+}
+
+[[maybe_unused]] void dpiCheck(
+            svBit valid,
+            const svBitVecVal *result,
+            const svBitVecVal *fflags) {
+
+   vbridge_impl_instance.dpiCheck(valid, *result, *fflags);
 }
 
 

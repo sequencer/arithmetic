@@ -6,6 +6,4 @@ struct DutInterface{
                     svBitVecVal *b;
                     svBitVecVal *op;
                     svBitVecVal *rm;
-                    svBitVecVal *refOut;
-                    svBitVecVal *refFlags;
 };

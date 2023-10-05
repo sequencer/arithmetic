@@ -16,12 +16,10 @@ class VerificationModule extends RawModule {
   val reset = IO(Output(Bool()))
 
 
-  val toDUT = IO(DecoupledIO(new DutPoke(8,24)))
-  val check = IO(Input(Bool()))
-  val pass = IO(Input(Bool()))
+  val dutPoke = IO(DecoupledIO(new DutPoke(8,24)))
 
-  val result = IO(Input(UInt(32.W)))
-  val fflags = IO(Input(UInt(32.W)))
+
+  val dutPeek = IO(Flipped(ValidIO(new DutPeek(8,24))))
 
 
   val verbatim = Module(new ExtModule with HasExtModuleInline {
@@ -72,25 +70,6 @@ class VerificationModule extends RawModule {
   clock := verbatim.clock
   reset := verbatim.reset
 
-  val dpiBasePoke = Module(new ExtModule with HasExtModuleInline {
-    override val desiredName = "dpiBasePoke"
-    val a = IO(Output(UInt(32.W)))
-    val clock = IO(Input(Clock()))
-    setInline(
-      s"$desiredName.sv",
-      s"""module $desiredName(
-         |  input clock,
-         |  output [31:0] a
-         |);
-         |  import "DPI-C" function void $desiredName(output bit[31:0] a);
-         |
-         |  always @ (posedge clock) $desiredName(a);
-         |endmodule
-         |""".stripMargin
-    )
-  })
-  dpiBasePoke.clock := verbatim.clock
-//  toDUT.bits.a := dpiBasePoke.a
 
   val dpiBasePeek = Module(new ExtModule with HasExtModuleInline {
     override val desiredName = "dpiBasePeek"
@@ -110,7 +89,42 @@ class VerificationModule extends RawModule {
     )
   })
   dpiBasePeek.clock := verbatim.clock
-  dpiBasePeek.ready := toDUT.ready
+  dpiBasePeek.ready := dutPoke.ready
+
+  val dpiCheck = Module(new ExtModule with HasExtModuleInline {
+    override val desiredName = "dpiCheck"
+    val clock  = IO(Input(Clock()))
+    val valid  = IO(Input(Bool()))
+    val result = IO(Input(UInt(32.W)))
+    val fflags = IO(Input(UInt(5.W)))
+
+    setInline(
+      s"$desiredName.sv",
+      s"""module $desiredName(
+         |  input clock,
+         |  input valid,
+         |  input [31:0] result,
+         |  input [4:0]  fflags
+         |);
+         |  import "DPI-C" function void $desiredName(
+         |  input bit valid,
+         |  input bit[31:0] result,
+         |  input bit[4:0]  fflags
+         |  );
+         |
+         |  always @ (posedge clock) #1 $desiredName(
+         |  valid,
+         |  result,
+         |  fflags
+         |  );
+         |endmodule
+         |""".stripMargin
+    )
+  })
+  dpiCheck.clock  := verbatim.clock
+  dpiCheck.result := dutPeek.bits.result
+  dpiCheck.fflags := dutPeek.bits.fflags
+  dpiCheck.valid  := dutPeek.valid
 
   val dpiPeekPoke = Module(new ExtModule with HasExtModuleInline {
     override val desiredName = "dpiPeekPoke"
@@ -119,8 +133,6 @@ class VerificationModule extends RawModule {
     val b = IO(Output(UInt(32.W)))
     val op = IO(Output(UInt(2.W)))
     val rm = IO(Output(UInt(3.W)))
-    val refOut = IO(Output(UInt(32.W)))
-    val refFlags = IO(Output(UInt(5.W)))
     val valid = IO(Output(Bool()))
     setInline(
       s"$desiredName.sv",
@@ -130,9 +142,7 @@ class VerificationModule extends RawModule {
          |  output [31:0] a,
          |  output [31:0] b,
          |  output [1:0] op,
-         |  output [2:0] rm,
-         |  output [31:0] refOut,
-         |  output [4:0]  refFlags
+         |  output [2:0] rm
          |);
          |
          |  import "DPI-C" function void $desiredName(
@@ -140,9 +150,7 @@ class VerificationModule extends RawModule {
          |  output bit[31:0] a,
          |  output bit[31:0] b,
          |  output bit[1:0]  op,
-         |  output bit[2:0]  rm,
-         |  output bit[31:0] refOut,
-         |  output bit[4:0]  refFlags
+         |  output bit[2:0]  rm
          |  );
          |
          |  always @ (negedge clock) $desiredName(
@@ -150,24 +158,18 @@ class VerificationModule extends RawModule {
          |  a,
          |  b,
          |  op,
-         |  rm,
-         |  refOut,
-         |  refFlags);
-         |
-         |
+         |  rm);
          |
          |endmodule
          |""".stripMargin
     )
   })
   dpiPeekPoke.clock       := verbatim.clock
-  toDUT.valid             := dpiPeekPoke.valid
-  toDUT.bits.a            := dpiPeekPoke.a
-  toDUT.bits.b            := dpiPeekPoke.b
-  toDUT.bits.op           := dpiPeekPoke.op
-  toDUT.bits.roundingMode := dpiPeekPoke.rm
-  toDUT.bits.refOut       := dpiPeekPoke.refOut
-  toDUT.bits.refFlags     := dpiPeekPoke.refFlags
+  dutPoke.valid             := dpiPeekPoke.valid
+  dutPoke.bits.a            := dpiPeekPoke.a
+  dutPoke.bits.b            := dpiPeekPoke.b
+  dutPoke.bits.op           := dpiPeekPoke.op
+  dutPoke.bits.roundingMode := dpiPeekPoke.rm
 
 
 

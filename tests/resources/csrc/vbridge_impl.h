@@ -54,11 +54,19 @@ public:
 
     std::queue <testdata> test_queue;
 
+    testdata testcase;
+
     void initTestCases();
+
+    void dpiCheck(svBit valid,
+                  svBitVecVal result,
+                  svBitVecVal fflags);
 
     void set_available();
 
     void clr_available();
+
+    void reloadcase();
 
 
 private:
