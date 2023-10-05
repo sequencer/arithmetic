@@ -186,18 +186,21 @@ trait FMATester extends AnyFlatSpec with Matchers with ParallelTestExecution {
          |
          |add_executable(emulator
          |${allCSourceFiles.mkString("\n")}
-         |${runDir}/testfloat.a
-         |${runDir}/softfloat.a
          |)
          |
          |target_include_directories(emulator PUBLIC
          |$emulatorCHeader
-         |./berkeley-testfloat-3/source/
-         |./berkeley-softfloat-3/source/include/
+         |/home/yyq/Projects/arithmetic/berkeley-testfloat-3/source
+         |/home/yyq/Projects/arithmetic/berkeley-softfloat-3/source/include
          |)
          |
          |target_link_libraries(emulator PUBLIC $${CMAKE_THREAD_LIBS_INIT})
-         |target_link_libraries(emulator PUBLIC  fmt::fmt glog::glog )  # note that libargs is header only, nothing to link
+         |target_link_libraries(emulator PUBLIC
+         |fmt::fmt
+         |glog::glog
+         |/home/yyq/Projects/arithmetic/run/softfloat.a
+         |/home/yyq/Projects/arithmetic/run/testfloat.a
+         |)  # note that libargs is header only, nothing to link
          |target_compile_definitions(emulator PRIVATE COSIM_VERILATOR)
          |
          |verilate(emulator

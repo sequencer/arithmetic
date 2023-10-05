@@ -11,6 +11,26 @@
 
 #include "encoding.h"
 
+#include <cstdio>
+#include <cassert>
+#include <cstdint>
+
+extern "C" {
+#include "functions.h"
+#include "softfloat.h"
+#include "genCases.h"
+#include "genLoops.h"
+}
+
+struct testdata {
+    uint64_t a;
+    uint64_t b;
+    uint64_t expected_out;
+    function_t function;
+    roundingMode_t roundingMode;
+    exceptionFlag_t expectedException;
+};
+
 
 class VBridgeImpl {
 public:
