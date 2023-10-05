@@ -24,6 +24,10 @@ class TestBench(expWidth: Int, sigWidth: Int) extends RawModule {
   dut.input.bits.refFlags      := verificationModule.toDUT.bits.refFlags
   dut.input.valid              := verificationModule.toDUT.valid
   verificationModule.toDUT.ready  := dut.input.ready
+  verificationModule.check := dut.check
+  verificationModule.pass  := dut.pass
+  verificationModule.result := dut.actual.out
+  verificationModule.fflags := dut.actual.exceptionFlags
 
 }
 

@@ -16,7 +16,13 @@ class VerificationModule extends RawModule {
   val reset = IO(Output(Bool()))
 
 
-  val toDUT = IO(DecoupledIO(new DutInterface(8,24)))
+  val toDUT = IO(DecoupledIO(new DutPoke(8,24)))
+  val check = IO(Input(Bool()))
+  val pass = IO(Input(Bool()))
+
+  val result = IO(Input(UInt(32.W)))
+  val fflags = IO(Input(UInt(32.W)))
+
 
   val verbatim = Module(new ExtModule with HasExtModuleInline {
     override val desiredName = "Verbatim"

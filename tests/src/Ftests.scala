@@ -123,12 +123,9 @@ trait FMATester extends AnyFlatSpec with Matchers with ParallelTestExecution {
       "firtool",
       elaborateDir / s"$topName.fir", s"--annotation-file=${elaborateDir / s"$topName.anno.json"}",
       "-dedup",
-      "-O=release",
-      "--disable-all-randomization",
+      "-O=debug",
       "--split-verilog",
-      "--preserve-values=none",
-      "--preserve-aggregate=all",
-      "--strip-debug-info",
+      "--preserve-values=named",
       s"-o=$rtlDir"
     ).call()
     val verilogs = os.read.lines(rtlDir / "filelist.f")

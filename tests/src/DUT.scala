@@ -12,7 +12,7 @@ import float._
   *
   * */
 class DUT(expWidth: Int, sigWidth: Int) extends Module {
-  val input = IO(Flipped(Decoupled(new DutInterface(expWidth, sigWidth))))
+  val input = IO(Flipped(Decoupled(new DutPoke(expWidth, sigWidth))))
 
   val actual = IO(new Bundle {
     val out = Output(Bits((expWidth + sigWidth).W))
@@ -45,7 +45,7 @@ class DUT(expWidth: Int, sigWidth: Int) extends Module {
 
 }
 
-class DutInterface(expWidth: Int, sigWidth: Int) extends Bundle {
+class DutPoke(expWidth: Int, sigWidth: Int) extends Bundle {
   val a = UInt((expWidth + sigWidth).W)
   val b = UInt((expWidth + sigWidth).W)
   val op = UInt(2.W)
