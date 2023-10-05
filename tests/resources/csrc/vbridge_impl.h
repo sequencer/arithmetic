@@ -46,13 +46,19 @@ public:
 
     uint64_t getCycle() { return ctx->time(); }
 
-    static void dpiBasePoke(uint32_t *a);
+    void dpiBasePoke(uint32_t *a);
 
     void dpiPeekPoke(const DutInterface &toDut);
 
-    static void dpiBasePeek(svBit ready);
+    void dpiBasePeek(svBit ready);
 
+    std::queue <testdata> test_queue;
 
+    void initTestCases();
+
+    void set_available();
+
+    void clr_available();
 
 
 private:
@@ -64,6 +70,10 @@ private:
 
 
     const std::string wave = "/home/yyq/Projects/arithmetic/run/wave";
+
+    bool available;
+
+
 
 
 

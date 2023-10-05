@@ -11,37 +11,37 @@ import float._
   * in
   *
   * */
-class DUT(expWidth:Int, sigWidth:Int) extends Module {
-    val input = IO(Flipped(Decoupled(new DutInterface(expWidth, sigWidth))))
+class DUT(expWidth: Int, sigWidth: Int) extends Module {
+  val input = IO(Flipped(Decoupled(new DutInterface(expWidth, sigWidth))))
 
-    val actual = IO(new Bundle {
-      val out = Output(Bits((expWidth + sigWidth).W))
-      val exceptionFlags = Output(Bits(5.W))
-    })
+  val actual = IO(new Bundle {
+    val out = Output(Bits((expWidth + sigWidth).W))
+    val exceptionFlags = Output(Bits(5.W))
+  })
 
-    val check = IO(Output(Bool()))
-    val pass = IO(Output(Bool()))
+  val check = IO(Output(Bool()))
+  val pass = IO(Output(Bool()))
 
 
   val ds = Module(new DivSqrt(expWidth: Int, sigWidth: Int))
-  ds.input.valid :=  input.valid
-  ds.input.bits.sqrt :=  input.valid
-  ds.input.bits.a :=  input.bits.a
-  ds.input.bits.b :=  input.bits.b
-  ds.input.bits.roundingMode :=  input.bits.roundingMode
-  /** @todo */
-   input.ready := ds.input.ready
+  ds.input.valid := input.valid
+  ds.input.bits.sqrt := input.valid
+  ds.input.bits.a := input.bits.a
+  ds.input.bits.b := input.bits.b
+  ds.input.bits.roundingMode := input.bits.roundingMode
+
+  input.ready := ds.input.ready
 
   // collect result
-   actual.out := ds.output.bits.result
-   actual.exceptionFlags := ds.output.bits.exceptionFlags
+  actual.out := ds.output.bits.result
+  actual.exceptionFlags := ds.output.bits.exceptionFlags
 
 
-  val resultError =  actual.out =/=  input.bits.refOut
-  val flagError =  actual.exceptionFlags =/=  input.bits.refFlags
+  val resultError = actual.out =/= input.bits.refOut
+  val flagError = actual.exceptionFlags =/= input.bits.refFlags
 
-   check := ds.output.valid
-   pass := !(ds.output.valid && (resultError || flagError))
+  check := ds.output.valid
+  pass := !(ds.output.valid && (resultError || flagError))
 
 }
 

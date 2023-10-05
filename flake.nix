@@ -25,6 +25,7 @@
             glog
             fmt
             zlib
+            ninja
           ];
         in
         {
