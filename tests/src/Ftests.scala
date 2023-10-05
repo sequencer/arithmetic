@@ -88,9 +88,15 @@ trait FMATester extends AnyFlatSpec with Matchers with ParallelTestExecution {
     os.makeDir.all(emulatorBuildDir)
 
 
-//    os.remove(rtlDir / "dut.sv")
-//    os.write(rtlDir / "dut.sv", chisel3.getVerilogString(new VerificationModule))
+    os.proc(
+      "make",
+      "softfloat",
+    ).call()
 
+    os.proc(
+      "make",
+      "testfloat",
+    ).call()
 
 
     val annos: AnnotationSeq = Seq(
@@ -180,9 +186,15 @@ trait FMATester extends AnyFlatSpec with Matchers with ParallelTestExecution {
          |
          |add_executable(emulator
          |${allCSourceFiles.mkString("\n")}
+         |${runDir}/testfloat.a
+         |${runDir}/softfloat.a
          |)
          |
-         |target_include_directories(emulator PUBLIC $emulatorCHeader)
+         |target_include_directories(emulator PUBLIC
+         |$emulatorCHeader
+         |./berkeley-testfloat-3/source/
+         |./berkeley-softfloat-3/source/include/
+         |)
          |
          |target_link_libraries(emulator PUBLIC $${CMAKE_THREAD_LIBS_INIT})
          |target_link_libraries(emulator PUBLIC  fmt::fmt glog::glog )  # note that libargs is header only, nothing to link

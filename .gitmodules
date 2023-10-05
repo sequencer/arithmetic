@@ -1,3 +1,9 @@
 [submodule "dependencies/chisel"]
 	path = dependencies/chisel
 	url = git@github.com:chipsalliance/chisel.git
+[submodule "berkeley-testfloat-3"]
+	path = berkeley-testfloat-3
+	url = git@github.com:cyyself/berkeley-testfloat-3.git
+[submodule "berkeley-softfloat-3"]
+	path = berkeley-softfloat-3
+	url = git@github.com:cyyself/berkeley-softfloat-3.git

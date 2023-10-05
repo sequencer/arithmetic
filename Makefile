@@ -1,3 +1,5 @@
+
+
 init:
 	git submodule update --init
 
@@ -15,4 +17,12 @@ bsp:
 
 clean:
 	git clean -fd
+
+softfloat:
+	make -C berkeley-softfloat-3/build/Linux-x86_64-GCC TESTFLOAT_OPTS="-DFLOAT64 -DFLOAT_ROUND_ODD" softfloat.a -j `nproc`
+	cp berkeley-softfloat-3/build/Linux-x86_64-GCC/softfloat.a run/
+
+testfloat:
+	make -C berkeley-testfloat-3/build/Linux-x86_64-GCC TESTFLOAT_OPTS="-DFLOAT64 -DFLOAT_ROUND_ODD" testfloat.a -j `nproc`
+	cp berkeley-testfloat-3/build/Linux-x86_64-GCC/testfloat.a run/
 
