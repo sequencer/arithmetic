@@ -140,7 +140,8 @@ trait FMATester extends AnyFlatSpec with Matchers with ParallelTestExecution {
     val allCSourceFiles = Seq(
       "dpi.cc",
       "vbridge_impl.cc",
-      "vbridge_impl.h"
+      "vbridge_impl.h",
+      "encoding.h"
     ).map { f =>
       os.pwd / "tests" / "resources" / "csrc" / f
     }

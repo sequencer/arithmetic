@@ -46,6 +46,17 @@ void dpiInitCosim() {
   LOG(INFO) << fmt::format("ready = {}", ready);
 }
 
+//[[maybe_unused]] void dpiPeekPoke(svBit ready,
+//                 svBit *valid,
+//                 svBitVecVal *a,
+//                 svBitVecVal *b,
+//                 svBitVecVal *op,
+//                 svBitVecVal *rm,
+//                 svBitVecVal *refOut,
+//                 svBitVecVal *refFlags) {
+//  vbridge_impl_instance.dpiPeekPoke(DutInterface(ready, valid, a, b, op, rm, refOut, refFlags));
+//}
+
 
 
 

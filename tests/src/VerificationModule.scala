@@ -14,19 +14,7 @@ class VerificationModule extends RawModule {
   val reset = IO(Output(Bool()))
 
 
-  val pokeDUT = IO(Valid(new DUTInput(8,24)))
-  val pokeReference  = IO(Output(new Reference(8,24)))
-
-  val ready = IO(Input(Bool()))
-
-
-  pokeDUT.bits.b := 0.U
-  pokeDUT.bits.op := 0.U
-  pokeDUT.bits.roundingMode := 0.U
-  pokeDUT.valid := true.B
-
-  pokeReference.out := 0.U
-  pokeReference.exceptionFlags := 0.U
+  val toDUT = IO(DecoupledIO(new DutInterface(8,24)))
 
   val verbatim = Module(new ExtModule with HasExtModuleInline {
     override val desiredName = "Verbatim"
@@ -94,7 +82,7 @@ class VerificationModule extends RawModule {
     )
   })
   dpiBasePoke.clock := verbatim.clock
-  pokeDUT.bits.a := dpiBasePoke.a
+  toDUT.bits.a := dpiBasePoke.a
 
   val dpiBasePeek = Module(new ExtModule with HasExtModuleInline {
     override val desiredName = "dpiBasePeek"
@@ -114,7 +102,14 @@ class VerificationModule extends RawModule {
     )
   })
   dpiBasePeek.clock := verbatim.clock
-  dpiBasePeek.ready := ready
+  dpiBasePeek.ready := toDUT.ready
+
+  toDUT.valid             := true.B
+  toDUT.bits.b            := 1.U
+  toDUT.bits.op           := 1.U
+  toDUT.bits.roundingMode := 1.U
+  toDUT.bits.refOut       := 1.U
+  toDUT.bits.refFlags     := 1.U
 
 
 }
