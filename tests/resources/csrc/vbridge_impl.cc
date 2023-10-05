@@ -41,6 +41,21 @@ void VBridgeImpl::dpiBasePoke(svBitVecVal *a) {
   *a = v;
 }
 
+void VBridgeImpl::dpiBasePeek(svBit ready) {
+    LOG(INFO) << fmt::format("dpiPeek running = {}", ready);
+}
+
+void VBridgeImpl::dpiPeekPoke(const DutInterface &toDut) {
+  uint32_t v = 0x1000;
+  *toDut.a = v;
+  *toDut.b = v;
+  *toDut.op = 0;
+  *toDut.rm = 0;
+  *toDut.refOut = v;
+  *toDut.refFlags = v;
+  *toDut.valid = 0;
+}
+
 
 
 VBridgeImpl vbridge_impl_instance;

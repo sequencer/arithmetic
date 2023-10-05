@@ -10,6 +10,8 @@ class VerificationModule extends RawModule {
 
   val clockRate = 2
 
+  val latPeek = 2
+
   val clock = IO(Output(Clock()))
   val reset = IO(Output(Bool()))
 
@@ -82,7 +84,7 @@ class VerificationModule extends RawModule {
     )
   })
   dpiBasePoke.clock := verbatim.clock
-  toDUT.bits.a := dpiBasePoke.a
+//  toDUT.bits.a := dpiBasePoke.a
 
   val dpiBasePeek = Module(new ExtModule with HasExtModuleInline {
     override val desiredName = "dpiBasePeek"
@@ -104,12 +106,64 @@ class VerificationModule extends RawModule {
   dpiBasePeek.clock := verbatim.clock
   dpiBasePeek.ready := toDUT.ready
 
-  toDUT.valid             := true.B
-  toDUT.bits.b            := 1.U
-  toDUT.bits.op           := 1.U
-  toDUT.bits.roundingMode := 1.U
-  toDUT.bits.refOut       := 1.U
-  toDUT.bits.refFlags     := 1.U
+  val dpiPeekPoke = Module(new ExtModule with HasExtModuleInline {
+    override val desiredName = "dpiPeekPoke"
+    val clock = IO(Input(Clock()))
+    val a = IO(Output(UInt(32.W)))
+    val b = IO(Output(UInt(32.W)))
+    val op = IO(Output(UInt(2.W)))
+    val rm = IO(Output(UInt(3.W)))
+    val refOut = IO(Output(UInt(32.W)))
+    val refFlags = IO(Output(UInt(5.W)))
+    val valid = IO(Output(Bool()))
+    setInline(
+      s"$desiredName.sv",
+      s"""module $desiredName(
+         |  output clock,
+         |  output valid,
+         |  output [31:0] a,
+         |  output [31:0] b,
+         |  output [1:0] op,
+         |  output [2:0] rm,
+         |  output [31:0] refOut,
+         |  output [4:0]  refFlags
+         |);
+         |
+         |  import "DPI-C" function void $desiredName(
+         |  output bit valid,
+         |  output bit[31:0] a,
+         |  output bit[31:0] b,
+         |  output bit[1:0]  op,
+         |  output bit[2:0]  rm,
+         |  output bit[31:0] refOut,
+         |  output bit[4:0]  refFlags
+         |  );
+         |
+         |  always @ (negedge clock) $desiredName(
+         |  valid,
+         |  a,
+         |  b,
+         |  op,
+         |  rm,
+         |  refOut,
+         |  refFlags);
+         |
+         |
+         |
+         |endmodule
+         |""".stripMargin
+    )
+  })
+  dpiPeekPoke.clock       := verbatim.clock
+  toDUT.valid             := dpiPeekPoke.valid
+  toDUT.bits.a            := dpiPeekPoke.a
+  toDUT.bits.b            := dpiPeekPoke.b
+  toDUT.bits.op           := dpiPeekPoke.op
+  toDUT.bits.roundingMode := dpiPeekPoke.rm
+  toDUT.bits.refOut       := dpiPeekPoke.refOut
+  toDUT.bits.refFlags     := dpiPeekPoke.refFlags
+
+
 
 
 }

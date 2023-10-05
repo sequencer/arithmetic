@@ -9,6 +9,7 @@
 
 #include <svdpi.h>
 
+#include "encoding.h"
 
 
 class VBridgeImpl {
@@ -26,6 +27,10 @@ public:
     uint64_t getCycle() { return ctx->time(); }
 
     static void dpiBasePoke(uint32_t *a);
+
+    void dpiPeekPoke(const DutInterface &toDut);
+
+    static void dpiBasePeek(svBit ready);
 
 
 

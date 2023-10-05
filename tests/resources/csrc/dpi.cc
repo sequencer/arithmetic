@@ -9,6 +9,7 @@
 
 #include "svdpi.h"
 #include "vbridge_impl.h"
+#include "encoding.h"
 
 
 //void sigint_handler(int s) {
@@ -43,19 +44,20 @@ void dpiInitCosim() {
 }
 
 [[maybe_unused]] void dpiBasePeek(svBit ready) {
-  LOG(INFO) << fmt::format("ready = {}", ready);
+  vbridge_impl_instance.dpiBasePeek(ready);
 }
 
-//[[maybe_unused]] void dpiPeekPoke(svBit ready,
-//                 svBit *valid,
-//                 svBitVecVal *a,
-//                 svBitVecVal *b,
-//                 svBitVecVal *op,
-//                 svBitVecVal *rm,
-//                 svBitVecVal *refOut,
-//                 svBitVecVal *refFlags) {
-//  vbridge_impl_instance.dpiPeekPoke(DutInterface(ready, valid, a, b, op, rm, refOut, refFlags));
-//}
+[[maybe_unused]] void dpiPeekPoke(
+                 svBit *valid,
+                 svBitVecVal *a,
+                 svBitVecVal *b,
+                 svBitVecVal *op,
+                 svBitVecVal *rm,
+                 svBitVecVal *refOut,
+                 svBitVecVal *refFlags) {
+  vbridge_impl_instance.dpiPeekPoke(DutInterface{valid, a, b, op, rm, refOut, refFlags});
+
+}
 
 
 
