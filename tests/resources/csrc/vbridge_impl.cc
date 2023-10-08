@@ -7,7 +7,7 @@
 
 
 
-VBridgeImpl::VBridgeImpl() : _cycles(10000) {}
+VBridgeImpl::VBridgeImpl() : _cycles(1000000) {}
 
 
 uint64_t VBridgeImpl::get_t() {
@@ -17,7 +17,7 @@ uint64_t VBridgeImpl::get_t() {
 
 int VBridgeImpl::timeoutCheck() {
   if (get_t() > _cycles) {
-    LOG(INFO) << fmt::format("Simulation timeout, t={}", get_t());
+    LOG(INFO) << fmt::format("Simulation timeout, t={}, num={}", get_t(), cnt);
     dpiFinish();
   }
   return 0;
@@ -40,6 +40,8 @@ void VBridgeImpl::dpiInitCosim() {
   LOG(INFO) << fmt::format("[{}] dpiInitCosim", getCycle());
 
   initTestCases();
+
+  cnt = 0;
 
   reloadcase();
 
@@ -77,18 +79,19 @@ void VBridgeImpl::dpiPeekPoke(const DutInterface &toDut) {
 
 void VBridgeImpl::dpiCheck(svBit valid, svBitVecVal result, svBitVecVal fflags) {
   if(valid == 0) return;
-  LOG(INFO) << fmt::format("check");
+//  LOG(INFO) << fmt::format("check");
   if((result == testcase.expected_out) && (fflags == testcase.expectedException))
     reloadcase();
   else
   {
-    LOG(INFO) << fmt::format("error");
+
     LOG(INFO) << fmt::format("a = {:08X} \n", testcase.a);
     LOG(INFO) << fmt::format("b = {:08X} \n", testcase.b);
     LOG(INFO) << fmt::format("dut_result = {:08X} \n" , result);
     LOG(INFO) << fmt::format("ref_result = {:08X} \n",testcase.expected_out);
     LOG(INFO) << fmt::format("dut_flags = {:X} \n",fflags);
     LOG(INFO) << fmt::format("ref_flags = {:X} \n",(int)testcase.expectedException);
+    LOG(FATAL) << fmt::format("error at {} cases",cnt);
     dpiFinish();
 
   }
@@ -166,7 +169,7 @@ void VBridgeImpl::initTestCases() {
 
 void VBridgeImpl::reloadcase() {
 
-
+  cnt++;
 
   testcase.a = test_queue.front().a;
   testcase.b = test_queue.front().b;

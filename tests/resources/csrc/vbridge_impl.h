@@ -68,6 +68,8 @@ public:
 
     void reloadcase();
 
+    uint64_t cnt;
+
 
 private:
 
