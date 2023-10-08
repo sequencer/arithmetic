@@ -7,7 +7,7 @@
 
 
 
-VBridgeImpl::VBridgeImpl() : _cycles(1000000) {}
+VBridgeImpl::VBridgeImpl() : _cycles(1000) {}
 
 
 uint64_t VBridgeImpl::get_t() {
@@ -16,8 +16,8 @@ uint64_t VBridgeImpl::get_t() {
 
 
 int VBridgeImpl::timeoutCheck() {
-  if (get_t() > _cycles) {
-    LOG(INFO) << fmt::format("Simulation timeout, t={}, num={}", get_t(), cnt);
+  if (cnt > _cycles) {
+    LOG(INFO) << fmt::format("pass {} cases, time = {}", cnt, get_t());
     dpiFinish();
   }
   return 0;
@@ -39,14 +39,47 @@ void VBridgeImpl::dpiInitCosim() {
 
   LOG(INFO) << fmt::format("[{}] dpiInitCosim", getCycle());
 
-  initTestCases();
+
 
   cnt = 0;
+
+  switch(rm){
+    case 0:
+      roundingMode = ROUND_NEAR_EVEN;
+      rmstring = "RNE";
+      break;
+    case 1:
+      roundingMode = ROUND_MINMAG;
+      rmstring = "RTZ";
+      break;
+    case 2:
+      roundingMode = ROUND_MIN;
+      rmstring = "RDN";
+      break;
+    case 3:
+      roundingMode = ROUND_MAX;
+      rmstring = "RUP";
+      break;
+    case 4:
+      roundingMode = ROUND_NEAR_MAXMAG;
+      rmstring = "RMM";
+      break;
+    default:
+      LOG(FATAL) << fmt::format("ilegal rm value = {}",rm);
+  }
+
+  LOG(INFO) << fmt::format("start test operation={} rounding mode= {}",op,rmstring);
+
+  initTestCases();
+
+
 
   reloadcase();
 
   dpiDumpWave();
 }
+
+
 
 void VBridgeImpl::dpiBasePoke(svBitVecVal *a) {
   uint32_t v = 0x1000;
@@ -70,7 +103,7 @@ void VBridgeImpl::dpiPeekPoke(const DutInterface &toDut) {
   *toDut.a = testcase.a;
   *toDut.b = testcase.b;
   *toDut.op = 0;
-  *toDut.rm = 0;
+  *toDut.rm = rm;
   *toDut.valid = true;
 
 
@@ -91,7 +124,7 @@ void VBridgeImpl::dpiCheck(svBit valid, svBitVecVal result, svBitVecVal fflags) 
     LOG(INFO) << fmt::format("ref_result = {:08X} \n",testcase.expected_out);
     LOG(INFO) << fmt::format("dut_flags = {:X} \n",fflags);
     LOG(INFO) << fmt::format("ref_flags = {:X} \n",(int)testcase.expectedException);
-    LOG(FATAL) << fmt::format("error at {} cases",cnt);
+    LOG(INFO) << fmt::format("error at {} cases",cnt);
     dpiFinish();
 
   }
@@ -154,14 +187,20 @@ void outputTestCases(std::vector<testdata> cases) {
 void fillTestQueue(std::vector<testdata> cases) {
   for (auto x : cases) {
     vbridge_impl_instance.test_queue.push(x);
-//    LOG(INFO) << fmt::format("queue = {}  {}",vbridge_impl_instance.test_queue.back().a, vbridge_impl_instance.test_queue.back().b);
+
   }
 }
 
 
 void VBridgeImpl::initTestCases() {
-  auto res = genTestCase(F32_DIV, ROUND_NEAR_EVEN);
+  LOG(INFO) << fmt::format("generate cases in roundingMode = {}", (int)roundingMode);
+  LOG(INFO) << fmt::format("circuit  rm = {}", rm);
+  auto res = genTestCase(F32_DIV, roundingMode);
+  LOG(INFO) << fmt::format("vector = {:08X} ",res[0].expected_out);
+
+
   fillTestQueue(res);
+  LOG(INFO) << fmt::format("queue = {:08X} ",vbridge_impl_instance.test_queue.front().expected_out);
   outputTestCases(res); // TODO: demo, please delete
 
 

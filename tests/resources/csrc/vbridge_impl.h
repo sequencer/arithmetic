@@ -10,6 +10,7 @@
 #include <svdpi.h>
 
 #include "encoding.h"
+#include "util.h"
 
 #include <cstdio>
 #include <cassert>
@@ -70,6 +71,10 @@ public:
 
     uint64_t cnt;
 
+    roundingMode_t roundingMode;
+
+    std::string rmstring;
+
 
 private:
 
@@ -79,9 +84,20 @@ private:
     uint64_t _cycles;
 
 
-    const std::string wave = "/home/yyq/Projects/arithmetic/run/wave";
+//    const std::string wave = "/home/yyq/Projects/arithmetic/run/wave";
 
     bool available;
+
+    const std::string wave = get_env_arg("wave");
+
+    const std::string op = get_env_arg("op");
+
+    const int rm = std::stoul(get_env_arg("rm"), nullptr, 10);
+
+
+
+
+
 
 
 

@@ -144,7 +144,10 @@ trait FMATester extends AnyFlatSpec with Matchers with ParallelTestExecution {
       "dpi.cc",
       "vbridge_impl.cc",
       "vbridge_impl.h",
-      "encoding.h"
+      "encoding.h",
+      "exceptions.h",
+      "glog_exception_safe.h",
+      "util.h"
     ).map { f =>
       os.pwd / "tests" / "resources" / "csrc" / f
     }
@@ -225,8 +228,15 @@ trait FMATester extends AnyFlatSpec with Matchers with ParallelTestExecution {
     // build emulator
     os.proc(Seq("ninja", "-C", emulatorBuildDir).map(_.toString)).call(emulatorBuildDir)
 
+    val runEnv = Map(
+      "wave" -> s"${runDir}/",
+      "op" -> "div",
+      "rm" -> "1"
+    )
+
+
     // run
-    os.proc(Seq("./emulator").map(_.toString)).call(emulatorBuildDir)
+    os.proc(Seq("./emulator").map(_.toString)).call(cwd=emulatorBuildDir,env=runEnv)
 
 
     Seq("No errors found.")

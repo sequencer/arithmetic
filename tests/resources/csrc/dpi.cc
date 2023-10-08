@@ -22,7 +22,7 @@
 
 void VBridgeImpl::dpiDumpWave() {
 
-        ::dpiDumpWave((wave + ".fst").c_str());
+        ::dpiDumpWave((wave + op + rmstring + ".fst").c_str());
 
 }
 #endif
