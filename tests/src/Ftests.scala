@@ -187,16 +187,16 @@ trait FMATester extends AnyFlatSpec with Matchers with ParallelTestExecution {
          |
          |target_include_directories(emulator PUBLIC
          |$emulatorCHeader
-         |/home/yyq/Projects/arithmetic/berkeley-testfloat-3/source
-         |/home/yyq/Projects/arithmetic/berkeley-softfloat-3/source/include
+         |${os.pwd}/berkeley-testfloat-3/source
+         |${os.pwd}/berkeley-softfloat-3/source/include
          |)
          |
          |target_link_libraries(emulator PUBLIC $${CMAKE_THREAD_LIBS_INIT})
          |target_link_libraries(emulator PUBLIC
          |fmt::fmt
          |glog::glog
-         |/home/yyq/Projects/arithmetic/run/softfloat.a
-         |/home/yyq/Projects/arithmetic/run/testfloat.a
+         |$runDir/softfloat.a
+         |$runDir/testfloat.a
          |)  # note that libargs is header only, nothing to link
          |target_compile_definitions(emulator PRIVATE COSIM_VERILATOR)
          |
