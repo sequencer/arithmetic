@@ -71,8 +71,8 @@ class VerificationModule extends RawModule {
   reset := verbatim.reset
 
 
-  val dpiBasePeek = Module(new ExtModule with HasExtModuleInline {
-    override val desiredName = "dpiBasePeek"
+  val dpiPeek = Module(new ExtModule with HasExtModuleInline {
+    override val desiredName = "dpiPeek"
     val ready = IO(Input(Bool()))
     val clock = IO(Input(Clock()))
     setInline(
@@ -88,8 +88,8 @@ class VerificationModule extends RawModule {
          |""".stripMargin
     )
   })
-  dpiBasePeek.clock := verbatim.clock
-  dpiBasePeek.ready := dutPoke.ready
+  dpiPeek.clock := verbatim.clock
+  dpiPeek.ready := dutPoke.ready
 
   val dpiCheck = Module(new ExtModule with HasExtModuleInline {
     override val desiredName = "dpiCheck"
@@ -126,8 +126,8 @@ class VerificationModule extends RawModule {
   dpiCheck.fflags := dutPeek.bits.fflags
   dpiCheck.valid  := dutPeek.valid
 
-  val dpiPeekPoke = Module(new ExtModule with HasExtModuleInline {
-    override val desiredName = "dpiPeekPoke"
+  val dpiPoke = Module(new ExtModule with HasExtModuleInline {
+    override val desiredName = "dpiPoke"
     val clock = IO(Input(Clock()))
     val a = IO(Output(UInt(32.W)))
     val b = IO(Output(UInt(32.W)))
@@ -164,12 +164,12 @@ class VerificationModule extends RawModule {
          |""".stripMargin
     )
   })
-  dpiPeekPoke.clock       := verbatim.clock
-  dutPoke.valid             := dpiPeekPoke.valid
-  dutPoke.bits.a            := dpiPeekPoke.a
-  dutPoke.bits.b            := dpiPeekPoke.b
-  dutPoke.bits.op           := dpiPeekPoke.op
-  dutPoke.bits.roundingMode := dpiPeekPoke.rm
+  dpiPoke.clock       := verbatim.clock
+  dutPoke.valid             := dpiPoke.valid
+  dutPoke.bits.a            := dpiPoke.a
+  dutPoke.bits.b            := dpiPoke.b
+  dutPoke.bits.op           := dpiPoke.op
+  dutPoke.bits.roundingMode := dpiPoke.rm
 
 
 

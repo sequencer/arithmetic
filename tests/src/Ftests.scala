@@ -238,7 +238,7 @@ trait FMATester extends AnyFlatSpec with Matchers with ParallelTestExecution {
     for(x<- 0 to 4){
       val runEnv = Map(
         "wave" -> s"${runDir}/",
-        "op" -> "div",
+        "op" -> "sqrt",
         "rm" -> s"$x"
       )
       os.proc(Seq("./emulator").map(_.toString)).call(stdout = runDir / s"${rmMaps(x)}.log",cwd=emulatorBuildDir,env=runEnv)

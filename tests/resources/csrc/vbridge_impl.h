@@ -53,11 +53,9 @@ public:
 
     uint64_t getCycle() { return ctx->time(); }
 
-    void dpiBasePoke(uint32_t *a);
+    void dpiPoke(const DutInterface &toDut);
 
-    void dpiPeekPoke(const DutInterface &toDut);
-
-    void dpiBasePeek(svBit ready);
+    void dpiPeek(svBit ready);
 
     std::queue <testdata> test_queue;
 
@@ -79,6 +77,8 @@ public:
 
     roundingMode_t roundingMode;
 
+    bool opSignal;
+
     std::string rmstring;
 
 
@@ -88,6 +88,8 @@ private:
     VerilatedFstC tfp;
 
     uint64_t _cycles;
+
+    bool terminate;
 
     bool available;
 

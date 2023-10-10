@@ -7,7 +7,7 @@
 
 
 
-VBridgeImpl::VBridgeImpl() : _cycles(1000) {}
+VBridgeImpl::VBridgeImpl() : terminate(false) {}
 
 
 uint64_t VBridgeImpl::get_t() {
@@ -16,8 +16,8 @@ uint64_t VBridgeImpl::get_t() {
 
 
 int VBridgeImpl::timeoutCheck() {
-  if (cnt > _cycles) {
-    LOG(INFO) << fmt::format("pass {} cases, time = {}", cnt, get_t());
+  if (terminate == true) {
+    LOG(INFO) << fmt::format("pass {} cases, time = {}", cnt-1, get_t());
     dpiFinish();
   }
   return 0;
@@ -66,6 +66,14 @@ void VBridgeImpl::dpiInitCosim() {
       LOG(FATAL) << fmt::format("ilegal rm value = {}",rm);
   }
 
+  if (op=="div"){
+      opSignal = false;
+    } else if (op=="sqrt"){
+      opSignal = true;
+    } else LOG(FATAL) << fmt::format("illegal operation");
+
+
+
   LOG(INFO) << fmt::format("test f32_{} in {}",op,rmstring);
 
   initTestCases();
@@ -78,27 +86,22 @@ void VBridgeImpl::dpiInitCosim() {
 
 
 
-void VBridgeImpl::dpiBasePoke(svBitVecVal *a) {
-  uint32_t v = 0x1000;
-  *a = v;
-}
 
-void VBridgeImpl::dpiBasePeek(svBit ready) {
+void VBridgeImpl::dpiPeek(svBit ready) {
 
     if(ready == 1) {
       set_available();
-//      LOG(INFO) << fmt::format("available = {}",available);
     }
 
 
 }
 
-void VBridgeImpl::dpiPeekPoke(const DutInterface &toDut) {
+void VBridgeImpl::dpiPoke(const DutInterface &toDut) {
   if(available==false) return;
 
   *toDut.a = testcase.a;
   *toDut.b = testcase.b;
-  *toDut.op = false;
+  *toDut.op = opSignal;
   *toDut.rm = rm;
   *toDut.valid = true;
 
@@ -154,9 +157,9 @@ std::vector<testdata> mygen_az_f32( float32_t trueFunction( float32_t ), functio
   std::vector<testdata> res;
   softfloat_roundingMode = roundingMode - 1;
 
-  genCases_f32_a_init();
+  genCases_f32_ab_init();
   while ( ! genCases_done  ) {
-    genCases_f32_a_next();
+    genCases_f32_ab_next();
 
     testdata curData;
     curData.function = function;
@@ -218,7 +221,6 @@ void VBridgeImpl::initTestCases() {
     res = genTestCase(F32_SQRT, roundingMode);
   } else LOG(FATAL) << fmt::format("illegal operation");
 
-
   fillTestQueue(res);
   outputTestCases(res); // TODO: demo, please delete
 
@@ -233,17 +235,9 @@ void VBridgeImpl::reloadcase() {
   testcase.b = test_queue.front().b;
   testcase.expected_out = test_queue.front().expected_out;
   testcase.expectedException = test_queue.front().expectedException;
-//  printf("%08x %08x %08x\n", test_vector[1].a, test_vector[1].b, test_vector[1].expected_out);
-//  LOG(INFO) << fmt::format("a = {:08X} \n", test_vector[0].a);
-//  LOG(INFO) << fmt::format("b = {:08X} \n", test_vector[0].b);
-//  LOG(INFO) << fmt::format("a = {:08X} \n", testcase.a);
-//  LOG(INFO) << fmt::format("b = {:08X} \n", testcase.b);
-//  LOG(INFO) << fmt::format("ref_result = {:08X} \n",testcase.expected_out);
-//  LOG(INFO) << fmt::format("reload");
-
 
   test_queue.pop();
-
+  if(test_queue.size() == 0) terminate = true;
 }
 
 

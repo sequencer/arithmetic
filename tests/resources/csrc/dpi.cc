@@ -30,21 +30,17 @@ void dpiInitCosim() {
         vbridge_impl_instance.timeoutCheck();
 }
 
-[[maybe_unused]] void dpiBasePoke(svBitVecVal *a) {
-  vbridge_impl_instance.dpiBasePoke(a);
+[[maybe_unused]] void dpiPeek(svBit ready) {
+  vbridge_impl_instance.dpiPeek(ready);
 }
 
-[[maybe_unused]] void dpiBasePeek(svBit ready) {
-  vbridge_impl_instance.dpiBasePeek(ready);
-}
-
-[[maybe_unused]] void dpiPeekPoke(
+[[maybe_unused]] void dpiPoke(
                  svBit *valid,
                  svBitVecVal *a,
                  svBitVecVal *b,
                  svBit *op,
                  svBitVecVal *rm) {
-  vbridge_impl_instance.dpiPeekPoke(DutInterface{valid, a, b, op, rm});
+  vbridge_impl_instance.dpiPoke(DutInterface{valid, a, b, op, rm});
 
 }
 
