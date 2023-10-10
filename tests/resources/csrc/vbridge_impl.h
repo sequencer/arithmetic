@@ -9,7 +9,6 @@
 
 #include <svdpi.h>
 
-#include "encoding.h"
 #include "util.h"
 
 #include <cstdio>
@@ -23,12 +22,19 @@ extern "C" {
 #include "genLoops.h"
 }
 
+struct DutInterface{
+    svBit *valid;
+    svBitVecVal *a;
+    svBitVecVal *b;
+    svBitVecVal *op;
+    svBitVecVal *rm;
+};
+
 struct testdata {
     uint64_t a;
     uint64_t b;
     uint64_t expected_out;
     function_t function;
-    roundingMode_t roundingMode;
     exceptionFlag_t expectedException;
 };
 

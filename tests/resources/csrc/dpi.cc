@@ -9,13 +9,7 @@
 
 #include "svdpi.h"
 #include "vbridge_impl.h"
-#include "encoding.h"
 
-
-//void sigint_handler(int s) {
-//  terminated = true;
-//  dpiFinish();
-//}
 
 
 #if VM_TRACE
@@ -28,15 +22,12 @@ void VBridgeImpl::dpiDumpWave() {
 #endif
 
 void dpiInitCosim() {
-//  std::signal(SIGINT, sigint_handler);
   svSetScope(svGetScopeFromName("TOP.TestBench.verificationModule.verbatim"));
   vbridge_impl_instance.dpiInitCosim();
 }
 
 [[maybe_unused]] void dpiTimeoutCheck() {
-
         vbridge_impl_instance.timeoutCheck();
-
 }
 
 [[maybe_unused]] void dpiBasePoke(svBitVecVal *a) {

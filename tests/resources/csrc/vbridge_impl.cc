@@ -34,12 +34,10 @@ void VBridgeImpl::clr_available() {
 void VBridgeImpl::dpiInitCosim() {
   google::InitGoogleLogging("emulator");
   FLAGS_logtostderr = true;
+  FLAGS_minloglevel = 0;
 
   ctx = Verilated::threadContextp();
-
-  LOG(INFO) << fmt::format("[{}] dpiInitCosim", getCycle());
-
-
+//  LOG(INFO) << fmt::format("[{}] dpiInitCosim", getCycle());
 
   cnt = 0;
 
@@ -68,10 +66,9 @@ void VBridgeImpl::dpiInitCosim() {
       LOG(FATAL) << fmt::format("ilegal rm value = {}",rm);
   }
 
-  LOG(INFO) << fmt::format("start test operation={} rounding mode= {}",op,rmstring);
+  LOG(INFO) << fmt::format("test f32_{} in {}",op,rmstring);
 
   initTestCases();
-
 
 
   reloadcase();
@@ -99,45 +96,36 @@ void VBridgeImpl::dpiBasePeek(svBit ready) {
 void VBridgeImpl::dpiPeekPoke(const DutInterface &toDut) {
   if(available==false) return;
 
-
   *toDut.a = testcase.a;
   *toDut.b = testcase.b;
   *toDut.op = 0;
   *toDut.rm = rm;
   *toDut.valid = true;
 
-
-
 }
 
 void VBridgeImpl::dpiCheck(svBit valid, svBitVecVal result, svBitVecVal fflags) {
   if(valid == 0) return;
-//  LOG(INFO) << fmt::format("check");
   if((result == testcase.expected_out) && (fflags == testcase.expectedException))
     reloadcase();
   else
   {
+    LOG(ERROR) << fmt::format("error at {} cases", cnt);
+    LOG(ERROR) << fmt::format("a = {:08X},b = {:08X} \n", testcase.a, testcase.b);
+    LOG(ERROR) << fmt::format("Result  dut vs ref  = {:08X} vs {:08X} \n" , result,testcase.expected_out);
+    LOG(ERROR) << fmt::format("Flag    dut vs ref  = {:08X} vs {:08X} \n" , fflags,(int)testcase.expectedException);
 
-    LOG(INFO) << fmt::format("a = {:08X} \n", testcase.a);
-    LOG(INFO) << fmt::format("b = {:08X} \n", testcase.b);
-    LOG(INFO) << fmt::format("Result differs! dut vs ref  = {:08X} vs {:08X} \n" , result,testcase.expected_out);
-    LOG(INFO) << fmt::format("Flag differs!   dut vs ref  = {:08X} vs {:08X} \n",fflags,(int)testcase.expectedException);
-    LOG(INFO) << fmt::format("error at {} cases",cnt);
-    dpiError("error");
     dpiFinish();
-
   }
-
 }
 
 std::vector<testdata> mygen_abz_f32( float32_t trueFunction( float32_t, float32_t ) , function_t function, roundingMode_t roundingMode) {
   // modified from berkeley-testfloat-3/source/genLoops.c
   union ui32_f32 { uint32_t ui; float32_t f; } u;
-  uint_fast8_t trueFlags;
 
   std::vector<testdata> res;
 
-  softfloat_roundingMode = roundingMode - 1 ;
+  softfloat_roundingMode = roundingMode - 1;
 
   genCases_f32_ab_init();
   while ( ! genCases_done ) {
@@ -145,7 +133,6 @@ std::vector<testdata> mygen_abz_f32( float32_t trueFunction( float32_t, float32_
 
     testdata curData;
     curData.function = function;
-    curData.roundingMode = roundingMode;
     u.f = genCases_f32_a;
     curData.a = u.ui;
     u.f = genCases_f32_b;
@@ -161,6 +148,31 @@ std::vector<testdata> mygen_abz_f32( float32_t trueFunction( float32_t, float32_
   return res;
 }
 
+std::vector<testdata> mygen_az_f32( float32_t trueFunction( float32_t ), function_t function, roundingMode_t roundingMode)
+{
+  union ui32_f32 { uint32_t ui; float32_t f; } u;
+  std::vector<testdata> res;
+  softfloat_roundingMode = roundingMode - 1;
+
+  genCases_f32_a_init();
+  while ( ! genCases_done  ) {
+    genCases_f32_a_next();
+
+    testdata curData;
+    curData.function = function;
+
+    u.f = genCases_f32_a;
+    curData.a = u.ui;
+    curData.b = u.ui;
+    softfloat_exceptionFlags = 0;
+    u.f = trueFunction( genCases_f32_a );
+    curData.expectedException = static_cast<exceptionFlag_t>(softfloat_exceptionFlags);
+    curData.expected_out = u.ui;
+    res.push_back(curData);
+  }
+  return res;
+}
+
 
 std::vector<testdata> genTestCase(function_t function, roundingMode_t roundingMode) { // call it in dpiInit
   // see berkeley-testfloat-3/source/testfloat_gen.c
@@ -171,6 +183,9 @@ std::vector<testdata> genTestCase(function_t function, roundingMode_t roundingMo
   switch (function) {
     case F32_DIV:
       res = mygen_abz_f32(f32_div, function, roundingMode);
+      break;
+    case F32_SQRT:
+      res = mygen_az_f32(f32_sqrt, function, roundingMode);
       break;
     default:
       assert(false);
@@ -194,9 +209,15 @@ void fillTestQueue(std::vector<testdata> cases) {
 
 
 void VBridgeImpl::initTestCases() {
-  LOG(INFO) << fmt::format("generate cases in roundingMode = {}", (int)roundingMode);
-  LOG(INFO) << fmt::format("circuit  rm = {}", rm);
-  auto res = genTestCase(F32_DIV, roundingMode);
+
+  std::vector<testdata> res;
+
+  if (op=="div"){
+    res = genTestCase(F32_DIV, roundingMode);
+  } else if (op=="sqrt"){
+    res = genTestCase(F32_SQRT, roundingMode);
+  } else LOG(FATAL) << fmt::format("illegal operation");
+
 
   fillTestQueue(res);
   outputTestCases(res); // TODO: demo, please delete

@@ -152,9 +152,6 @@ trait FMATester extends AnyFlatSpec with Matchers with ParallelTestExecution {
       "dpi.cc",
       "vbridge_impl.cc",
       "vbridge_impl.h",
-      "encoding.h",
-      "exceptions.h",
-      "glog_exception_safe.h",
       "util.h"
     ).map { f =>
       os.pwd / "tests" / "resources" / "csrc" / f
