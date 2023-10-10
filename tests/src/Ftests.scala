@@ -33,6 +33,14 @@ trait FMATester extends AnyFlatSpec with Matchers with ParallelTestExecution {
     "-rnear_maxMag" -> "4",
   )
 
+  val rmMaps = Map(
+    0 -> "RNE",
+    1 -> "RTZ",
+    2 -> "RDN",
+    3 -> "RUP",
+    4 -> "RMM"
+  )
+
   def exp(f: Int) = f match {
     case 16 => 5
     case 32 => 8
@@ -228,15 +236,17 @@ trait FMATester extends AnyFlatSpec with Matchers with ParallelTestExecution {
     // build emulator
     os.proc(Seq("ninja", "-C", emulatorBuildDir).map(_.toString)).call(emulatorBuildDir)
 
-    val runEnv = Map(
-      "wave" -> s"${runDir}/",
-      "op" -> "div",
-      "rm" -> "1"
-    )
-
 
     // run
-    os.proc(Seq("./emulator").map(_.toString)).call(cwd=emulatorBuildDir,env=runEnv)
+    for(x<- 0 to 4){
+      val runEnv = Map(
+        "wave" -> s"${runDir}/",
+        "op" -> "div",
+        "rm" -> s"$x"
+      )
+      os.proc(Seq("./emulator").map(_.toString)).call(stdout = runDir / s"${rmMaps(x)}.log",cwd=emulatorBuildDir,env=runEnv)
+    }
+
 
 
     Seq("No errors found.")

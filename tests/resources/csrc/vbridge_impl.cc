@@ -120,11 +120,10 @@ void VBridgeImpl::dpiCheck(svBit valid, svBitVecVal result, svBitVecVal fflags) 
 
     LOG(INFO) << fmt::format("a = {:08X} \n", testcase.a);
     LOG(INFO) << fmt::format("b = {:08X} \n", testcase.b);
-    LOG(INFO) << fmt::format("dut_result = {:08X} \n" , result);
-    LOG(INFO) << fmt::format("ref_result = {:08X} \n",testcase.expected_out);
-    LOG(INFO) << fmt::format("dut_flags = {:X} \n",fflags);
-    LOG(INFO) << fmt::format("ref_flags = {:X} \n",(int)testcase.expectedException);
+    LOG(INFO) << fmt::format("Result differs! dut vs ref  = {:08X} vs {:08X} \n" , result,testcase.expected_out);
+    LOG(INFO) << fmt::format("Flag differs!   dut vs ref  = {:08X} vs {:08X} \n",fflags,(int)testcase.expectedException);
     LOG(INFO) << fmt::format("error at {} cases",cnt);
+    dpiError("error");
     dpiFinish();
 
   }
@@ -137,6 +136,8 @@ std::vector<testdata> mygen_abz_f32( float32_t trueFunction( float32_t, float32_
   uint_fast8_t trueFlags;
 
   std::vector<testdata> res;
+
+  softfloat_roundingMode = roundingMode - 1 ;
 
   genCases_f32_ab_init();
   while ( ! genCases_done ) {
@@ -196,11 +197,8 @@ void VBridgeImpl::initTestCases() {
   LOG(INFO) << fmt::format("generate cases in roundingMode = {}", (int)roundingMode);
   LOG(INFO) << fmt::format("circuit  rm = {}", rm);
   auto res = genTestCase(F32_DIV, roundingMode);
-  LOG(INFO) << fmt::format("vector = {:08X} ",res[0].expected_out);
-
 
   fillTestQueue(res);
-  LOG(INFO) << fmt::format("queue = {:08X} ",vbridge_impl_instance.test_queue.front().expected_out);
   outputTestCases(res); // TODO: demo, please delete
 
 

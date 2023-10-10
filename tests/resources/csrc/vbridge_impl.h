@@ -83,9 +83,6 @@ private:
 
     uint64_t _cycles;
 
-
-//    const std::string wave = "/home/yyq/Projects/arithmetic/run/wave";
-
     bool available;
 
     const std::string wave = get_env_arg("wave");
@@ -93,16 +90,6 @@ private:
     const std::string op = get_env_arg("op");
 
     const int rm = std::stoul(get_env_arg("rm"), nullptr, 10);
-
-
-
-
-
-
-
-
-
-
 
 };
 
