@@ -98,7 +98,7 @@ void VBridgeImpl::dpiPeekPoke(const DutInterface &toDut) {
 
   *toDut.a = testcase.a;
   *toDut.b = testcase.b;
-  *toDut.op = 0;
+  *toDut.op = false;
   *toDut.rm = rm;
   *toDut.valid = true;
 

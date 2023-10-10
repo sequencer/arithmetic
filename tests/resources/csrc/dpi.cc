@@ -42,7 +42,7 @@ void dpiInitCosim() {
                  svBit *valid,
                  svBitVecVal *a,
                  svBitVecVal *b,
-                 svBitVecVal *op,
+                 svBit *op,
                  svBitVecVal *rm) {
   vbridge_impl_instance.dpiPeekPoke(DutInterface{valid, a, b, op, rm});
 

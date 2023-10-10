@@ -131,7 +131,7 @@ class VerificationModule extends RawModule {
     val clock = IO(Input(Clock()))
     val a = IO(Output(UInt(32.W)))
     val b = IO(Output(UInt(32.W)))
-    val op = IO(Output(UInt(2.W)))
+    val op = IO(Output(Bool()))
     val rm = IO(Output(UInt(3.W)))
     val valid = IO(Output(Bool()))
     setInline(
@@ -141,7 +141,7 @@ class VerificationModule extends RawModule {
          |  output valid,
          |  output [31:0] a,
          |  output [31:0] b,
-         |  output [1:0] op,
+         |  output op,
          |  output [2:0] rm
          |);
          |
@@ -149,7 +149,7 @@ class VerificationModule extends RawModule {
          |  output bit valid,
          |  output bit[31:0] a,
          |  output bit[31:0] b,
-         |  output bit[1:0]  op,
+         |  output bit op,
          |  output bit[2:0]  rm
          |  );
          |

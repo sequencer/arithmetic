@@ -26,7 +26,7 @@ struct DutInterface{
     svBit *valid;
     svBitVecVal *a;
     svBitVecVal *b;
-    svBitVecVal *op;
+    svBit *op;
     svBitVecVal *rm;
 };
 

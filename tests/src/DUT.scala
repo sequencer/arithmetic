@@ -34,7 +34,7 @@ class DUT(expWidth: Int, sigWidth: Int) extends Module {
 class DutPoke(expWidth: Int, sigWidth: Int) extends Bundle {
   val a = UInt((expWidth + sigWidth).W)
   val b = UInt((expWidth + sigWidth).W)
-  val op = UInt(2.W)
+  val op = Bool()
   val roundingMode = UInt(3.W)
 }
 
