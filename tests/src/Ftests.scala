@@ -1,28 +1,13 @@
 package tests
 
 import chisel3.RawModule
-import float._
-
-import java.text.SimpleDateFormat
-import java.util.Calendar
-import java.text.SimpleDateFormat
-import java.util.Calendar
-import scala.collection.parallel.CollectionConverters._
-import chisel3.RawModule
+import chisel3.stage._
 import firrtl.AnnotationSeq
+import firrtl.stage.FirrtlCircuitAnnotation
 import org.scalatest.ParallelTestExecution
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
-
-import chisel3.experimental.ExtModule
-import chisel3.util.{HasExtModuleInline, HasExtModuleResource}
-import firrtl.stage.FirrtlCircuitAnnotation
-
-import chisel3.stage._
 import os._
-
-
-
 
 trait FMATester extends AnyFlatSpec with Matchers with ParallelTestExecution {
   val roundings = Seq(
@@ -30,7 +15,7 @@ trait FMATester extends AnyFlatSpec with Matchers with ParallelTestExecution {
     "-rminMag" -> "1",
     "-rmin" -> "2",
     "-rmax" -> "3",
-    "-rnear_maxMag" -> "4",
+    "-rnear_maxMag" -> "4"
   )
 
   val rmMaps = Map(
@@ -54,14 +39,15 @@ trait FMATester extends AnyFlatSpec with Matchers with ParallelTestExecution {
   }
 
   def check(stdouts: Seq[String]) = {
-    stdouts foreach (_ shouldNot include("expected"))
-    stdouts foreach (_ shouldNot include("Ran 0 tests."))
-    stdouts foreach (_ should include("No errors found."))
+    stdouts.foreach(_ shouldNot include("expected"))
+    stdouts.foreach(_ shouldNot include("Ran 0 tests."))
+    stdouts.foreach(_ should include("No errors found."))
   }
 
   def test(name: String, module: () => RawModule, softfloatArg: Seq[String]): Seq[String] = {
-    val (softfloatArgs, dutArgs) = (roundings.map { case (s, d) =>
-      (Seq(s, "-tininessafter") ++ softfloatArg, Seq(d, "0"))
+    val (softfloatArgs, dutArgs) = (roundings.map {
+      case (s, d) =>
+        (Seq(s, "-tininessafter") ++ softfloatArg, Seq(d, "0"))
     }).unzip
     test(name, module, "test.cpp", softfloatArgs, Some(dutArgs))
   }
@@ -74,7 +60,13 @@ trait FMATester extends AnyFlatSpec with Matchers with ParallelTestExecution {
     * @param softfloatArgs arguments passed to `softfloat_gen` application. If has multiple command lines, multiple test will be executed.
     * @param dutArgs       arguments passed to verilator dut executor, If set to [[None]], no arguments will be passed to.
     */
-  def test(name: String, module: () => RawModule, harness: String, softfloatArgs: Seq[Seq[String]], dutArgs: Option[Seq[Seq[String]]] = None) = {
+  def test(
+    name:          String,
+    module:        () => RawModule,
+    harness:       String,
+    softfloatArgs: Seq[Seq[String]],
+    dutArgs:       Option[Seq[Seq[String]]] = None
+  ) = {
 
     var topName: String = null
     val emulatorThreads = 8
@@ -95,24 +87,22 @@ trait FMATester extends AnyFlatSpec with Matchers with ParallelTestExecution {
     val emulatorBuildDir = emulatorDir / "build"
     os.makeDir.all(emulatorBuildDir)
 
-
     os.proc(
       "make",
-      "softfloat",
+      "softfloat"
     ).call()
 
     os.proc(
       "make",
-      "testfloat",
+      "testfloat"
     ).call()
-
 
     val annos: AnnotationSeq = Seq(
       new chisel3.stage.phases.Elaborate,
       new chisel3.stage.phases.Convert
     ).foldLeft(
       Seq(
-        ChiselGeneratorAnnotation(() => new TestBench(8,24))
+        ChiselGeneratorAnnotation(() => new TestBench(8, 24))
       ): AnnotationSeq
     ) { case (annos, stage) => stage.transform(annos) }
       .flatMap {
@@ -120,7 +110,7 @@ trait FMATester extends AnyFlatSpec with Matchers with ParallelTestExecution {
           topName = circuit.main
           os.write.over(elaborateDir / s"$topName.fir", circuit.serialize)
           None
-        case _: chisel3.stage.DesignAnnotation[_] => None
+        case _: chisel3.stage.DesignAnnotation[_]     => None
         case _: chisel3.stage.ChiselCircuitAnnotation => None
         case a => Some(a)
       }
@@ -129,14 +119,16 @@ trait FMATester extends AnyFlatSpec with Matchers with ParallelTestExecution {
     // rtl
     os.proc(
       "firtool",
-      elaborateDir / s"$topName.fir", s"--annotation-file=${elaborateDir / s"$topName.anno.json"}",
+      elaborateDir / s"$topName.fir",
+      s"--annotation-file=${elaborateDir / s"$topName.anno.json"}",
       "-dedup",
       "-O=debug",
       "--split-verilog",
       "--preserve-values=named",
       s"-o=$rtlDir"
     ).call()
-    val verilogs = os.read.lines(rtlDir / "filelist.f")
+    val verilogs = os.read
+      .lines(rtlDir / "filelist.f")
       .map(str =>
         try {
           os.Path(str)
@@ -146,7 +138,6 @@ trait FMATester extends AnyFlatSpec with Matchers with ParallelTestExecution {
         }
       )
       .filter(p => p.ext == "v" || p.ext == "sv")
-
 
     val allCSourceFiles = Seq(
       "dpi.cc",
@@ -176,7 +167,8 @@ trait FMATester extends AnyFlatSpec with Matchers with ParallelTestExecution {
       "--main"
     )
 
-    os.write(emulatorBuildDir / "CMakeLists.txt",
+    os.write(
+      emulatorBuildDir / "CMakeLists.txt",
       // format: off
       s"""cmake_minimum_required(VERSION 3.20)
          |project(emulator)
@@ -223,28 +215,33 @@ trait FMATester extends AnyFlatSpec with Matchers with ParallelTestExecution {
     )
 
     // build verilator
-    os.proc(Seq(
-      "cmake",
-      "-G", "Ninja",
-      "-S", emulatorBuildDir,
-      "-B", emulatorBuildDir
-    ).map(_.toString)).call(emulatorBuildDir)
+    os.proc(
+      Seq(
+        "cmake",
+        "-G",
+        "Ninja",
+        "-S",
+        emulatorBuildDir,
+        "-B",
+        emulatorBuildDir
+      ).map(_.toString)
+    ).call(emulatorBuildDir)
 
     // build emulator
     os.proc(Seq("ninja", "-C", emulatorBuildDir).map(_.toString)).call(emulatorBuildDir)
 
-
     // run
-    for(x<- 0 to 4){
-      val runEnv = Map(
+    for (x <- 0 to 4) {
+      def runEnv(opration: String) = Map(
         "wave" -> s"${runDir}/",
-        "op" -> "sqrt",
+        "op" -> s"$opration",
         "rm" -> s"$x"
       )
-      os.proc(Seq("./emulator").map(_.toString)).call(stdout = runDir / s"${rmMaps(x)}.log",cwd=emulatorBuildDir,env=runEnv)
+      os.proc(Seq("./emulator").map(_.toString))
+        .call(stdout = runDir / s"${rmMaps(x)}.log", cwd = emulatorBuildDir, env = runEnv("div"))
+      os.proc(Seq("./emulator").map(_.toString))
+        .call(stdout = runDir / s"${rmMaps(x)}.log", cwd = emulatorBuildDir, env = runEnv("sqrt"))
     }
-
-
 
     Seq("No errors found.")
   }
@@ -253,7 +250,7 @@ trait FMATester extends AnyFlatSpec with Matchers with ParallelTestExecution {
 class DivSqrtRecFn_smallSpec extends FMATester {
   def test(f: Int, fn: String): Seq[String] = {
     def generator(options: Int) = fn match {
-      case "div" => () => new TestBench(exp(f), sig(f))
+      case "div"  => () => new TestBench(exp(f), sig(f))
       case "sqrt" => () => new TestBench(exp(f), sig(f))
     }
 
@@ -268,6 +265,5 @@ class DivSqrtRecFn_smallSpec extends FMATester {
   "DivSqrtRecF32_small_div" should "pass" in {
     check(test(32, "div"))
   }
-
 
 }
