@@ -1,24 +1,23 @@
 #ifdef COSIM_VERILATOR
+
 #include <VTestBench__Dpi.h>
+
 #endif
 
 #include <csignal>
 
-#include <glog/logging.h>
 #include <fmt/core.h>
+#include <glog/logging.h>
 
 #include "svdpi.h"
 #include "vbridge_impl.h"
 
-
-
 #if VM_TRACE
 
 void VBridgeImpl::dpiDumpWave() {
-
-        ::dpiDumpWave((wave + op + rmstring + ".fst").c_str());
-
+  ::dpiDumpWave((wave + op + rmstring + ".fst").c_str());
 }
+
 #endif
 
 void dpiInitCosim() {
@@ -27,7 +26,7 @@ void dpiInitCosim() {
 }
 
 [[maybe_unused]] void dpiTimeoutCheck() {
-        vbridge_impl_instance.timeoutCheck();
+  vbridge_impl_instance.timeoutCheck();
 }
 
 [[maybe_unused]] void dpiPeek(svBit ready) {
@@ -41,7 +40,6 @@ void dpiInitCosim() {
                  svBit *op,
                  svBitVecVal *rm) {
   vbridge_impl_instance.dpiPoke(DutInterface{valid, a, b, op, rm});
-
 }
 
 [[maybe_unused]] void dpiCheck(
@@ -51,8 +49,3 @@ void dpiInitCosim() {
 
    vbridge_impl_instance.dpiCheck(valid, *result, *fflags);
 }
-
-
-
-
-
