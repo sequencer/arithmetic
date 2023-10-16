@@ -112,7 +112,9 @@ class VerificationModule extends RawModule {
          |  input bit[4:0]  fflags
          |  );
          |
-         |  always @ (posedge clock) #1 $desiredName(
+         |  always @ (posedge clock) #1
+         |  if (valid == 1)
+         |  $desiredName(
          |  valid,
          |  result,
          |  fflags
@@ -134,9 +136,11 @@ class VerificationModule extends RawModule {
     val op = IO(Output(Bool()))
     val rm = IO(Output(UInt(3.W)))
     val valid = IO(Output(Bool()))
+    val ready  = IO(Input(Bool()))
     setInline(
       s"$desiredName.sv",
       s"""module $desiredName(
+         |  input  ready,
          |  output clock,
          |  output valid,
          |  output [31:0] a,
@@ -153,7 +157,9 @@ class VerificationModule extends RawModule {
          |  output bit[2:0]  rm
          |  );
          |
-         |  always @ (negedge clock) $desiredName(
+         |  always @ (negedge clock)
+         |  if(ready==1)
+         |  $desiredName(
          |  valid,
          |  a,
          |  b,
@@ -170,6 +176,7 @@ class VerificationModule extends RawModule {
   dutPoke.bits.b            := dpiPoke.b
   dutPoke.bits.op           := dpiPoke.op
   dutPoke.bits.roundingMode := dpiPoke.rm
+  dpiPoke.ready  := dutPoke.ready
 
 
 
