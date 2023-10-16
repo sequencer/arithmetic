@@ -40,46 +40,52 @@ class DivSqrt(expWidth: Int, sigWidth: Int) extends Module{
   // Exceptions
 
   /** inf/inf and 0/0  => NaN out */
-  val divInvalidExcNotSigNaNIn =
+  val divTwoInvalidOpCases =
     (rawA.isZero && rawB.isZero) || (rawA.isInf && rawB.isInf)
-  /** -Inf + -normal => NaN out */
-  val sqrtInvalidExcNotSigNaNIn =
+  /** A = -Inf or -Normal */
+  val sqrtInvalidNegaCases =
     !rawA.isNaN && !rawA.isZero && rawA.sign
-  /** isSigNaNRawFloat detect signaling NaN */
-  val majorExc =
+  /** classified in flags
+    *
+    * contains all NV and DZ flags cases
+    */
+  val isNVorDZ =
     Mux(input.bits.sqrt,
-      isSigNaNRawFloat(rawA) || sqrtInvalidExcNotSigNaNIn,
+      isSigNaNRawFloat(rawA) || sqrtInvalidNegaCases,
       isSigNaNRawFloat(rawA) || isSigNaNRawFloat(rawB) ||
-        divInvalidExcNotSigNaNIn ||
+        divTwoInvalidOpCases ||
         (!rawA.isNaN && !rawA.isInf && rawB.isZero)
     )
 
-  /** all cases result in NaN output */
+  /** classified in output result
+    *
+    * qNaN output
+    */
   val isNaN =
     Mux(input.bits.sqrt,
-      rawA.isNaN || sqrtInvalidExcNotSigNaNIn,
-      rawA.isNaN || rawB.isNaN || divInvalidExcNotSigNaNIn
+      rawA.isNaN || sqrtInvalidNegaCases,
+      rawA.isNaN || rawB.isNaN || divTwoInvalidOpCases
     )
   val isInf  = Mux(input.bits.sqrt, rawA.isInf, rawA.isInf || rawB.isZero)
   val isZero = Mux(input.bits.sqrt, rawA.isZero, rawA.isZero || rawB.isInf)
 
-  val majorExcReg = RegEnable(majorExc, false.B, input.fire)
+  val isNVorDZreg = RegEnable(isNVorDZ, false.B, input.fire)
   val isNaNReg    = RegEnable(isNaN   , false.B, input.fire)
   val isInfReg    = RegEnable(isInf   , false.B, input.fire)
   val isZeroReg   = RegEnable(isZero  , false.B, input.fire)
 
   /** invalid operation flag */
-  val invalidExec = majorExcReg &&  isNaNReg
+  val invalidExec = isNVorDZreg &&  isNaNReg
 
   /** DivideByZero flag */
-  val infinitExec = majorExcReg && !isNaNReg
+  val infinitExec = isNVorDZreg && !isNaNReg
 
-  val specialCaseA = rawA.isNaN || rawA.isInf || rawA.isZero
-  val specialCaseB = rawB.isNaN || rawB.isInf || rawB.isZero
-  val normalCaseDiv = !specialCaseA && !specialCaseB
+  val specialCaseA   = rawA.isNaN || rawA.isInf || rawA.isZero
+  val specialCaseB   = rawB.isNaN || rawB.isInf || rawB.isZero
+  val normalCaseDiv  = !specialCaseA && !specialCaseB
   val normalCaseSqrt = !specialCaseA && !rawA.sign
-  val normalCase = Mux(input.bits.sqrt, normalCaseSqrt, normalCaseDiv)
-  val specialCase = !normalCase
+  val normalCase     = Mux(input.bits.sqrt, normalCaseSqrt, normalCaseDiv)
+  val specialCase    = !normalCase
 
   val fastValid = RegInit(false.B)
   fastValid := specialCase && input.fire
@@ -116,6 +122,7 @@ class DivSqrt(expWidth: Int, sigWidth: Int) extends Module{
   SqrtModule.input.bits.operand := sqrtFractIn
   SqrtModule.input.valid := input.valid && input.bits.sqrt && normalCaseSqrt
 
+  // collect sqrt result
   val rbitsSqrt      = SqrtModule.output.bits.result(1) ## (!SqrtModule.output.bits.zeroRemainder || SqrtModule.output.bits.result(0))
   val sigToRoundSqrt = SqrtModule.output.bits.result(24, 2)
 
@@ -133,7 +140,7 @@ class DivSqrt(expWidth: Int, sigWidth: Int) extends Module{
   divModule.input.valid := input.valid && !input.bits.sqrt && normalCaseDiv
 
 
-  /** collect div sig result
+  /** collect div result
     *
     * {{{
     * when B_sig > A_sig
@@ -161,6 +168,8 @@ class DivSqrt(expWidth: Int, sigWidth: Int) extends Module{
     * expForSqrt(7,0) effective is 8bits, MSB is sign
     * extends 2 sign bit in MSB
     * expStoreNext = 10bits
+    * input =   axxxxxxx
+    * out   = aaaxxxxxxx
     * }}}
     *
     * for div

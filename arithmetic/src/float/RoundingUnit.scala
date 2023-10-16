@@ -34,11 +34,11 @@ class RoundingUnit extends Module{
     val exceptionFlags = Output(Bits(5.W))
   }))
 
-  val rmRNE = (input.roundingMode === consts.round_near_even)
-  val rmRTZ = (input.roundingMode === consts.round_minMag)
-  val rmRDN = (input.roundingMode === consts.round_min)
-  val rmRUP = (input.roundingMode === consts.round_max)
-  val rmRMM = (input.roundingMode === consts.round_near_maxMag)
+  val rmRNE = (input.roundingMode === RoundingMode.RNE)
+  val rmRTZ = (input.roundingMode === RoundingMode.RTZ)
+  val rmRDN = (input.roundingMode === RoundingMode.RDN)
+  val rmRUP = (input.roundingMode === RoundingMode.RUP)
+  val rmRMM = (input.roundingMode === RoundingMode.RMM)
 
   val commonOverflow  = Wire(Bool())
   val commonUnderflow = Wire(Bool())
