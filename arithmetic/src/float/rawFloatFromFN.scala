@@ -68,6 +68,7 @@ object rawFloatFromFN {
     out.sExp := adjustedExp(expWidth, 0).zext
     out.sig :=
       0.U(1.W) ## !isZero ## Mux(isZeroExpIn, subnormFract, fractIn)
+    out.isSNaN :=  out.isNaN && !out.sig(sigWidth - 2)
     out
   }
 }

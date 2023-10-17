@@ -39,11 +39,12 @@ class DivSqrt(expWidth: Int, sigWidth: Int) extends Module{
 
   // Exceptions
 
-  /** inf/inf and 0/0  => NaN out */
-  val divTwoInvalidOpCases =
-    (rawA.isZero && rawB.isZero) || (rawA.isInf && rawB.isInf)
-  /** A = -Inf or -Normal */
-  val sqrtInvalidNegaCases =
+  /** inf/inf and 0/0  => qNaN, set NV */
+  val divInvalidCases = (rawA.isZero && rawB.isZero) || (rawA.isInf && rawB.isInf)
+  /** normal/0  => inf, set DV */
+  val divDivideZero = (!rawA.isNaN && !rawA.isInf && rawB.isZero)
+  /** A = -Inf or -Normal => qNaN, set NV*/
+  val sqrtInvalidCases =
     !rawA.isNaN && !rawA.isZero && rawA.sign
   /** classified in flags
     *
@@ -51,10 +52,10 @@ class DivSqrt(expWidth: Int, sigWidth: Int) extends Module{
     */
   val isNVorDZ =
     Mux(input.bits.sqrt,
-      isSigNaNRawFloat(rawA) || sqrtInvalidNegaCases,
-      isSigNaNRawFloat(rawA) || isSigNaNRawFloat(rawB) ||
-        divTwoInvalidOpCases ||
-        (!rawA.isNaN && !rawA.isInf && rawB.isZero)
+      rawA.isSNaN || sqrtInvalidCases,
+      rawA.isSNaN || rawB.isSNaN ||
+        divInvalidCases ||
+        divDivideZero
     )
 
   /** classified in output result
@@ -63,22 +64,22 @@ class DivSqrt(expWidth: Int, sigWidth: Int) extends Module{
     */
   val isNaN =
     Mux(input.bits.sqrt,
-      rawA.isNaN || sqrtInvalidNegaCases,
-      rawA.isNaN || rawB.isNaN || divTwoInvalidOpCases
+      rawA.isNaN || sqrtInvalidCases,
+      rawA.isNaN || rawB.isNaN || divInvalidCases
     )
   val isInf  = Mux(input.bits.sqrt, rawA.isInf, rawA.isInf || rawB.isZero)
   val isZero = Mux(input.bits.sqrt, rawA.isZero, rawA.isZero || rawB.isInf)
 
-  val isNVorDZreg = RegEnable(isNVorDZ, false.B, input.fire)
+  val isNVorDZReg = RegEnable(isNVorDZ, false.B, input.fire)
   val isNaNReg    = RegEnable(isNaN   , false.B, input.fire)
   val isInfReg    = RegEnable(isInf   , false.B, input.fire)
   val isZeroReg   = RegEnable(isZero  , false.B, input.fire)
 
   /** invalid operation flag */
-  val invalidExec = isNVorDZreg &&  isNaNReg
+  val invalidExec = isNVorDZReg &&  isNaNReg
 
   /** DivideByZero flag */
-  val infinitExec = isNVorDZreg && !isNaNReg
+  val infinitExec = isNVorDZReg && !isNaNReg
 
   val specialCaseA   = rawA.isNaN || rawA.isInf || rawA.isZero
   val specialCaseB   = rawB.isNaN || rawB.isInf || rawB.isZero
