@@ -17,18 +17,7 @@ import chisel3.util._
   * sig: 23bits UInt
   */
 class RoundingUnit extends Module{
-  val input = IO(Input(new Bundle{
-    val invalidExc = Bool() // overrides 'infiniteExc' and 'in'
-    val infiniteExc = Bool() // overrides 'in' except for 'in.sign'
-    val isInf  = Bool()
-    val isZero = Bool()
-    val isNaN  = Bool()
-    val sig = UInt(23.W)
-    val exp = SInt(10.W)
-    val rBits = UInt(2.W)
-    val sign = Bool()
-    val roundingMode = UInt(5.W)
-  }))
+  val input = IO(Input(new RoundingInput))
   val output = IO(Output(new Bundle{
     val data = UInt(32.W)
     val exceptionFlags = Output(Bits(5.W))
@@ -51,6 +40,9 @@ class RoundingUnit extends Module{
   val subSigOut, commonSubnormSigOut = Wire(UInt(23.W))
   val expInc = Wire(UInt(8.W))
 
+  val allSig = Wire(UInt(25.W))
+  allSig := input.sigPlus
+
   // control logic
   // set to 126 according to softfloat
   val expSubnorm = (input.exp + 126.S(10.W))
@@ -60,7 +52,7 @@ class RoundingUnit extends Module{
   val commonTotalUnderflow = subnormDist > 235.S
 
   /** contains the hidden 1 and rBits */
-  val adjustedSig = Cat(1.U(1.W), input.sig, input.rBits)
+  val adjustedSig = Cat(1.U(1.W), allSig)
 
   // rounding logic
   val distGT32 = subnormDist(9,5).orR
@@ -164,13 +156,14 @@ class RoundingUnit extends Module{
 }
 
 object RoundingUnit {
-  def apply(sign: Bool, exp: SInt, sig: UInt, rbits: UInt, rmode: UInt, invalidExc: Bool, infiniteExc: Bool, isNaN: Bool, isInf: Bool, isZero: Bool): Vec[UInt] = {
+  def apply(sign: Bool, exp: SInt, sigPlus: UInt, rmode: UInt, invalidExc: Bool, infiniteExc: Bool, isNaN: Bool, isInf: Bool, isZero: Bool): Vec[UInt] = {
 
     val rounder = Module(new RoundingUnit)
     rounder.input.sign := sign
-    rounder.input.sig := sig
+    rounder.input.sigPlus := sigPlus
+
     rounder.input.exp := exp
-    rounder.input.rBits := rbits
+
     rounder.input.roundingMode := rmode
     rounder.input.invalidExc := invalidExc
     rounder.input.infiniteExc := infiniteExc
@@ -180,6 +173,20 @@ object RoundingUnit {
     VecInit(rounder.output.data, rounder.output.exceptionFlags)
   }
 
+}
+
+class RoundingInput extends Bundle{
+  val invalidExc = Bool() // overrides 'infiniteExc' and 'in'
+  val infiniteExc = Bool() // overrides 'in' except for 'in.sign'
+  val isInf = Bool()
+  val isZero = Bool()
+  val isNaN = Bool()
+  val sigPlus = UInt(25.W)
+
+  val exp = SInt(10.W)
+
+  val sign = Bool()
+  val roundingMode = UInt(5.W)
 }
 
 

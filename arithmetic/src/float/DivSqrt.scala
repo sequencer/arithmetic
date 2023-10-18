@@ -124,8 +124,7 @@ class DivSqrt(expWidth: Int, sigWidth: Int) extends Module{
   SqrtModule.input.valid := input.valid && input.bits.sqrt && normalCaseSqrt
 
   // collect sqrt result
-  val rbitsSqrt      = SqrtModule.output.bits.result(1) ## (!SqrtModule.output.bits.zeroRemainder || SqrtModule.output.bits.result(0))
-  val sigToRoundSqrt = SqrtModule.output.bits.result(24, 2)
+  val sigPlusSqrt = SqrtModule.output.bits.result(24, 1) ## (!SqrtModule.output.bits.zeroRemainder || SqrtModule.output.bits.result(0))
 
 
   // divInput
@@ -150,15 +149,10 @@ class DivSqrt(expWidth: Int, sigWidth: Int) extends Module{
     * }}}
     */
   val needRightShift = !divModule.output.bits.quotient(27)
-  val sigToRoundDiv = Mux(needRightShift,
-    divModule.output.bits.quotient(calWidth - 3, calWidth - sigWidth - 1),
-    divModule.output.bits.quotient(calWidth - 2, calWidth - sigWidth))
-  val rbitsDiv = Mux(needRightShift, divModule.output.bits.quotient(calWidth - sigWidth - 2) ## divModule.output.bits.reminder.orR,
-    divModule.output.bits.quotient(calWidth - sigWidth - 1) ## divModule.output.bits.reminder.orR)
-
-  // collect sig result
-  val sigToRound   = Mux(opSqrtReg, sigToRoundSqrt, sigToRoundDiv)
-  val rbitsToRound = Mux(opSqrtReg, rbitsSqrt, rbitsDiv)
+  val sigPlusDiv = Mux(needRightShift,
+    divModule.output.bits.quotient(calWidth - 3, calWidth - sigWidth - 2) ## divModule.output.bits.reminder.orR,
+    divModule.output.bits.quotient(calWidth - 2, calWidth - sigWidth-1)   ## divModule.output.bits.reminder.orR
+  )
 
   // exp logic
   val expStoreNext,expToRound = Wire(UInt((expWidth+2).W))
@@ -182,11 +176,12 @@ class DivSqrt(expWidth: Int, sigWidth: Int) extends Module{
   val expStore = RegEnable(expStoreNext, 0.U((expWidth+2).W), input.fire)
   expToRound := Mux(opSqrtReg, expStore, expStore - needRightShift)
 
+  val sigPlus = Mux(opSqrtReg, sigPlusSqrt, sigPlusDiv)
+
   val roundresult = RoundingUnit(
     signReg,
     expToRound.asSInt,
-    sigToRound,
-    rbitsToRound,
+    sigPlus,
     roundingModeReg,
     invalidExec,
     infinitExec,
