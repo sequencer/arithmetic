@@ -17,6 +17,7 @@ class RawFloat(val expWidth: Int, val sigWidth: Int) extends Bundle
     val isInf: Bool  = Bool()              // overrides 'isZero', 'sExp', and 'sig'
     val isZero: Bool = Bool()              // overrides 'sExp' and 'sig'
     val isSNaN:Bool  = Bool()
+    val sExpIsEven   = Bool()
     val sign: Bool   = Bool()
     // sExp = 0.U(1.W) ## (Exp &- bias)
     // Exp - bias width is expWidth + 1

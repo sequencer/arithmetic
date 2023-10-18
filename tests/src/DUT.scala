@@ -18,8 +18,8 @@ class DUT(expWidth: Int, sigWidth: Int) extends Module {
   val ds = Module(new DivSqrt(expWidth: Int, sigWidth: Int))
   ds.input.valid := input.valid
   ds.input.bits.sqrt := input.bits.op
-  ds.input.bits.a := input.bits.a
-  ds.input.bits.b := input.bits.b
+  ds.input.bits.dividend := input.bits.a
+  ds.input.bits.divisor := input.bits.b
   ds.input.bits.roundingMode := input.bits.roundingMode
 
   input.ready := ds.input.ready

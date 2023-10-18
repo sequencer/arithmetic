@@ -34,8 +34,8 @@ class DivSqrt(expWidth: Int, sigWidth: Int) extends Module{
   val opSqrtReg       = RegEnable(input.bits.sqrt        , false.B, input.fire)
   val roundingModeReg = RegEnable(input.bits.roundingMode, 0.U    , input.fire)
 
-  val rawA = rawFloatFromFN(expWidth, sigWidth, input.bits.a)
-  val rawB = rawFloatFromFN(expWidth, sigWidth, input.bits.b)
+  val rawA = rawFloatFromFN(expWidth, sigWidth, input.bits.dividend)
+  val rawB = rawFloatFromFN(expWidth, sigWidth, input.bits.divisor)
 
   // Exceptions
 
@@ -115,8 +115,8 @@ class DivSqrt(expWidth: Int, sigWidth: Int) extends Module{
   )
 
   val expForSqrt = Cat(expstart, rawA.sExp(expWidth - 2, 0)) >> 1
-  val sqrtExpIsOdd = !rawA.sExp(0)
-  val sqrtFractIn = Mux(sqrtExpIsOdd, Cat(0.U(1.W), rawA.sig(sigWidth - 1, 0), 0.U(1.W)),
+
+  val sqrtFractIn = Mux(rawA.sExpIsEven , Cat(0.U(1.W), rawA.sig(sigWidth - 1, 0), 0.U(1.W)),
     Cat(rawA.sig(sigWidth - 1, 0), 0.U(2.W)))
 
   val SqrtModule = Module(new SquareRoot(2, 2, sigWidth+2, sigWidth+2))
@@ -203,8 +203,8 @@ class DivSqrt(expWidth: Int, sigWidth: Int) extends Module{
 
 
 class DivSqrtInput(expWidth: Int, sigWidth: Int) extends Bundle() {
-  val a = UInt((expWidth + sigWidth).W)
-  val b = UInt((expWidth + sigWidth).W)
+  val dividend = UInt((expWidth + sigWidth).W)
+  val divisor = UInt((expWidth + sigWidth).W)
   val sqrt = Bool()
   val roundingMode = UInt(3.W)
 }

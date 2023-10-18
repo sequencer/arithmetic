@@ -50,8 +50,8 @@ object DivSqrtTester extends TestSuite with ChiselUtestTester {
         ) { dut: DivSqrt =>
           dut.clock.setTimeout(0)
           dut.input.valid.poke(true.B)
-          dut.input.bits.a.poke((xInput).U)
-          dut.input.bits.b.poke((dInput).U)
+          dut.input.bits.dividend.poke((xInput).U)
+          dut.input.bits.divisor.poke((dInput).U)
           dut.input.bits.sqrt.poke(false.B)
           dut.clock.step()
           dut.input.valid.poke(false.B)
