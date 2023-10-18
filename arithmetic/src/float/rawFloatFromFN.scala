@@ -60,11 +60,8 @@ object rawFloatFromFN {
     val isZero = isZeroExpIn && isZeroFractIn
     val isSpecial = adjustedExp(expWidth, expWidth - 1) === 3.U
     val isSubnormal = isZeroExpIn && !isZeroFractIn
-    /** gets rawAExpIsEven directly from a and leadingZero
-      *
-      * @todo 1 bits Mux?
-      */
-    val sExpIsEven = Mux(isSubnormal, in(23) ^ normDist(0), in(23)).asBool
+    /** gets rawAExpIsEven directly from expLSB and leadingZero */
+    val sExpIsEven = (isSubnormal && (in(23) ^ normDist(0))) || (!isSubnormal && in(23))
 
     val out = Wire(new RawFloat(expWidth, sigWidth))
     out.isNaN := isSpecial && !isZeroFractIn

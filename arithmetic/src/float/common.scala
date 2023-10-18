@@ -13,9 +13,9 @@ object RoundingMode {
 
 class RawFloat(val expWidth: Int, val sigWidth: Int) extends Bundle
 {
-    val isNaN: Bool  = Bool()              // overrides all other fields
-    val isInf: Bool  = Bool()              // overrides 'isZero', 'sExp', and 'sig'
-    val isZero: Bool = Bool()              // overrides 'sExp' and 'sig'
+    val isNaN: Bool  = Bool()
+    val isInf: Bool  = Bool()
+    val isZero: Bool = Bool()
     val isSNaN:Bool  = Bool()
     val sExpIsEven   = Bool()
     val sign: Bool   = Bool()
