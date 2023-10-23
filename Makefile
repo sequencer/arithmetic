@@ -10,7 +10,7 @@ run:
 	mill -i -j 0 arithmetic[5.0.0].run
 
 test:
-	mill -i -j 0 arithmetictest[5.0.0].test
+	mill -i -j 0 arithmetictest[5.0.0].run
 
 bsp:
 	mill -i mill.bsp.BSP/install

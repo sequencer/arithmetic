@@ -39,9 +39,9 @@ trait ArithmeticModule
 // TODO: migrate test to svsim
 
 trait ArithmeticTestModule
-  extends TestModule
+  extends ScalaModule
     with HasChisel
-    with TestModule.ScalaTest {
+     {
   def arithmeticModule: ArithmeticModule
   def spireIvy: T[Dep]
 
@@ -49,18 +49,10 @@ trait ArithmeticTestModule
 
   def oslibIvy: T[Dep]
 
-  def scalatestIvy: Dep
-
-  def scalaparIvy: Dep
-
   override def moduleDeps = super.moduleDeps ++ Some(arithmeticModule)
-
-  override def defaultCommandName() = "test"
 
   override def ivyDeps = T(
     super.ivyDeps() ++ Agg(
-      scalatestIvy,
-      scalaparIvy,
       spireIvy(),
       evilplotIvy()
     )

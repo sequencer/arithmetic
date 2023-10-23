@@ -52,9 +52,6 @@ trait ArithmeticTest
 
   def arithmeticModule = arithmetic(crossValue)
 
-  def scalatestIvy = v.scalatest
-
-  def scalaparIvy = v.scalapar
 
   def spireIvy = v.spire
 

@@ -11,7 +11,7 @@ uint64_t VBridgeImpl::get_t() { return getCycle(); }
 
 int VBridgeImpl::timeoutCheck() {
   if (terminate == true) {
-    LOG(INFO) << fmt::format("pass {} cases, time = {}", cnt - 1, get_t());
+    LOG(INFO) << fmt::format("ran {} cases, cycles = {}", cnt - 1, get_t());
     dpiFinish();
   }
   return 0;
@@ -27,8 +27,6 @@ void VBridgeImpl::dpiInitCosim() {
   FLAGS_minloglevel = 0;
 
   ctx = Verilated::threadContextp();
-  //  LOG(INFO) << fmt::format("[{}] dpiInitCosim", getCycle());
-
   cnt = 0;
 
   switch (rm) {
@@ -105,7 +103,6 @@ void VBridgeImpl::dpiCheck(svBit valid, svBitVecVal result,
                               result, testcase.expected_out);
     LOG(ERROR) << fmt::format("Flag    dut vs ref  = {:08X} vs {:08X} \n",
                               fflags, (int)testcase.expectedException);
-
     dpiFinish();
   }
 }
@@ -197,13 +194,6 @@ genTestCase(function_t function,
   return res;
 }
 
-void outputTestCases(std::vector<testdata> cases) {
-  for (auto x : cases) {
-    //    printf("%08x %08x %08x %02x\n", x.a, x.b, x.expected_out,
-    //    x.expectedException);
-  }
-}
-
 void fillTestQueue(std::vector<testdata> cases) {
   for (auto x : cases) {
     vbridge_impl_instance.test_queue.push(x);
@@ -222,7 +212,6 @@ void VBridgeImpl::initTestCases() {
     LOG(FATAL) << fmt::format("illegal operation");
 
   fillTestQueue(res);
-  outputTestCases(res); // TODO: demo, please delete
 }
 
 void VBridgeImpl::reloadcase() {
