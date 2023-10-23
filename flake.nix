@@ -19,7 +19,6 @@
             mill
             circt
             verilator
-            testfloat
             cmake
             libargs
             glog
