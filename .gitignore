@@ -8,7 +8,6 @@ project/project
 project/target
 target/
 # test
-test_run_dir/
 verdiLog
 
 .bsp/

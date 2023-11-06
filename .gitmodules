@@ -1,3 +1,0 @@
-[submodule "dependencies/chisel"]
-	path = dependencies/chisel
-	url = git@github.com:chipsalliance/chisel.git

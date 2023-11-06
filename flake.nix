@@ -19,13 +19,26 @@
             mill
             circt
             verilator
+            testfloat
+            cmake
+            libargs
+            glog
+            fmt
+            zlib
+            ninja
           ];
         in
         {
           legacyPackages = pkgs;
           devShell = pkgs.mkShell {
             buildInputs = deps;
+            env = {
+                  "SOFT_FLOAT_LIB_DIR" = "${pkgs.softfloat}";
+                  "TEST_FLOAT_LIB_DIR" = "${pkgs.testfloat}";
+            };
           };
+          packages.softfloat = pkgs.softfloat;
+          packages.testfloat = pkgs.testfloat;
         }
       )
     // { inherit inputs; overlays.default = overlay; };
