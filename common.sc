@@ -35,5 +35,3 @@ trait ArithmeticModule
 
   override def ivyDeps = T(super.ivyDeps() ++ Seq(spireIvy(), evilplotIvy()))
 }
-
-// TODO: migrate test to svsim
