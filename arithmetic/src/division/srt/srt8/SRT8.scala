@@ -29,13 +29,12 @@ class SRT8(
 
   val guardBitWidth = 2
   val xLen: Int = dividendWidth + radixLog2 + 1 + guardBitWidth
-  val wLen: Int = xLen + radixLog2
 
   // IO
   val input = IO(Flipped(DecoupledIO(new SRTInput(dividendWidth, dividerWidth, n, 3))))
   val output = IO(ValidIO(new SRTOutput(dividerWidth, dividendWidth)))
 
-  val partialReminderCarryNext, partialReminderSumNext = Wire(UInt(wLen.W))
+  val partialReminderCarryNext, partialReminderSumNext = Wire(UInt(xLen.W))
   val quotientNext, quotientMinusOneNext = Wire(UInt(n.W))
   val dividerNext = Wire(UInt(dividerWidth.W))
   val counterNext = Wire(UInt(log2Ceil(n).W))
@@ -47,8 +46,8 @@ class SRT8(
 
   // State
   // because we need a CSA to minimize the critical path
-  val partialReminderCarry = RegEnable(partialReminderCarryNext, 0.U(wLen.W), enable)
-  val partialReminderSum = RegEnable(partialReminderSumNext, 0.U(wLen.W), enable)
+  val partialReminderCarry = RegEnable(partialReminderCarryNext, 0.U(xLen.W), enable)
+  val partialReminderSum = RegEnable(partialReminderSumNext, 0.U(xLen.W), enable)
   val divider = RegEnable(dividerNext, 0.U(dividerWidth.W), enable)
   val quotient = RegEnable(quotientNext, 0.U(n.W), enable)
   val quotientMinusOne = RegEnable(quotientMinusOneNext, 0.U(n.W), enable)
@@ -69,8 +68,8 @@ class SRT8(
   val remainderNoCorrect: UInt = partialReminderSum + partialReminderCarry
   val remainderCorrect: UInt =
     partialReminderSum + partialReminderCarry + (divisorExtended << radixLog2)
-  val needCorrect: Bool = remainderNoCorrect(wLen - 4).asBool
-  output.bits.reminder := Mux(needCorrect, remainderCorrect, remainderNoCorrect)(wLen - 5, radixLog2 + guardBitWidth)
+  val needCorrect: Bool = remainderNoCorrect(xLen - 1).asBool
+  output.bits.reminder := Mux(needCorrect, remainderCorrect, remainderNoCorrect)(xLen - 2, radixLog2 + guardBitWidth)
   output.bits.quotient := Mux(needCorrect, quotientMinusOne, quotient)
 
   val rWidth: Int = 1 + radixLog2 + rTruncateWidth
@@ -85,8 +84,8 @@ class SRT8(
   // qds
   val selectedQuotientOH: UInt =
     QDS(rWidth, ohWidth, dTruncateWidth - 1, tables, a)(
-      leftShift(partialReminderSum, radixLog2).head(rWidth),
-      leftShift(partialReminderCarry, radixLog2).head(rWidth),
+      partialReminderSum.head(rWidth),
+      partialReminderCarry.head(rWidth),
       dividerNext.head(dTruncateWidth)(dTruncateWidth - 2, 0) //.1********* -> 1*** -> ***
     )
   // On-The-Fly conversion
@@ -115,15 +114,15 @@ class SRT8(
     })
     val csa0 = addition.csa.c32(
       VecInit(
-        leftShift(partialReminderSum, radixLog2).head(wLen - radixLog2),
-        leftShift(partialReminderCarry, radixLog2).head(wLen - radixLog2 - 1) ## qdsSign0,
+        partialReminderSum.head(xLen),
+        partialReminderCarry.head(xLen - 1) ## qdsSign0,
         Mux1H(qHigh, dividerHMap)
       )
     )
     val csa1 = addition.csa.c32(
       VecInit(
-        csa0(1).head(wLen - radixLog2),
-        leftShift(csa0(0), 1).head(wLen - radixLog2 - 1) ## qdsSign1,
+        csa0(1).head(xLen),
+        leftShift(csa0(0), 1).head(xLen - 1) ## qdsSign1,
         Mux1H(qLow, dividerLMap)
       )
     )
@@ -143,15 +142,15 @@ class SRT8(
     })
     val csa0 = addition.csa.c32(
       VecInit(
-        leftShift(partialReminderSum, radixLog2).head(wLen - radixLog2),
-        leftShift(partialReminderCarry, radixLog2).head(wLen - radixLog2 - 1) ## qdsSign0,
+        partialReminderSum.head(xLen),
+        partialReminderCarry.head(xLen - 1) ## qdsSign0,
         Mux1H(qHigh, dividerHMap)
       )
     )
     val csa1 = addition.csa.c32(
       VecInit(
-        csa0(1).head(wLen - radixLog2),
-        leftShift(csa0(0), 1).head(wLen - radixLog2 - 1) ## qdsSign1,
+        csa0(1).head(xLen),
+        leftShift(csa0(0), 1).head(xLen - 1) ## qdsSign1,
         Mux1H(qLow, dividerLMap)
       )
     )
@@ -171,15 +170,15 @@ class SRT8(
     })
     val csa0 = addition.csa.c32(
       VecInit(
-        leftShift(partialReminderSum, radixLog2).head(wLen - radixLog2),
-        leftShift(partialReminderCarry, radixLog2).head(wLen - radixLog2 - 1) ## qdsSign0,
+        partialReminderSum.head(xLen),
+        partialReminderCarry.head(xLen - 1) ## qdsSign0,
         Mux1H(qHigh, dividerHMap)
       )
     )
     val csa1 = addition.csa.c32(
       VecInit(
-        csa0(1).head(wLen - radixLog2),
-        leftShift(csa0(0), 1).head(wLen - radixLog2 - 1) ## qdsSign1,
+        csa0(1).head(xLen),
+        leftShift(csa0(0), 1).head(xLen - 1) ## qdsSign1,
         Mux1H(qLow, dividerLMap)
       )
     )
@@ -199,15 +198,15 @@ class SRT8(
     })
     val csa0 = addition.csa.c32(
       VecInit(
-        leftShift(partialReminderSum, radixLog2).head(wLen - radixLog2),
-        leftShift(partialReminderCarry, radixLog2).head(wLen - radixLog2 - 1) ## qdsSign0,
+        partialReminderSum.head(xLen),
+        partialReminderCarry.head(xLen - 1) ## qdsSign0,
         Mux1H(qHigh, dividerHMap)
       )
     )
     val csa1 = addition.csa.c32(
       VecInit(
-        csa0(1).head(wLen - radixLog2),
-        leftShift(csa0(0), 1).head(wLen - radixLog2 - 1) ## qdsSign1,
+        csa0(1).head(xLen),
+        leftShift(csa0(0), 1).head(xLen - 1) ## qdsSign1,
         Mux1H(qLow, dividerLMap)
       )
     )
