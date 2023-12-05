@@ -105,7 +105,7 @@ void TestHarness::dpiCheck(svBit valid, svBitVecVal result,
 }
 
 std::vector<testdata>
-mygen_abz_f32(float32_t trueFunction(float32_t, float32_t), function_t function,
+mygen_abz_f32(float32_t trueFunction(float32_t, float32_t), testfloat_function_t function,
               roundingMode_t roundingMode) {
   // modified from berkeley-testfloat-3/source/genLoops.c
   union ui32_f32 {
@@ -140,7 +140,7 @@ mygen_abz_f32(float32_t trueFunction(float32_t, float32_t), function_t function,
 }
 
 std::vector<testdata> gencase_az_f32(float32_t trueFunction(float32_t),
-                                   function_t function,
+                                   testfloat_function_t function,
                                    roundingMode_t roundingMode) {
   union ui32_f32 {
     uint32_t ui;
@@ -170,7 +170,7 @@ std::vector<testdata> gencase_az_f32(float32_t trueFunction(float32_t),
 }
 
 std::vector<testdata>
-genTestCase(function_t function,
+genTestCase(testfloat_function_t function,
             roundingMode_t roundingMode) { // call it in dpiInit
   // see berkeley-testfloat-3/source/testfloat_gen.c
   std::vector<testdata> res;

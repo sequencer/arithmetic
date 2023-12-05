@@ -33,7 +33,7 @@ struct testdata {
   uint64_t a;
   uint64_t b;
   uint64_t expected_out;
-  function_t function;
+  testfloat_function_t function;
   exceptionFlag_t expectedException;
 };
 

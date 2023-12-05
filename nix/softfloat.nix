@@ -1,14 +1,13 @@
 { stdenv, fetchFromGitHub }:
 stdenv.mkDerivation rec {
   pname = "softfloat";
-  version = "5c06db33fc1e2130f67c045327b0ec949032df1d";
+  version = "080c31c72d5c3fd813584ea990e8a3aa10e902eb";
   src = fetchFromGitHub {
     owner = "ucb-bar";
     repo = "berkeley-softfloat-3";
     rev = version;
-    sha256 = "sha256-uqf2xATeLyPEs/f8Yqc/Cr5YiklV2754g8IJu5z50sk=";
+    sha256 = "sha256-0/xmH5ku2ftUIAU5k6/yydCC2uDv2MKh/Nel1MiPSOE=";
   };
-  patches = [ ./softfloat.patch ];
   buildPhase = ''
     make -C build/Linux-x86_64-GCC SPECIALIZE_TYPE=RISCV TESTFLOAT_OPTS="-DFLOAT64 -DFLOAT_ROUND_ODD" softfloat.a
   '';
