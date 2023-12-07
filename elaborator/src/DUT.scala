@@ -8,7 +8,7 @@ class DUT(expWidth: Int, sigWidth: Int) extends Module {
   val input = IO(Flipped(Decoupled(new DutPoke(expWidth, sigWidth))))
   val output = IO(Valid(new DutPeek(expWidth, sigWidth)))
 
-  val ds = Module(new DivSqrtMerge(expWidth: Int, sigWidth: Int))
+  val ds = Module(new DivSqrt(expWidth: Int, sigWidth: Int))
   ds.input.valid := input.valid
   ds.input.bits.sqrt := input.bits.op
   ds.input.bits.dividend := input.bits.a
