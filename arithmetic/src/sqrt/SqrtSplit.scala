@@ -2,7 +2,8 @@ package sqrt
 
 import chisel3._
 import chisel3.util._
-import division.srt.srt4.OTF
+import division.srt.{OTFInput, OTFOutput}
+import division.srt.srt16.OTF
 
 class SqrtIter(
                 radixLog2:   Int,
@@ -10,9 +11,16 @@ class SqrtIter(
                 iterWidth:  Int,
                 outputWidth: Int)
   extends Module {
+  /** todo later parameterize it */
+  val rtzYWidth = 7
+  val rtzSWidth = 4
+  val ohWidth = 5
+
   val input = IO(Flipped(DecoupledIO(new SqrtIterIn(iterWidth))))
   val resultOutput = IO(ValidIO(new SquareRootOutput(outputWidth)))
   val output = IO(Output(new SqrtIterOut(iterWidth)))
+  val reqOTF = IO(Output(new OTFInput(outputWidth, ohWidth)))
+  val respOTF = IO(Input(new OTFOutput(outputWidth)))
 
   /** S[j] = .xxxxxxxx
     *
@@ -49,11 +57,6 @@ class SqrtIter(
   shiftSum   := partialSum   << 2
   shiftCarry := partialCarry << 2
 
-  /** todo later parameterize it */
-  val rtzYWidth = 7
-  val rtzSWidth = 4
-  val ohWidth = 5
-
   /** S[j] = x.xxxxxxxx
     * width = outwidth + 1
     *
@@ -75,9 +78,6 @@ class SqrtIter(
       shiftCarry.head(rtzYWidth),
       resultForQDS //.1********* -> 1*** -> ***
     )
-
-  /** On-The-Fly conversion */
-  val otf = OTF(radixLog2, outputWidth, ohWidth, a)(resultOrigin, resultMinusOne, selectedQuotientOH)
 
   /** effective bits : LSB 2j+1+4 = 2j + 5 */
   val formationForIter = Mux1H(
@@ -115,12 +115,16 @@ class SqrtIter(
   val needCorrect: Bool = remainderFinal(iterWidth - 1).asBool
 
   /** init S[0] = 1 */
-  resultOriginNext       := Mux(input.fire, 1.U, otf(0))
-  resultMinusOneNext     := Mux(input.fire, 0.U, otf(1))
+  resultOriginNext       := Mux(input.fire, 1.U, respOTF.quotient)
+  resultMinusOneNext     := Mux(input.fire, 0.U, respOTF.quotientMinusOne)
   counterNext            := Mux(input.fire, 0.U, counter + 1.U)
 
   resultOutput.bits.result := Mux(needCorrect, resultMinusOne, resultOrigin)
   resultOutput.bits.zeroRemainder := !remainderFinal.orR
+
+  reqOTF.quotient := resultOrigin
+  reqOTF.quotientMinusOne := resultMinusOne
+  reqOTF.selectedQuotientOH := selectedQuotientOH
 
   output.partialSum := csa(1)
   output.partialCarry := csa(0) << 1
@@ -136,26 +140,31 @@ class SqrtSplited(
   val output = IO(ValidIO(new SquareRootOutput(outputWidth)))
   /** width for partial result */
   val iterWidth = inputWidth + 2
+  val ohWidth = 5
 
-  val sqrtIter = Module(new SqrtIter(radixLog2, a, iterWidth, outputWidth))
+  val iter = Module(new SqrtIter(radixLog2, a, iterWidth, outputWidth))
+  val otf = OTF(radixLog2, outputWidth, ohWidth)(iter.reqOTF.quotient, iter.reqOTF.quotientMinusOne, iter.reqOTF.selectedQuotientOH)
 
   val partialCarryNext, partialSumNext = Wire(UInt(iterWidth.W))
-  val enable = input.fire || !sqrtIter.output.isLastCycle
+  val enable = input.fire || !iter.output.isLastCycle
 
   /** w[0] = oprand - 1.U */
   val initSum = Cat("b11".U, input.bits.operand)
-  partialSumNext   := Mux(input.fire, initSum, sqrtIter.output.partialSum)
-  partialCarryNext := Mux(input.fire, 0.U, sqrtIter.output.partialCarry)
+  partialSumNext   := Mux(input.fire, initSum, iter.output.partialSum)
+  partialCarryNext := Mux(input.fire, 0.U, iter.output.partialCarry)
 
   val partialCarry = RegEnable(partialCarryNext, 0.U(iterWidth.W), enable)
   val partialSum   = RegEnable(partialSumNext, 0.U(iterWidth.W), enable)
 
-  input.ready := sqrtIter.input.ready
+  input.ready := iter.input.ready
 
-  sqrtIter.input.valid := input.valid
-  sqrtIter.input.bits.partialCarry := partialCarry
-  sqrtIter.input.bits.partialSum   := partialSum
+  iter.input.valid := input.valid
+  iter.input.bits.partialCarry := partialCarry
+  iter.input.bits.partialSum   := partialSum
 
-  output := sqrtIter.resultOutput
+  iter.respOTF.quotient := otf(0)
+  iter.respOTF.quotientMinusOne := otf(1)
+
+  output := iter.resultOutput
 
 }
