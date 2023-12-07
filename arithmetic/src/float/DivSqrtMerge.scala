@@ -118,33 +118,29 @@ class DivSqrtMerge(expWidth: Int, sigWidth: Int) extends Module {
     )
   )
 
+  // build SQRT input
   val expForSqrt = Cat(expstart, rawA.sExp(expWidth - 2, 0)) >> 1
-
   val sqrtFractIn = Mux(rawA.sExpIsEven, Cat(0.U(1.W), rawA.sig(sigWidth - 1, 0), 0.U(1.W)),
     Cat(rawA.sig(sigWidth - 1, 0), 0.U(2.W)))
 
 
-  val sqrtIter = Module(new SqrtIter(2, 2, sqrtIterWidth, sigWidth + 2))
-
-
-
-  // divInput
+  // build DIV Input
   val fractDividendIn = Wire(UInt((fpWidth).W))
   val fractDivisorIn = Wire(UInt((fpWidth).W))
   fractDividendIn := Cat(1.U(1.W), rawA.sig(sigWidth - 2, 0), 0.U(expWidth.W))
   fractDivisorIn := Cat(1.U(1.W), rawB.sig(sigWidth - 2, 0), 0.U(expWidth.W))
 
 
+  val sqrtIter = Module(new SqrtIter(2, 2, sqrtIterWidth, sigWidth + 2))
   val divIter = Module(new SRT16Iter(fpWidth, fpWidth, fpWidth, 2, 2, 4, 4))
 
-  val sqrtMuxInput  = Wire(new IterMuxIO(expWidth, sigWidth, fpWidth, ohWidth, iterWidth))
-  val divMuxInput   = Wire(new IterMuxIO(expWidth, sigWidth, fpWidth, ohWidth, iterWidth))
+  val sqrtMuxIn     = Wire(new IterMuxIO(expWidth, sigWidth, fpWidth, ohWidth, iterWidth))
+  val divMuxIn      = Wire(new IterMuxIO(expWidth, sigWidth, fpWidth, ohWidth, iterWidth))
   val divSqrtMuxOut = Wire(new IterMuxIO(expWidth, sigWidth, fpWidth, ohWidth, iterWidth))
-  divSqrtMuxOut := Mux(opSqrtReg, sqrtMuxInput, divMuxInput)
+  divSqrtMuxOut := Mux(opSqrtReg, sqrtMuxIn, divMuxIn)
 
   val divValid = input.valid && !input.bits.sqrt && normalCaseDiv
   val divReady = divIter.input.ready
-
   val sqrtValid = input.valid && input.bits.sqrt && normalCaseSqrt
   val sqrtReady = sqrtIter.input.ready
 
@@ -162,6 +158,11 @@ class DivSqrtMerge(expWidth: Int, sigWidth: Int) extends Module {
     0.U,
     divSqrtMuxOut.partialCarryNext)
 
+  val otf = OTF(2, fpWidth, ohWidth)(
+    divSqrtMuxOut.quotient,
+    divSqrtMuxOut.quotientMinusOne,
+    divSqrtMuxOut.selectedQuotientOH)
+
   sqrtIter.input.valid := sqrtValid
   sqrtIter.input.bits.partialCarry := partialCarry
   sqrtIter.input.bits.partialSum := partialSum
@@ -171,11 +172,6 @@ class DivSqrtMerge(expWidth: Int, sigWidth: Int) extends Module {
   divIter.input.bits.partialCarry := partialCarry
   divIter.input.bits.divider := fractDivisorIn
   divIter.input.bits.counter := 8.U
-
-  val otf = OTF(2, fpWidth, ohWidth)(
-    divSqrtMuxOut.quotient,
-    divSqrtMuxOut.quotientMinusOne,
-    divSqrtMuxOut.selectedQuotientOH)
 
   sqrtIter.respOTF.quotient := otf(0)
   sqrtIter.respOTF.quotientMinusOne := otf(1)
@@ -238,24 +234,24 @@ class DivSqrtMerge(expWidth: Int, sigWidth: Int) extends Module {
     isInfReg,
     isZeroReg)
 
-  sqrtMuxInput.enable             := (sqrtValid && sqrtReady) || !sqrtIter.output.isLastCycle
-  divMuxInput.enable              := (divValid && divReady) || !divIter.output.isLastCycle
-  sqrtMuxInput.partialSumInit     := Cat("b11".U, sqrtFractIn)
-  divMuxInput.partialSumInit      := fractDividendIn
-  sqrtMuxInput.partialSumNext     := sqrtIter.output.partialSum
-  sqrtMuxInput.partialCarryNext   := sqrtIter.output.partialCarry
-  divMuxInput.partialSumNext      := divIter.output.partialSum
-  divMuxInput.partialCarryNext    := divIter.output.partialCarry
-  sqrtMuxInput.quotient           := sqrtIter.reqOTF.quotient
-  sqrtMuxInput.quotientMinusOne   := sqrtIter.reqOTF.quotientMinusOne
-  sqrtMuxInput.selectedQuotientOH := sqrtIter.reqOTF.selectedQuotientOH
-  divMuxInput.quotient            := divIter.reqOTF.quotient
-  divMuxInput.quotientMinusOne    := divIter.reqOTF.quotientMinusOne
-  divMuxInput.selectedQuotientOH  := divIter.reqOTF.selectedQuotientOH
-  sqrtMuxInput.sigToRound         := sigPlusSqrt
-  sqrtMuxInput.expToRound         := expStore
-  divMuxInput.sigToRound          := sigPlusDiv
-  divMuxInput.expToRound          := expStore - needRightShift
+  sqrtMuxIn.enable             := (sqrtValid && sqrtReady) || !sqrtIter.output.isLastCycle
+  divMuxIn.enable              := (divValid && divReady) || !divIter.output.isLastCycle
+  sqrtMuxIn.partialSumInit     := Cat("b11".U, sqrtFractIn)
+  divMuxIn.partialSumInit      := fractDividendIn
+  sqrtMuxIn.partialSumNext     := sqrtIter.output.partialSum
+  sqrtMuxIn.partialCarryNext   := sqrtIter.output.partialCarry
+  divMuxIn.partialSumNext      := divIter.output.partialSum
+  divMuxIn.partialCarryNext    := divIter.output.partialCarry
+  sqrtMuxIn.quotient           := sqrtIter.reqOTF.quotient
+  sqrtMuxIn.quotientMinusOne   := sqrtIter.reqOTF.quotientMinusOne
+  sqrtMuxIn.selectedQuotientOH := sqrtIter.reqOTF.selectedQuotientOH
+  divMuxIn.quotient            := divIter.reqOTF.quotient
+  divMuxIn.quotientMinusOne    := divIter.reqOTF.quotientMinusOne
+  divMuxIn.selectedQuotientOH  := divIter.reqOTF.selectedQuotientOH
+  sqrtMuxIn.sigToRound         := sigPlusSqrt
+  sqrtMuxIn.expToRound         := expStore
+  divMuxIn.sigToRound          := sigPlusDiv
+  divMuxIn.expToRound          := expStore - needRightShift
 
   output.bits.result := roundresult(0)
   output.bits.exceptionFlags := roundresult(1)
