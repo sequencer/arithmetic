@@ -33,6 +33,7 @@ class DivSqrtMerge(expWidth: Int, sigWidth: Int) extends Module {
 
   val iterWidth: Int = fpWidth + 6
   val sqrtIterWidth = sigWidth + 4
+  val ohWidth = 5
 
   val opSqrtReg = RegEnable(input.bits.sqrt, false.B, input.fire)
   val roundingModeReg = RegEnable(input.bits.roundingMode, 0.U, input.fire)
@@ -136,15 +137,18 @@ class DivSqrtMerge(expWidth: Int, sigWidth: Int) extends Module {
 
   val divIter = Module(new SRT16Iter(fpWidth, fpWidth, fpWidth, 2, 2, 4, 4))
 
+  val sqrtMuxInput  = Wire(new IterMuxIO(expWidth, sigWidth, fpWidth, ohWidth, iterWidth))
+  val divMuxInput   = Wire(new IterMuxIO(expWidth, sigWidth, fpWidth, ohWidth, iterWidth))
+  val divSqrtMuxOut = Wire(new IterMuxIO(expWidth, sigWidth, fpWidth, ohWidth, iterWidth))
+  divSqrtMuxOut := Mux(opSqrtReg, sqrtMuxInput, divMuxInput)
+
   val divValid = input.valid && !input.bits.sqrt && normalCaseDiv
   val divReady = divIter.input.ready
 
   val sqrtValid = input.valid && input.bits.sqrt && normalCaseSqrt
   val sqrtReady = sqrtIter.input.ready
 
-  val enable = Mux(opSqrtReg, 
-    (sqrtValid && sqrtReady) || !sqrtIter.output.isLastCycle, 
-    (divValid && divReady)   || !divIter.output.isLastCycle)
+  val enable = divSqrtMuxOut.enable
 
   val partialCarryNext, partialSumNext = Wire(UInt(iterWidth.W))
 
@@ -152,21 +156,31 @@ class DivSqrtMerge(expWidth: Int, sigWidth: Int) extends Module {
   val partialSum   = RegEnable(partialSumNext,   0.U(iterWidth.W), enable)
 
   partialSumNext := Mux(input.fire,
-    Mux(opSqrtReg, Cat("b11".U, sqrtFractIn), fractDividendIn),
-    Mux(opSqrtReg,sqrtIter.output.partialSum, divIter.output.partialSum))
-  partialCarryNext := Mux(input.fire, 
-    0.U, 
-    Mux(opSqrtReg, sqrtIter.output.partialCarry, divIter.output.partialCarry))
+    divSqrtMuxOut.partialSumInit,
+    divSqrtMuxOut.partialSumNext)
+  partialCarryNext := Mux(input.fire,
+    0.U,
+    divSqrtMuxOut.partialCarryNext)
 
   sqrtIter.input.valid := sqrtValid
   sqrtIter.input.bits.partialCarry := partialCarry
   sqrtIter.input.bits.partialSum := partialSum
-  
+
   divIter.input.valid := divValid
   divIter.input.bits.partialSum := partialSum
   divIter.input.bits.partialCarry := partialCarry
   divIter.input.bits.divider := fractDivisorIn
   divIter.input.bits.counter := 8.U
+
+  val otf = OTF(2, fpWidth, ohWidth)(
+    divSqrtMuxOut.quotient,
+    divSqrtMuxOut.quotientMinusOne,
+    divSqrtMuxOut.selectedQuotientOH)
+
+  sqrtIter.respOTF.quotient := otf(0)
+  sqrtIter.respOTF.quotientMinusOne := otf(1)
+  divIter.respOTF.quotient := otf(0)
+  divIter.respOTF.quotientMinusOne := otf(1)
 
   /** collect div result
     *
@@ -176,8 +190,10 @@ class DivSqrtMerge(expWidth: Int, sigWidth: Int) extends Module {
     * exp need decrease by 1
     * }}}
     */
-  val needRightShift = !divIter.resultOutput.bits.quotient(27)
-  val sigPlusDiv = Mux(needRightShift,
+  val needRightShift = Wire(Bool())
+  needRightShift := !divIter.resultOutput.bits.quotient(27)
+  val sigPlusDiv = Wire(UInt((sigWidth+2).W))
+  sigPlusDiv := Mux(needRightShift,
     divIter.resultOutput.bits.quotient(calWidth - 3, calWidth - sigWidth - 2) ## divIter.resultOutput.bits.reminder.orR,
     divIter.resultOutput.bits.quotient(calWidth - 2, calWidth - sigWidth - 1) ## divIter.resultOutput.bits.reminder.orR
   )
@@ -206,9 +222,10 @@ class DivSqrtMerge(expWidth: Int, sigWidth: Int) extends Module {
     Cat(expForSqrt(7), expForSqrt(7), expForSqrt(7, 0)),
     (rawA.sExp - rawB.sExp).asUInt)
   val expStore = RegEnable(expStoreNext, 0.U((expWidth + 2).W), input.fire)
-  expToRound := Mux(opSqrtReg, expStore, expStore - needRightShift)
+  expToRound := divSqrtMuxOut.expToRound
 
-  val sigToRound = Mux(opSqrtReg, sigPlusSqrt, sigPlusDiv)
+  val sigToRound = Wire(UInt((sigWidth+2).W))
+  sigToRound := divSqrtMuxOut.sigToRound
 
   val roundresult = RoundingUnit(
     signReg,
@@ -221,9 +238,49 @@ class DivSqrtMerge(expWidth: Int, sigWidth: Int) extends Module {
     isInfReg,
     isZeroReg)
 
+  sqrtMuxInput.enable             := (sqrtValid && sqrtReady) || !sqrtIter.output.isLastCycle
+  divMuxInput.enable              := (divValid && divReady) || !divIter.output.isLastCycle
+  sqrtMuxInput.partialSumInit     := Cat("b11".U, sqrtFractIn)
+  divMuxInput.partialSumInit      := fractDividendIn
+  sqrtMuxInput.partialSumNext     := sqrtIter.output.partialSum
+  sqrtMuxInput.partialCarryNext   := sqrtIter.output.partialCarry
+  divMuxInput.partialSumNext      := divIter.output.partialSum
+  divMuxInput.partialCarryNext    := divIter.output.partialCarry
+  sqrtMuxInput.quotient           := sqrtIter.reqOTF.quotient
+  sqrtMuxInput.quotientMinusOne   := sqrtIter.reqOTF.quotientMinusOne
+  sqrtMuxInput.selectedQuotientOH := sqrtIter.reqOTF.selectedQuotientOH
+  divMuxInput.quotient            := divIter.reqOTF.quotient
+  divMuxInput.quotientMinusOne    := divIter.reqOTF.quotientMinusOne
+  divMuxInput.selectedQuotientOH  := divIter.reqOTF.selectedQuotientOH
+  sqrtMuxInput.sigToRound         := sigPlusSqrt
+  sqrtMuxInput.expToRound         := expStore
+  divMuxInput.sigToRound          := sigPlusDiv
+  divMuxInput.expToRound          := expStore - needRightShift
+
   output.bits.result := roundresult(0)
   output.bits.exceptionFlags := roundresult(1)
 
   input.ready := divReady && sqrtReady
   output.valid := divIter.resultOutput.valid || sqrtIter.resultOutput.valid || fastValid
 }
+
+class IterMuxIO(expWidth: Int, sigWidth: Int, qWidth: Int, ohWidth: Int, iterWidth: Int)  extends Bundle{
+  // enable signal
+  val enable = Bool()
+
+  // partialResult
+  val partialSumInit = UInt(iterWidth.W)
+  val partialSumNext = UInt(iterWidth.W)
+  val partialCarryNext = UInt(iterWidth.W)
+
+  // otf
+  val quotient = UInt(qWidth.W)
+  val quotientMinusOne = UInt(qWidth.W)
+  val selectedQuotientOH = UInt(ohWidth.W)
+
+  // collect output
+  val expToRound = UInt((expWidth + 2).W)
+  val sigToRound = UInt((sigWidth + 2).W)
+
+}
+
