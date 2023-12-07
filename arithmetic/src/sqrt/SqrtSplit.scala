@@ -4,49 +4,16 @@ import chisel3._
 import chisel3.util._
 import division.srt.srt4.OTF
 
-/** SquareRoot
-  *
-  * all example xxx assumes inputWidth = 8
-  *
-  * {{{
-  * oprand = 0.1xxxxx > 1/2  , input.bits.oprand  = 1xxxx
-  * oprand = 0.01xxxxx > 1/4 , input.bits.oprand  = 01xxxx
-  * result = 0.1xxxxx > 1/2 , output.bits.result = 1xxxxx
-  *
-  * }}}
-  *
-  * csa width = partialresult width : wlen = inputwidth + 2
-  * csa width(formation width) : wlen
-  * resultOrigin and Minus: outputWidth
-  *
-  * outputWidth must <= inputWidth +2 or we can't get exact FormationFinal
-  *
-  * @note inputWidth mod 2 ==0
-  *
-  * @example if oprand = .10110000, input.bits.oprand shoule be 10110000
-  *
-  * @param radixLog2 SRT radix log2
-  * @param a Redundent system
-  * @param inputWidth   width for input
-  * @param outputWidth  width for result ,need to be inputwidth + 2
-  */
-class SquareRoot(
-  radixLog2:   Int,
-  a:           Int,
-  inputWidth:  Int,
-  outputWidth: Int)
-    extends Module {
-  val input = IO(Flipped(DecoupledIO(new SquareRootInput(inputWidth: Int))))
-  val output = IO(ValidIO(new SquareRootOutput(outputWidth)))
+class SqrtIter(
+                radixLog2:   Int,
+                a:           Int,
+                iterWidth:  Int,
+                outputWidth: Int)
+  extends Module {
+  val input = IO(Flipped(DecoupledIO(new SqrtIterIn(iterWidth))))
+  val resultOutput = IO(ValidIO(new SquareRootOutput(outputWidth)))
+  val output = IO(Output(new SqrtIterOut(iterWidth)))
 
-  /** width for partial result  */
-  val wlen = inputWidth + 2
-
-  /** W[j] = xx.xxxxxxxx
-    *
-    * width = 2 + inputwidth
-    */
-  val partialCarryNext, partialSumNext = Wire(UInt(wlen.W))
   /** S[j] = .xxxxxxxx
     *
     * effective bits number depends on counter, 2n+1
@@ -66,19 +33,19 @@ class SquareRoot(
   isLastCycle  := counter === (outputWidth/2).U
   input.ready  := !occupied
   enable       := input.fire || !isLastCycle
-  output.valid := occupied && isLastCycle
+  resultOutput.valid := occupied && isLastCycle
 
   /** Data REG */
   val resultOrigin       = RegEnable(resultOriginNext,   0.U((outputWidth).W), enable)
   val resultMinusOne     = RegEnable(resultMinusOneNext, 0.U((outputWidth).W), enable)
-  val partialCarry       = RegEnable(partialCarryNext,   0.U(wlen.W),          enable)
-  val partialSum         = RegEnable(partialSumNext,     0.U(wlen.W),          enable)
+  val partialCarry       = input.bits.partialCarry
+  val partialSum         = input.bits.partialSum
 
   /** rW[j] = xxxx.xxxxxxxx
     *
     * first 7 bits truncated for QDS
     */
-  val shiftSum, shiftCarry = Wire(UInt((wlen+2).W))
+  val shiftSum, shiftCarry = Wire(UInt((iterWidth+2).W))
   shiftSum   := partialSum   << 2
   shiftCarry := partialCarry << 2
 
@@ -131,32 +98,64 @@ class SquareRoot(
     *
     * @todo width fixed to wlen + 1, prove it
     */
-  val formationFinal = Wire(UInt((wlen + 1).W))
-  formationFinal := formationForIter << (wlen - 4) >> (counter << 1)
+  val formationFinal = Wire(UInt((iterWidth + 1).W))
+  formationFinal := formationForIter << (iterWidth - 4) >> (counter << 1)
 
   /** csa width : wlen */
   val csa: Vec[UInt] = addition.csa.c32(
     VecInit(
-      shiftSum(inputWidth + 1, 0),
-      shiftCarry(inputWidth + 1, 0),
-      formationFinal(inputWidth + 1, 0)
+      shiftSum(iterWidth - 1, 0),
+      shiftCarry(iterWidth - 1, 0),
+      formationFinal(iterWidth - 1, 0)
     )
   )
 
   /** @todo opt SZ logic */
   val remainderFinal = partialSum + partialCarry
-  val needCorrect: Bool = remainderFinal(wlen - 1).asBool
-
-  /** w[0] = oprand - 1.U */
-  val initSum = Cat("b11".U, input.bits.operand)
+  val needCorrect: Bool = remainderFinal(iterWidth - 1).asBool
 
   /** init S[0] = 1 */
   resultOriginNext       := Mux(input.fire, 1.U, otf(0))
   resultMinusOneNext     := Mux(input.fire, 0.U, otf(1))
-  partialSumNext         := Mux(input.fire, initSum, csa(1))
-  partialCarryNext       := Mux(input.fire, 0.U, csa(0) << 1)
   counterNext            := Mux(input.fire, 0.U, counter + 1.U)
 
-  output.bits.result := Mux(needCorrect, resultMinusOne, resultOrigin)
-  output.bits.zeroRemainder := !remainderFinal.orR
+  resultOutput.bits.result := Mux(needCorrect, resultMinusOne, resultOrigin)
+  resultOutput.bits.zeroRemainder := !remainderFinal.orR
+
+  output.partialSum := csa(1)
+  output.partialCarry := csa(0) << 1
+  output.isLastCycle := isLastCycle
+}
+
+class SqrtSplited(
+                   radixLog2:   Int,
+                   a:           Int,
+                   inputWidth:  Int,
+                   outputWidth: Int) extends Module{
+  val input = IO(Flipped(DecoupledIO(new SquareRootInput(inputWidth: Int))))
+  val output = IO(ValidIO(new SquareRootOutput(outputWidth)))
+  /** width for partial result */
+  val iterWidth = inputWidth + 2
+
+  val sqrtIter = Module(new SqrtIter(radixLog2, a, iterWidth, outputWidth))
+
+  val partialCarryNext, partialSumNext = Wire(UInt(iterWidth.W))
+  val enable = input.fire || !sqrtIter.output.isLastCycle
+
+  /** w[0] = oprand - 1.U */
+  val initSum = Cat("b11".U, input.bits.operand)
+  partialSumNext   := Mux(input.fire, initSum, sqrtIter.output.partialSum)
+  partialCarryNext := Mux(input.fire, 0.U, sqrtIter.output.partialCarry)
+
+  val partialCarry = RegEnable(partialCarryNext, 0.U(iterWidth.W), enable)
+  val partialSum   = RegEnable(partialSumNext, 0.U(iterWidth.W), enable)
+
+  input.ready := sqrtIter.input.ready
+
+  sqrtIter.input.valid := input.valid
+  sqrtIter.input.bits.partialCarry := partialCarry
+  sqrtIter.input.bits.partialSum   := partialSum
+
+  output := sqrtIter.resultOutput
+
 }
