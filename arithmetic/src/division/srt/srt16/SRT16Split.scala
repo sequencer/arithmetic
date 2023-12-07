@@ -23,6 +23,8 @@ class SRT16Iter(
   val input = IO(Flipped(DecoupledIO(new DivIterIn(dividerWidth, xLen, n))))
   val resultOutput = IO(ValidIO(new SRTOutput(dividerWidth, dividendWidth)))
   val output = IO(Output(new DivIterOut(xLen)))
+  val reqOTF = IO(Output(new OTFInput(n, ohWidth)))
+  val respOTF = IO(Input(new OTFOutput(n)))
 
   val dividerNext = Wire(UInt(dividerWidth.W))
   val counterNext = Wire(UInt(log2Ceil(n).W))
@@ -128,8 +130,11 @@ class SRT16Iter(
 
   // On-The-Fly conversion
   //  todo?: OTF input: Q, QM1, (q1 << 2 + q2) output: Q,QM1
-  val otf0 = OTF(radixLog2, n, ohWidth)(quotient, quotientMinusOne, qdsOH0)
-  val otf1 = OTF(radixLog2, n, ohWidth)(otf0(0), otf0(1), qdsOH1)
+  val otf1 = OTF(radixLog2, n, ohWidth)(respOTF.quotient, respOTF.quotientMinusOne, qdsOH1)
+
+  reqOTF.quotient := quotient
+  reqOTF.quotientMinusOne := quotientMinusOne
+  reqOTF.selectedQuotientOH := qdsOH0
 
   dividerNext := Mux(input.fire, input.bits.divider, divider)
   counterNext := Mux(input.fire, input.bits.counter, counter - 1.U)
@@ -166,8 +171,10 @@ class SRT16Split(
 
   val guardBitWidth = 3
   val xLen: Int = dividendWidth + radixLog2 + 1 + guardBitWidth
+  val ohWidth: Int = 2 * a + 1
 
   val iter = Module(new SRT16Iter(dividendWidth, dividerWidth, n, radixLog2, a, dTruncateWidth, rTruncateWidth))
+  val otf = OTF(radixLog2, n, ohWidth)(iter.reqOTF.quotient, iter.reqOTF.quotientMinusOne, iter.reqOTF.selectedQuotientOH)
 
   val partialCarryNext, partialSumNext = Wire(UInt(xLen.W))
   val enable       = input.fire || !iter.output.isLastCycle
@@ -185,6 +192,9 @@ class SRT16Split(
   iter.input.bits.partialSum   := partialSum
   iter.input.bits.divider := input.bits.divider
   iter.input.bits.counter := input.bits.counter
+
+  iter.respOTF.quotient := otf(0)
+  iter.respOTF.quotientMinusOne := otf(1)
 
   output := iter.resultOutput
 
