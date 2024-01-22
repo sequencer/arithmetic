@@ -101,7 +101,7 @@ class WallaceMultiplierImpl(
   }
 
   def makePartialProducts(i: Int, recoded: SInt): Seq[(Int, Bool)] = { // Seq[(weight, value)]
-    val bb: UInt = MuxLookup(recoded.asUInt, 0.S(bMultipleWidth), partialProductLookupTable).asUInt
+    val bb: UInt = MuxLookup(recoded.asUInt, 0.S(bMultipleWidth))(partialProductLookupTable).asUInt
     val shouldPlus1 = recoded.head(1).asBool
     val s = if (signed) bb.head(1) else shouldPlus1
     val pp = i match {

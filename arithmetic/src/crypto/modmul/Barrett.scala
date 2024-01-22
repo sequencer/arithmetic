@@ -1,7 +1,6 @@
 package crypto.modmul
 
 import chisel3._
-import chisel3.experimental.ChiselEnum
 import chisel3.util.experimental.decode.TruthTable
 import chisel3.util.{BitPat, Counter, Mux1H}
 

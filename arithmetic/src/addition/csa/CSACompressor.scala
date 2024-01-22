@@ -31,9 +31,7 @@ abstract class CSACompressor(val inputSize: Int, val outputSize: Int) {
 
   val encodeTable: Map[BigInt, Seq[BigInt]]
 
-  def decode(outputBits: UInt): UInt = util.MuxLookup(
-    outputBits,
-    0.U,
+  def decode(outputBits: UInt): UInt = util.MuxLookup(outputBits, 0.U)(
     decodeTable.map { case (k, v) => k.U -> v.U }.toSeq
   )
 
