@@ -24,3 +24,6 @@ verdiLog
 *.cmd
 *.log
 *.json
+
+# nix
+result
