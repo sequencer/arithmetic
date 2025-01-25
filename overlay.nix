@@ -1,8 +1,4 @@
 final: prev: {
-  fetchMillDeps = final.callPackage ./nix/fetch-mill-deps.nix { inherit (final.xorg) lndir; };
-  publishMillJar = final.callPackage ./nix/publish-mill-jar.nix { inherit (final.xorg) lndir; };
-  configure-mill-home-hook = final.callPackage ./nix/configure-mill-home.nix { };
-
   mill = prev.mill.overrideAttrs {
     version = "unstable-0.12.5-173-15dded";
     src = final.fetchurl {
