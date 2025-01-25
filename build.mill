@@ -1,7 +1,8 @@
+package build
+
 import mill._
-import mill.scalalib._
+import mill.scalalib._, publish._
 import mill.scalalib.scalafmt._
-import $file.common
 import os._
 
 object v {
@@ -12,6 +13,7 @@ object v {
   val mainargs = ivy"com.lihaoyi::mainargs:0.5.0"
   val chiselCrossVersions = Map(
     "5.0.0" -> (ivy"org.chipsalliance::chisel:5.0.0", ivy"org.chipsalliance:::chisel-plugin:5.0.0"),
+    "snapshot" -> (ivy"org.chipsalliance::chisel:0.0.0+0-no-vcs-SNAPSHOT", ivy"org.chipsalliance:::chisel-plugin:0.0.0+0-no-vcs-SNAPSHOT"),
   )
 }
 
@@ -30,6 +32,7 @@ object test
 trait Arithmetic
   extends common.ArithmeticModule
     with ScalafmtModule
+    with PublishModule
     with Cross.Module[String] {
 
   override def scalaVersion = T(v.scala)
@@ -47,6 +50,21 @@ trait Arithmetic
   def chiselIvy = Some(v.chiselCrossVersions(crossValue)._1)
 
   def chiselPluginIvy = Some(v.chiselCrossVersions(crossValue)._2)
+
+  def publishVersion = if (crossValue == "snapshot") {
+    "0.0.0+0-no-vcs-SNAPSHOT"
+  } else {
+    crossValue
+  }
+
+  def pomSettings = PomSettings (
+    description = "Arithmetic",
+    organization = "me.jiuyang",
+    url = "https://github.com/sequencer/arithmetic",
+    licenses = Seq(License.MIT),
+    versionControl = VersionControl.github("sequencer", "arithmetic"),
+    developers = Seq(Developer("sequencer", "Liu Jiuyang", "https://github.com/sequencer"))
+  )
 }
 
 trait Elaborator
