@@ -3,8 +3,6 @@ final: prev: {
   publishMillJar = final.callPackage ./nix/publish-mill-jar.nix { inherit (final.xorg) lndir; };
   configure-mill-home-hook = final.callPackage ./nix/configure-mill-home.nix { };
 
-  chisel = final.callPackage ./nix/chisel.nix { };
-
   mill = prev.mill.overrideAttrs {
     version = "unstable-0.12.5-173-15dded";
     src = final.fetchurl {
@@ -16,4 +14,7 @@ final: prev: {
   espresso = final.callPackage ./nix/espresso.nix { };
   softfloat = final.callPackage ./nix/softfloat.nix { };
   testfloat = final.callPackage ./nix/testfloat.nix { };
+
+  chisel = final.callPackage ./nix/chisel.nix { };
+  arithmetic = final.callPackage ./nix/arithmetic.nix { };
 }
