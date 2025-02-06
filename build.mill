@@ -36,7 +36,7 @@ trait Arithmetic
 
   override def scalaVersion = T(v.scala)
 
-  override def millSourcePath = os.pwd / "arithmetic"
+  def sourceRoots = Task.Sources(millSourcePath / "arithmetic")
 
   def spireIvy = v.spire
 
@@ -70,7 +70,7 @@ trait Elaborator
   extends Cross.Module[String] {
 
   object elaborate extends ScalaModule with ScalafmtModule{
-    override def millSourcePath: os.Path = os.pwd / "elaborator"
+    def sourceRoots = Task.Sources(millSourcePath / "elaborator")
 
     override def scalaVersion = v.scala
 
