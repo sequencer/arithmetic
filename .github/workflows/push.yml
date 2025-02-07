@@ -8,7 +8,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        chisel: ["5.0.0"]
+        chisel: ["snapshot"]
 
     steps:
       - uses: actions/checkout@v2
@@ -16,8 +16,8 @@ jobs:
           submodules: 'true'
       - uses: cachix/install-nix-action@v19
         with:
-          install_url: https://releases.nixos.org/nix/nix-2.13.3/install
+          install_url: https://releases.nixos.org/nix/nix-2.26.1/install
           nix_path: nixpkgs=channel:nixos-unstable
       - name: run test
         run: |
-          nix --experimental-features 'nix-command flakes' develop -c mill -j 0 'arithmetic[${{ matrix.chisel }}].compile'
+          nix --experimental-features 'nix-command flakes' build '.#arithmetic'
