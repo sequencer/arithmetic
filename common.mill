@@ -33,7 +33,5 @@ trait ArithmeticModule
     with HasChisel {
   def spireIvy: T[Dep]
 
-  def evilplotIvy: T[Dep]
-
-  override def ivyDeps = T(super.ivyDeps() ++ Seq(spireIvy(), evilplotIvy()))
+  override def ivyDeps = T(super.ivyDeps() ++ Seq(spireIvy()))
 }

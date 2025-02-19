@@ -1,10 +1,5 @@
 package division.srt
 
-import com.cibo.evilplot.colors.HTMLNamedColors
-import com.cibo.evilplot.numeric.Bounds
-import com.cibo.evilplot.plot._
-import com.cibo.evilplot.plot.aesthetics.DefaultTheme._
-import com.cibo.evilplot.plot.renderers.PointRenderer
 import os.Path
 import spire.implicits._
 import spire.math._
@@ -31,34 +26,6 @@ case class SRTTable(
   lazy val xMin: Algebraic = -rho * dMax * radix
   lazy val xMax: Algebraic = rho * dMax * radix
 
-  /** P-D Diagram
-    *
-    * @note Graph 5.17(b)
-    */
-  lazy val pd: Plot = Overlay((aMin.toBigInt to aMax.toBigInt).flatMap { k: BigInt =>
-    Seq(
-      FunctionPlot.series(
-        _ * uRate(k.toInt).toDouble,
-        s"U($k)",
-        HTMLNamedColors.blue,
-        Some(Bounds(dMin.toDouble, dMax.toDouble)),
-        strokeWidth = Some(1)
-      ),
-      FunctionPlot.series(
-        _ * lRate(k.toInt).toDouble,
-        s"L($k)",
-        HTMLNamedColors.red,
-        Some(Bounds(dMin.toDouble, dMax.toDouble)),
-        strokeWidth = Some(1)
-      )
-    ) ++ qdsPoints :+ mesh
-  }: _*)
-    .title(s"P-D Graph of $this")
-    .xLabel("d")
-    .yLabel(s"${radix.toInt}ω[j]")
-    .rightLegend()
-    .standard()
-
   lazy val aMax:   Algebraic = a
   lazy val aMin:   Algebraic = -a
   lazy val deltaD: Algebraic = pow(2, -dTruncateWidth.toDouble)
@@ -76,18 +43,6 @@ case class SRTTable(
         val m: Seq[Algebraic] = xSet.filter { x: Algebraic => x <= (ceil - deltaX) && x >= floor }
         (d, m)
       }
-    }
-  }
-  lazy val qdsPoints: Seq[Plot] = {
-    tables.map {
-      case (i, ps) =>
-        ScatterPlot(
-          ps.flatMap { case (d, xs) => xs.map(x => com.cibo.evilplot.numeric.Point(d.toDouble, x.toDouble)) },
-          Some(
-            PointRenderer
-              .default[com.cibo.evilplot.numeric.Point](pointSize = Some(1), color = Some(HTMLNamedColors.gold))
-          )
-        )
     }
   }
 
@@ -119,52 +74,8 @@ case class SRTTable(
   assert((rho > 1 / 2) && (rho <= 1))
   private val dSet = Seq.tabulate((dStep + 1).toInt) { n => dMin + deltaD * n }
 
-  private val mesh =
-    ScatterPlot(
-      xSet.flatMap { y =>
-        dSet.map { x =>
-          com.cibo.evilplot.numeric.Point(x.toDouble, y.toDouble)
-        }
-      },
-      Some(
-        PointRenderer
-          .default[com.cibo.evilplot.numeric.Point](pointSize = Some(0.5), color = Some(HTMLNamedColors.gray))
-      )
-    )
-
   override def toString: String =
     s"SRT${radix.toInt} with quotient set: from ${aMin.toInt} to ${aMax.toInt}"
-
-  /** Robertson Diagram
-    *
-    * @note Graph 5.17(a)
-    */
-  def robertson(d: Algebraic): Plot = {
-    require(d > dMin && d < dMax)
-    Overlay((aMin.toBigInt to aMax.toBigInt).map { k: BigInt =>
-      FunctionPlot.series(
-        _ - (Algebraic(k) * d).toDouble,
-        s"$k",
-        HTMLNamedColors.black,
-        xbounds = Some(Bounds(((Algebraic(k) - rho) * d).toDouble, ((Algebraic(k) + rho) * d).toDouble))
-      )
-    }: _*)
-      .title(s"Robertson Graph of $this divisor: $d")
-      .xLabel("rω[j]")
-      .yLabel("ω[j+1]")
-      .xbounds((-radix * rho * dMax).toDouble, (radix * rho * dMax).toDouble)
-      .ybounds((-rho * d).toDouble, (rho * d).toDouble)
-      .rightLegend()
-      .standard()
-  }
-
-  def dumpGraph(plot: Plot, path: Path) = {
-    javax.imageio.ImageIO.write(
-      plot.render().asBufferedImage,
-      "png",
-      path.wrapped.toFile
-    )
-  }
 
   // select four points, then drop the first and the last one.
   /** for range `dLeft` to `dRight`, return the `rOmegaCeil` and `rOmegaFloor`
