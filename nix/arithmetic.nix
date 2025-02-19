@@ -16,7 +16,7 @@ let
     name = "arithmetic";
     src = arithmeticSrc;
     buildInputs = [ chisel.setupHook ];
-    millDepsHash = "sha256-NYB4g7uCaQZH7MqA7fdQzB2vXUdXfo37MC6hAMaMIZU=";
+    millDepsHash = "sha256-lv1d+NSXsV42Xb1NuVZjlz07T6W4Xqkx/3MQvaVqRTA=";
   };
 in
 publishMillJar {
